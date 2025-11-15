@@ -3,6 +3,7 @@ import Trades from './pages/Trades';
 import Goals from './pages/Goals';
 import Strategies from './pages/Strategies';
 import Analytics from './pages/Analytics';
+import Backtesting from './pages/Backtesting';
 import Layout from './Layout.jsx';
 
 
@@ -12,6 +13,7 @@ export const PAGES = {
     "Goals": Goals,
     "Strategies": Strategies,
     "Analytics": Analytics,
+    "Backtesting": Backtesting,
 }
 
 export const pagesConfig = {
