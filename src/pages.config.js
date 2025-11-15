@@ -5,6 +5,7 @@ import Strategies from './pages/Strategies';
 import Analytics from './pages/Analytics';
 import Backtesting from './pages/Backtesting';
 import Imports from './pages/Imports';
+import MarketData from './pages/MarketData';
 import Layout from './Layout.jsx';
 
 
@@ -16,6 +17,7 @@ export const PAGES = {
     "Analytics": Analytics,
     "Backtesting": Backtesting,
     "Imports": Imports,
+    "MarketData": MarketData,
 }
 
 export const pagesConfig = {

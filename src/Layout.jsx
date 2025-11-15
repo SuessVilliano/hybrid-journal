@@ -1,11 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
-import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp } from 'lucide-react';
 
 export default function Layout({ children, currentPageName }) {
   const navigation = [
     { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard },
+    { name: 'Live Market', page: 'MarketData', icon: TrendingUp },
     { name: 'Trades', page: 'Trades', icon: BookOpen },
     { name: 'Strategies', page: 'Strategies', icon: Layers },
     { name: 'Goals', page: 'Goals', icon: Target },
@@ -62,7 +63,7 @@ export default function Layout({ children, currentPageName }) {
             <div>✨ AI-Powered Insights</div>
             <div>📊 Advanced Analytics</div>
             <div>🎯 Goal Tracking</div>
-            <div>⚡ Multi-Platform Import</div>
+            <div>📈 Live Market Data</div>
           </div>
         </div>
       </aside>
