@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { X, Upload, FileText, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
-import { parseTradeFile } from '@/utils/tradeParsers';
+import { parseTradeFile } from '@/components/utils/tradeParsers';
 import ImportResults from './ImportResults';
 
 export default function ImportModal({ onClose }) {
@@ -27,10 +27,8 @@ export default function ImportModal({ onClose }) {
       setUploading(true);
       setImportResult({ status: 'processing', message: 'Processing file...' });
 
-      // Upload file to storage first
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
 
-      // Parse the file based on format
       const parseResult = await parseTradeFile(file);
       const { trades: parsedTrades, errors, format } = parseResult;
 
@@ -52,7 +50,6 @@ export default function ImportModal({ onClose }) {
         return;
       }
 
-      // Create import record
       const importRecord = await base44.entities.Import.create({
         filename: file.name,
         file_url: file_url,
@@ -62,7 +59,6 @@ export default function ImportModal({ onClose }) {
         trades_imported: 0
       });
 
-      // Import trades to database
       setImportResult({
         status: 'importing',
         message: `Importing ${parsedTrades.length} trades...`,
@@ -77,7 +73,6 @@ export default function ImportModal({ onClose }) {
           const created = await base44.entities.Trade.create(parsedTrades[i]);
           imported.push(created);
           
-          // Update progress
           setImportResult({
             status: 'importing',
             message: `Importing trades... ${i + 1}/${parsedTrades.length}`,
@@ -91,14 +86,12 @@ export default function ImportModal({ onClose }) {
         }
       }
 
-      // Update import record
       await base44.entities.Import.update(importRecord.id, {
         status: failed.length === 0 ? 'Completed' : 'Completed',
         trades_imported: imported.length,
         error_message: failed.length > 0 ? `${failed.length} trades failed to import` : null
       });
 
-      // Show final results
       setImportResult({
         status: 'complete',
         format,
@@ -141,7 +134,6 @@ export default function ImportModal({ onClose }) {
         </div>
 
         <div className="p-6 space-y-6">
-          {/* File Upload Area */}
           <div 
             className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
               file ? 'border-blue-500 bg-blue-50' : 'border-slate-300 hover:border-blue-400'
@@ -149,7 +141,7 @@ export default function ImportModal({ onClose }) {
           >
             <input
               type="file"
-              accept=".csv,.txt,.html,.htm,.xlsx,.xls,.pdf"
+              accept=".csv,.txt,.html,.htm,.xlsx,.xls"
               onChange={handleFileSelect}
               className="hidden"
               id="file-upload"
@@ -175,7 +167,6 @@ export default function ImportModal({ onClose }) {
             </label>
           </div>
 
-          {/* Supported Platforms */}
           <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 border border-blue-200">
             <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-blue-600" />
@@ -209,7 +200,6 @@ export default function ImportModal({ onClose }) {
             </div>
           </div>
 
-          {/* Expected Format Guide */}
           <details className="bg-slate-50 rounded-lg">
             <summary className="p-4 cursor-pointer font-medium text-slate-900 hover:bg-slate-100 rounded-lg">
               📋 CSV Column Requirements
@@ -224,12 +214,10 @@ export default function ImportModal({ onClose }) {
             </div>
           </details>
 
-          {/* Import Results */}
           {importResult && (
             <ImportResults result={importResult} />
           )}
 
-          {/* Actions */}
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
             <Button 
               variant="outline" 
