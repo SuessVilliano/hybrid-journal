@@ -27,7 +27,7 @@ export default function PerformanceMetrics({ trades, detailed = false }) {
     }, {});
 
     // By Side
-    const byS ide = trades.reduce((acc, t) => {
+    const bySide = trades.reduce((acc, t) => {
       const side = t.side || 'Unknown';
       if (!acc[side]) acc[side] = { wins: 0, losses: 0, pnl: 0 };
       if (t.pnl > 0) acc[side].wins++;

@@ -4,10 +4,10 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TrendingUp, TrendingDown, Activity, DollarSign, Target, Calendar } from 'lucide-react';
-import EquityCurve from '../components/trading/EquityCurve';
-import TradeCalendar from '../components/trading/TradeCalendar';
-import PerformanceMetrics from '../components/trading/PerformanceMetrics';
-import RecentTrades from '../components/trading/RecentTrades';
+import EquityCurve from '@/components/trading/EquityCurve';
+import TradeCalendar from '@/components/trading/TradeCalendar';
+import PerformanceMetrics from '@/components/trading/PerformanceMetrics';
+import RecentTrades from '@/components/trading/RecentTrades';
 
 export default function Dashboard() {
   const [timeframe, setTimeframe] = useState('all');
@@ -192,7 +192,6 @@ export default function Dashboard() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-slate-600">Track your emotional state and identify patterns affecting your trading.</p>
-                  {/* Emotion analysis component will go here */}
                 </CardContent>
               </Card>
 
@@ -202,7 +201,6 @@ export default function Dashboard() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-slate-600">AI-powered insights into your trading behavior and decision-making.</p>
-                  {/* AI insights component will go here */}
                 </CardContent>
               </Card>
             </div>

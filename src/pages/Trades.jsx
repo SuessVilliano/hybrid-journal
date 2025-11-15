@@ -4,10 +4,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Search, Filter, Upload, Download } from 'lucide-react';
-import TradeForm from '../components/trading/TradeForm';
-import TradeList from '../components/trading/TradeList';
-import TradeFilters from '../components/trading/TradeFilters';
-import ImportModal from '../components/trading/ImportModal';
+import TradeForm from '@/components/trading/TradeForm';
+import TradeList from '@/components/trading/TradeList';
+import TradeFilters from '@/components/trading/TradeFilters';
+import ImportModal from '@/components/trading/ImportModal';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 
