@@ -1,12 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
-import { LayoutDashboard, BookOpen, Target, BarChart3, Upload, Settings } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers } from 'lucide-react';
 
 export default function Layout({ children, currentPageName }) {
   const navigation = [
     { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard },
     { name: 'Trades', page: 'Trades', icon: BookOpen },
+    { name: 'Strategies', page: 'Strategies', icon: Layers },
     { name: 'Goals', page: 'Goals', icon: Target },
     { name: 'Analytics', page: 'Analytics', icon: BarChart3 },
   ];
@@ -19,11 +20,11 @@ export default function Layout({ children, currentPageName }) {
         <div className="p-6 border-b border-slate-700">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <BookOpen className="h-6 w-6" />
+              <Zap className="h-6 w-6" />
             </div>
             <div>
               <h1 className="text-xl font-bold">TradeHybrid</h1>
-              <p className="text-xs text-slate-400">Trading Journal</p>
+              <p className="text-xs text-slate-400">Pro Trading Journal</p>
             </div>
           </div>
         </div>
@@ -53,15 +54,13 @@ export default function Layout({ children, currentPageName }) {
           })}
         </nav>
 
-        {/* Footer */}
+        {/* Footer Info */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-700">
-          <Link
-            to={createPageUrl('Settings')}
-            className="flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-all"
-          >
-            <Settings className="h-5 w-5" />
-            <span className="font-medium">Settings</span>
-          </Link>
+          <div className="text-xs text-slate-400 space-y-1">
+            <div>✨ AI-Powered Insights</div>
+            <div>📊 Advanced Analytics</div>
+            <div>🎯 Goal Tracking</div>
+          </div>
         </div>
       </aside>
 
