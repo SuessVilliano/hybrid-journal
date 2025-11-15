@@ -4,6 +4,7 @@ import Goals from './pages/Goals';
 import Strategies from './pages/Strategies';
 import Analytics from './pages/Analytics';
 import Backtesting from './pages/Backtesting';
+import Imports from './pages/Imports';
 import Layout from './Layout.jsx';
 
 
@@ -14,6 +15,7 @@ export const PAGES = {
     "Strategies": Strategies,
     "Analytics": Analytics,
     "Backtesting": Backtesting,
+    "Imports": Imports,
 }
 
 export const pagesConfig = {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
-import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload } from 'lucide-react';
 
 export default function Layout({ children, currentPageName }) {
   const navigation = [
@@ -11,6 +11,7 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Goals', page: 'Goals', icon: Target },
     { name: 'Analytics', page: 'Analytics', icon: BarChart3 },
     { name: 'Backtesting', page: 'Backtesting', icon: Play },
+    { name: 'Imports', page: 'Imports', icon: Upload },
   ];
 
   return (
@@ -31,7 +32,7 @@ export default function Layout({ children, currentPageName }) {
         </div>
 
         {/* Navigation */}
-        <nav className="p-4 space-y-2">
+        <nav className="p-4 space-y-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
           {navigation.map((item) => {
             const Icon = item.icon;
             const isActive = currentPageName === item.page;
@@ -61,7 +62,7 @@ export default function Layout({ children, currentPageName }) {
             <div>✨ AI-Powered Insights</div>
             <div>📊 Advanced Analytics</div>
             <div>🎯 Goal Tracking</div>
-            <div>⚡ Backtesting Engine</div>
+            <div>⚡ Multi-Platform Import</div>
           </div>
         </div>
       </aside>

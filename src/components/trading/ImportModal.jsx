@@ -2,19 +2,21 @@ import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { X, Upload, FileText, CheckCircle, AlertCircle } from 'lucide-react';
+import { X, Upload, FileText, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
+import { parseTradeFile } from '@/utils/tradeParsers';
+import ImportResults from './ImportResults';
 
 export default function ImportModal({ onClose }) {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const [status, setStatus] = useState(null);
+  const [importResult, setImportResult] = useState(null);
   const queryClient = useQueryClient();
 
   const handleFileSelect = (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
       setFile(selectedFile);
-      setStatus(null);
+      setImportResult(null);
     }
   };
 
@@ -23,113 +25,117 @@ export default function ImportModal({ onClose }) {
 
     try {
       setUploading(true);
-      setStatus({ type: 'loading', message: 'Uploading file...' });
+      setImportResult({ status: 'processing', message: 'Processing file...' });
 
-      // Upload file to Base44 storage
+      // Upload file to storage first
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
 
-      // Create import record
-      await base44.entities.Import.create({
-        filename: file.name,
-        file_url: file_url,
-        import_type: file.name.endsWith('.csv') ? 'CSV' : 
-                     file.name.endsWith('.xlsx') ? 'Excel' : 'PDF',
-        status: 'Pending'
+      // Parse the file based on format
+      const parseResult = await parseTradeFile(file);
+      const { trades: parsedTrades, errors, format } = parseResult;
+
+      setImportResult({
+        status: 'parsed',
+        format,
+        totalParsed: parsedTrades.length,
+        errors: errors.length,
+        message: `Detected ${format} format. Found ${parsedTrades.length} trades.`
       });
 
-      // For CSV files, try to parse and import trades
-      if (file.name.endsWith('.csv')) {
-        setStatus({ type: 'loading', message: 'Parsing trades...' });
-        
-        const text = await file.text();
-        const lines = text.split('\n');
-        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-        
-        const trades = [];
-        for (let i = 1; i < lines.length; i++) {
-          if (!lines[i].trim()) continue;
-          
-          const values = lines[i].split(',');
-          const trade = {};
-          
-          headers.forEach((header, index) => {
-            const value = values[index]?.trim();
-            if (!value) return;
-            
-            // Map common CSV headers to our schema
-            if (header.includes('symbol') || header.includes('instrument')) {
-              trade.symbol = value;
-            } else if (header.includes('side') || header.includes('direction')) {
-              trade.side = value.toLowerCase().includes('short') ? 'Short' : 'Long';
-            } else if (header.includes('entry') && header.includes('price')) {
-              trade.entry_price = parseFloat(value);
-            } else if (header.includes('exit') && header.includes('price')) {
-              trade.exit_price = parseFloat(value);
-            } else if (header.includes('quantity') || header.includes('lots') || header.includes('volume')) {
-              trade.quantity = parseFloat(value);
-            } else if (header.includes('profit') || header.includes('pnl')) {
-              trade.pnl = parseFloat(value);
-            } else if (header.includes('entry') && (header.includes('date') || header.includes('time'))) {
-              trade.entry_date = new Date(value).toISOString();
-            } else if (header.includes('exit') && (header.includes('date') || header.includes('time'))) {
-              trade.exit_date = new Date(value).toISOString();
-            }
-          });
-          
-          if (trade.symbol && trade.pnl !== undefined) {
-            trade.import_source = 'CSV Import';
-            trade.platform = trade.platform || 'Other';
-            trades.push(trade);
-          }
-        }
-        
-        if (trades.length > 0) {
-          setStatus({ type: 'loading', message: `Importing ${trades.length} trades...` });
-          
-          for (const trade of trades) {
-            await base44.entities.Trade.create(trade);
-          }
-          
-          setStatus({ 
-            type: 'success', 
-            message: `Successfully imported ${trades.length} trades!` 
-          });
-          
-          queryClient.invalidateQueries(['trades']);
-          
-          setTimeout(() => {
-            onClose();
-          }, 2000);
-        } else {
-          setStatus({ 
-            type: 'error', 
-            message: 'No valid trades found in CSV. Check column names match expected format.' 
-          });
-        }
-      } else {
-        setStatus({ 
-          type: 'success', 
-          message: 'File uploaded! Manual review required for non-CSV files.' 
+      if (parsedTrades.length === 0) {
+        setImportResult({
+          status: 'error',
+          message: 'No valid trades found in file. Please check the format.',
+          errors: errors
         });
-        setTimeout(() => onClose(), 2000);
+        setUploading(false);
+        return;
       }
+
+      // Create import record
+      const importRecord = await base44.entities.Import.create({
+        filename: file.name,
+        file_url: file_url,
+        platform: format,
+        import_type: file.name.endsWith('.html') || file.name.endsWith('.htm') ? 'MT4 Statement' : 'CSV',
+        status: 'Processing',
+        trades_imported: 0
+      });
+
+      // Import trades to database
+      setImportResult({
+        status: 'importing',
+        message: `Importing ${parsedTrades.length} trades...`,
+        progress: 0
+      });
+
+      const imported = [];
+      const failed = [];
+
+      for (let i = 0; i < parsedTrades.length; i++) {
+        try {
+          const created = await base44.entities.Trade.create(parsedTrades[i]);
+          imported.push(created);
+          
+          // Update progress
+          setImportResult({
+            status: 'importing',
+            message: `Importing trades... ${i + 1}/${parsedTrades.length}`,
+            progress: ((i + 1) / parsedTrades.length) * 100
+          });
+        } catch (error) {
+          failed.push({
+            trade: parsedTrades[i],
+            error: error.message
+          });
+        }
+      }
+
+      // Update import record
+      await base44.entities.Import.update(importRecord.id, {
+        status: failed.length === 0 ? 'Completed' : 'Completed',
+        trades_imported: imported.length,
+        error_message: failed.length > 0 ? `${failed.length} trades failed to import` : null
+      });
+
+      // Show final results
+      setImportResult({
+        status: 'complete',
+        format,
+        imported: imported.length,
+        failed: failed.length,
+        errors: [...errors, ...failed],
+        trades: imported
+      });
+
+      queryClient.invalidateQueries(['trades']);
+      queryClient.invalidateQueries(['imports']);
+
     } catch (error) {
       console.error('Import error:', error);
-      setStatus({ 
-        type: 'error', 
-        message: error.message || 'Import failed. Please try again.' 
+      setImportResult({
+        status: 'error',
+        message: error.message || 'Import failed. Please try again.',
+        errors: [{ error: error.message }]
       });
     } finally {
       setUploading(false);
     }
   };
 
+  const handleClose = () => {
+    if (importResult?.status === 'complete') {
+      queryClient.invalidateQueries(['trades']);
+    }
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full">
-        <div className="p-6 border-b border-slate-200 flex justify-between items-center">
+      <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex justify-between items-center z-10">
           <h2 className="text-2xl font-bold text-slate-900">Import Trades</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <button onClick={handleClose} className="text-slate-400 hover:text-slate-600">
             <X className="h-6 w-6" />
           </button>
         </div>
@@ -143,69 +149,114 @@ export default function ImportModal({ onClose }) {
           >
             <input
               type="file"
-              accept=".csv,.xlsx,.xls,.pdf"
+              accept=".csv,.txt,.html,.htm,.xlsx,.xls,.pdf"
               onChange={handleFileSelect}
               className="hidden"
               id="file-upload"
+              disabled={uploading}
             />
-            <label htmlFor="file-upload" className="cursor-pointer">
+            <label htmlFor="file-upload" className={uploading ? 'cursor-not-allowed' : 'cursor-pointer'}>
               {file ? (
                 <div className="space-y-2">
                   <FileText className="h-12 w-12 text-blue-600 mx-auto" />
                   <p className="font-medium text-slate-900">{file.name}</p>
-                  <p className="text-sm text-slate-500">Click to change file</p>
+                  <p className="text-sm text-slate-500">
+                    {(file.size / 1024).toFixed(2)} KB
+                    {!uploading && ' • Click to change'}
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   <Upload className="h-12 w-12 text-slate-400 mx-auto" />
                   <p className="font-medium text-slate-900">Click to upload</p>
-                  <p className="text-sm text-slate-500">CSV, Excel, or PDF files</p>
+                  <p className="text-sm text-slate-500">CSV, TXT, HTML, Excel files</p>
                 </div>
               )}
             </label>
           </div>
 
-          {/* Expected CSV Format */}
-          <div className="bg-slate-50 rounded-lg p-4">
-            <h3 className="font-medium text-slate-900 mb-2">Expected CSV Columns:</h3>
-            <ul className="text-sm text-slate-600 space-y-1">
-              <li>• <span className="font-medium">symbol</span> - Trading symbol (required)</li>
-              <li>• <span className="font-medium">side</span> - Long or Short</li>
-              <li>• <span className="font-medium">entry_price, exit_price</span> - Prices</li>
-              <li>• <span className="font-medium">quantity</span> - Position size</li>
-              <li>• <span className="font-medium">pnl</span> - Profit/Loss (required)</li>
-              <li>• <span className="font-medium">entry_date, exit_date</span> - Timestamps</li>
-            </ul>
+          {/* Supported Platforms */}
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 border border-blue-200">
+            <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-blue-600" />
+              Supported Platforms & Formats
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-slate-700">MetaTrader 4/5 (HTML, CSV)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-slate-700">cTrader (CSV)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-slate-700">DXTrade (CSV)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-slate-700">MatchTrader (CSV)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-slate-700">Tradovate (CSV)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-slate-700">Generic CSV</span>
+              </div>
+            </div>
           </div>
 
-          {/* Status Message */}
-          {status && (
-            <div className={`p-4 rounded-lg flex items-center gap-3 ${
-              status.type === 'success' ? 'bg-green-50 text-green-800' :
-              status.type === 'error' ? 'bg-red-50 text-red-800' :
-              'bg-blue-50 text-blue-800'
-            }`}>
-              {status.type === 'success' && <CheckCircle className="h-5 w-5" />}
-              {status.type === 'error' && <AlertCircle className="h-5 w-5" />}
-              {status.type === 'loading' && (
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600" />
-              )}
-              <p className="text-sm font-medium">{status.message}</p>
+          {/* Expected Format Guide */}
+          <details className="bg-slate-50 rounded-lg">
+            <summary className="p-4 cursor-pointer font-medium text-slate-900 hover:bg-slate-100 rounded-lg">
+              📋 CSV Column Requirements
+            </summary>
+            <div className="p-4 pt-0 space-y-2 text-sm text-slate-600">
+              <div><strong>Required:</strong> symbol, pnl (or profit)</div>
+              <div><strong>Recommended:</strong> entry_date, entry_price, exit_price, side, quantity</div>
+              <div><strong>Optional:</strong> stop_loss, take_profit, commission, swap, strategy, notes</div>
+              <div className="pt-2 text-xs text-slate-500">
+                💡 Column names are flexible - we auto-detect common variations
+              </div>
             </div>
+          </details>
+
+          {/* Import Results */}
+          {importResult && (
+            <ImportResults result={importResult} />
           )}
 
           {/* Actions */}
-          <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={onClose} disabled={uploading}>
-              Cancel
-            </Button>
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
             <Button 
-              onClick={handleImport} 
-              disabled={!file || uploading}
-              className="bg-blue-600 hover:bg-blue-700"
+              variant="outline" 
+              onClick={handleClose}
+              disabled={uploading && importResult?.status === 'importing'}
             >
-              {uploading ? 'Importing...' : 'Import'}
+              {importResult?.status === 'complete' ? 'Close' : 'Cancel'}
             </Button>
+            {importResult?.status !== 'complete' && (
+              <Button 
+                onClick={handleImport} 
+                disabled={!file || uploading}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {uploading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                    {importResult?.status === 'importing' ? 'Importing...' : 'Processing...'}
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Import
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </div>
       </div>
