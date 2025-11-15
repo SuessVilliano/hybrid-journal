@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, BookOpen, TrendingUp, Target } from 'lucide-react';
 import StrategyForm from '@/components/strategies/StrategyForm';
-import StrategyCard from '@/components/strategies/StrategyCard';
+import StrategyCard from '@/components/strategies/StrategyCard.jsx';
 
 export default function Strategies() {
   const [showForm, setShowForm] = useState(false);
