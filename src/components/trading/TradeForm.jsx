@@ -3,7 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { X } from 'lucide-react';
+import { X, Sparkles, Loader2 } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
+import { autoPopulateTradeFields, detectInstrumentType } from './AITradeHelper';
 
 export default function TradeForm({ trade, onSubmit, onCancel }) {
   const [formData, setFormData] = useState(trade || {
@@ -24,8 +27,44 @@ export default function TradeForm({ trade, onSubmit, onCancel }) {
     strategy: '',
     notes: '',
     emotion_before: 'Calm',
+    emotion_after: '',
     followed_rules: true
   });
+
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const { data: strategies = [] } = useQuery({
+    queryKey: ['strategies'],
+    queryFn: () => base44.entities.Strategy.list('-created_date', 100)
+  });
+
+  // Auto-detect instrument type when symbol changes
+  const handleSymbolChange = (value) => {
+    const updates = { symbol: value };
+    if (value) {
+      updates.instrument_type = detectInstrumentType(value);
+    }
+    setFormData({ ...formData, ...updates });
+  };
+
+  // AI Auto-populate
+  const handleAIAutoPopulate = async () => {
+    if (!formData.symbol || !formData.entry_price) {
+      alert('Please enter at least Symbol and Entry Price to use AI assistance');
+      return;
+    }
+
+    setAiLoading(true);
+    try {
+      const updates = await autoPopulateTradeFields(formData, strategies);
+      setFormData({ ...formData, ...updates });
+    } catch (error) {
+      console.error('AI auto-populate error:', error);
+      alert('AI assistance failed. Please try again.');
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -56,7 +95,7 @@ export default function TradeForm({ trade, onSubmit, onCancel }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex justify-between items-center">
+        <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex justify-between items-center z-10">
           <h2 className="text-2xl font-bold text-slate-900">
             {trade ? 'Edit Trade' : 'Add New Trade'}
           </h2>
@@ -66,13 +105,45 @@ export default function TradeForm({ trade, onSubmit, onCancel }) {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* AI Assistant Banner */}
+          <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Sparkles className="h-5 w-5 text-purple-600" />
+                <div>
+                  <p className="font-medium text-slate-900">AI Trade Assistant</p>
+                  <p className="text-sm text-slate-600">Auto-populate strategy, notes, emotions, and more</p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                onClick={handleAIAutoPopulate}
+                disabled={aiLoading || !formData.symbol || !formData.entry_price}
+                className="bg-purple-600 hover:bg-purple-700"
+                size="sm"
+              >
+                {aiLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Auto-Fill with AI
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+
           {/* Basic Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">Symbol *</label>
               <Input
                 value={formData.symbol}
-                onChange={(e) => setFormData({...formData, symbol: e.target.value})}
+                onChange={(e) => handleSymbolChange(e.target.value)}
                 placeholder="EURUSD, NQ, BTC/USD"
                 required
               />
@@ -101,7 +172,10 @@ export default function TradeForm({ trade, onSubmit, onCancel }) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Instrument Type</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Instrument Type
+                <span className="ml-2 text-xs text-purple-600">✨ Auto-detected</span>
+              </label>
               <Select value={formData.instrument_type} onValueChange={(val) => setFormData({...formData, instrument_type: val})}>
                 <SelectTrigger>
                   <SelectValue />
@@ -237,7 +311,10 @@ export default function TradeForm({ trade, onSubmit, onCancel }) {
           {/* Strategy & Psychology */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Strategy</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Strategy
+                <span className="ml-2 text-xs text-purple-600">✨ AI-suggested</span>
+              </label>
               <Input
                 value={formData.strategy}
                 onChange={(e) => setFormData({...formData, strategy: e.target.value})}
@@ -246,7 +323,10 @@ export default function TradeForm({ trade, onSubmit, onCancel }) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Emotion Before Trade</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Emotion Before Trade
+                <span className="ml-2 text-xs text-purple-600">✨ AI-analyzed</span>
+              </label>
               <Select value={formData.emotion_before} onValueChange={(val) => setFormData({...formData, emotion_before: val})}>
                 <SelectTrigger>
                   <SelectValue />
@@ -258,14 +338,42 @@ export default function TradeForm({ trade, onSubmit, onCancel }) {
                   <SelectItem value="Excited">Excited</SelectItem>
                   <SelectItem value="Fearful">Fearful</SelectItem>
                   <SelectItem value="Impatient">Impatient</SelectItem>
+                  <SelectItem value="Disciplined">Disciplined</SelectItem>
+                  <SelectItem value="Impulsive">Impulsive</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {formData.exit_price && (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Emotion After Trade
+                  <span className="ml-2 text-xs text-purple-600">✨ AI-analyzed</span>
+                </label>
+                <Select value={formData.emotion_after} onValueChange={(val) => setFormData({...formData, emotion_after: val})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select emotion..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Confident">Confident</SelectItem>
+                    <SelectItem value="Anxious">Anxious</SelectItem>
+                    <SelectItem value="Calm">Calm</SelectItem>
+                    <SelectItem value="Excited">Excited</SelectItem>
+                    <SelectItem value="Satisfied">Satisfied</SelectItem>
+                    <SelectItem value="Regretful">Regretful</SelectItem>
+                    <SelectItem value="Disciplined">Disciplined</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Notes</label>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Notes
+              <span className="ml-2 text-xs text-purple-600">✨ AI-generated</span>
+            </label>
             <Textarea
               value={formData.notes}
               onChange={(e) => setFormData({...formData, notes: e.target.value})}
