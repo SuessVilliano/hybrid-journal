@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
-import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield } from 'lucide-react';
 
 export default function Layout({ children, currentPageName }) {
   const navigation = [
@@ -9,6 +9,7 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Live Market', page: 'MarketData', icon: TrendingUp },
     { name: 'Trades', page: 'Trades', icon: BookOpen },
     { name: 'AI Coach', page: 'TradingCoach', icon: MessageSquare },
+    { name: 'Risk Manager', page: 'RiskManagement', icon: Shield },
     { name: 'Broker Sync', page: 'BrokerConnections', icon: LinkIcon },
     { name: 'Automation', page: 'Automation', icon: Bot },
     { name: 'Strategies', page: 'Strategies', icon: Layers },
@@ -60,9 +61,9 @@ export default function Layout({ children, currentPageName }) {
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-700">
           <div className="text-xs text-slate-400 space-y-1">
             <div>🤖 AI Coach & Automation</div>
+            <div>🛡️ Smart Risk Management</div>
             <div>📊 Advanced Analytics</div>
             <div>🔗 Broker Integration</div>
-            <div>📈 Live Market Data</div>
           </div>
         </div>
       </aside>
