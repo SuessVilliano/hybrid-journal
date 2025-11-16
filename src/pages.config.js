@@ -7,6 +7,7 @@ import Backtesting from './pages/Backtesting';
 import Imports from './pages/Imports';
 import MarketData from './pages/MarketData';
 import BrokerConnections from './pages/BrokerConnections';
+import Automation from './pages/Automation';
 import Layout from './Layout.jsx';
 
 
@@ -20,6 +21,7 @@ export const PAGES = {
     "Imports": Imports,
     "MarketData": MarketData,
     "BrokerConnections": BrokerConnections,
+    "Automation": Automation,
 }
 
 export const pagesConfig = {

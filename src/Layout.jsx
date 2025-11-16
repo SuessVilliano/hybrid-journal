@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
-import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot } from 'lucide-react';
 
 export default function Layout({ children, currentPageName }) {
   const navigation = [
@@ -9,6 +9,7 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Live Market', page: 'MarketData', icon: TrendingUp },
     { name: 'Trades', page: 'Trades', icon: BookOpen },
     { name: 'Broker Sync', page: 'BrokerConnections', icon: LinkIcon },
+    { name: 'Automation', page: 'Automation', icon: Bot },
     { name: 'Strategies', page: 'Strategies', icon: Layers },
     { name: 'Goals', page: 'Goals', icon: Target },
     { name: 'Analytics', page: 'Analytics', icon: BarChart3 },
@@ -18,9 +19,7 @@ export default function Layout({ children, currentPageName }) {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Sidebar */}
       <aside className="fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-slate-900 to-slate-800 text-white shadow-2xl z-50">
-        {/* Logo */}
         <div className="p-6 border-b border-slate-700">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
@@ -33,7 +32,6 @@ export default function Layout({ children, currentPageName }) {
           </div>
         </div>
 
-        {/* Navigation */}
         <nav className="p-4 space-y-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
           {navigation.map((item) => {
             const Icon = item.icon;
@@ -58,10 +56,9 @@ export default function Layout({ children, currentPageName }) {
           })}
         </nav>
 
-        {/* Footer Info */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-700">
           <div className="text-xs text-slate-400 space-y-1">
-            <div>✨ AI-Powered Insights</div>
+            <div>🤖 AI Automation</div>
             <div>📊 Advanced Analytics</div>
             <div>🔗 Broker Integration</div>
             <div>📈 Live Market Data</div>
@@ -69,7 +66,6 @@ export default function Layout({ children, currentPageName }) {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="ml-64">
         {children}
       </main>
