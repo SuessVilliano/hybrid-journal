@@ -10,6 +10,7 @@ import BrokerConnections from './pages/BrokerConnections';
 import Automation from './pages/Automation';
 import TradingCoach from './pages/TradingCoach';
 import RiskManagement from './pages/RiskManagement';
+import TradingSummaries from './pages/TradingSummaries';
 import Layout from './Layout.jsx';
 
 
@@ -26,6 +27,7 @@ export const PAGES = {
     "Automation": Automation,
     "TradingCoach": TradingCoach,
     "RiskManagement": RiskManagement,
+    "TradingSummaries": TradingSummaries,
 }
 
 export const pagesConfig = {

@@ -1,13 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
-import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText } from 'lucide-react';
 
 export default function Layout({ children, currentPageName }) {
   const navigation = [
     { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard },
     { name: 'Live Market', page: 'MarketData', icon: TrendingUp },
     { name: 'Trades', page: 'Trades', icon: BookOpen },
+    { name: 'Summaries', page: 'TradingSummaries', icon: FileText },
     { name: 'AI Coach', page: 'TradingCoach', icon: MessageSquare },
     { name: 'Risk Manager', page: 'RiskManagement', icon: Shield },
     { name: 'Broker Sync', page: 'BrokerConnections', icon: LinkIcon },
