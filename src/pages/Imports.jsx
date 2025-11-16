@@ -1,12 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Upload, FileText, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Upload, FileText, CheckCircle, XCircle, Clock, Plus, BarChart3 } from 'lucide-react';
 import { format } from 'date-fns';
+import ImportModal from '@/components/trading/ImportModal';
+import ImportVisualization from '@/components/trading/ImportVisualization';
 
 export default function Imports() {
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [selectedImport, setSelectedImport] = useState(null);
+
   const { data: imports = [], isLoading } = useQuery({
     queryKey: ['imports'],
     queryFn: () => base44.entities.Import.list('-created_date', 100)
@@ -22,10 +28,45 @@ export default function Imports() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-4xl font-bold text-slate-900">Import History</h1>
-          <p className="text-slate-600 mt-1">Track all your trade imports</p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-4xl font-bold text-slate-900">Import Trades</h1>
+            <p className="text-slate-600 mt-1">Import and analyze trades from any platform</p>
+          </div>
+          <Button 
+            onClick={() => setShowImportModal(true)}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Import Trades
+          </Button>
         </div>
+
+        <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-3">
+              <FileText className="h-5 w-5 text-blue-600 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-bold text-slate-900 mb-2">Supported File Types</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm text-slate-700">
+                  <div>✓ MetaTrader 4/5 (CSV, HTML)</div>
+                  <div>✓ cTrader (CSV)</div>
+                  <div>✓ DXTrade (CSV)</div>
+                  <div>✓ MatchTrader (CSV)</div>
+                  <div>✓ Tradovate (CSV)</div>
+                  <div>✓ Generic CSV</div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {selectedImport && (
+          <ImportVisualization 
+            importRecord={selectedImport}
+            onClose={() => setSelectedImport(null)}
+          />
+        )}
 
         {isLoading ? (
           <div className="flex items-center justify-center h-64">
@@ -35,9 +76,16 @@ export default function Imports() {
           <Card className="p-12 text-center">
             <Upload className="h-16 w-16 text-slate-300 mx-auto mb-4" />
             <h3 className="text-xl font-bold text-slate-900 mb-2">No imports yet</h3>
-            <p className="text-slate-600">
+            <p className="text-slate-600 mb-4">
               Import trades from your trading platform to get started
             </p>
+            <Button 
+              onClick={() => setShowImportModal(true)}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Import Your First Trades
+            </Button>
           </Card>
         ) : (
           <div className="space-y-4">
@@ -79,22 +127,39 @@ export default function Imports() {
                         </div>
                       </div>
 
-                      {imp.file_url && (
-                        <a 
-                          href={imp.file_url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                        >
-                          View File
-                        </a>
-                      )}
+                      <div className="flex gap-2">
+                        {imp.status === 'Completed' && imp.trades_imported > 0 && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setSelectedImport(imp)}
+                          >
+                            <BarChart3 className="h-4 w-4 mr-1" />
+                            View Analysis
+                          </Button>
+                        )}
+                        {imp.file_url && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            asChild
+                          >
+                            <a href={imp.file_url} target="_blank" rel="noopener noreferrer">
+                              View File
+                            </a>
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
               );
             })}
           </div>
+        )}
+
+        {showImportModal && (
+          <ImportModal onClose={() => setShowImportModal(false)} />
         )}
       </div>
     </div>
