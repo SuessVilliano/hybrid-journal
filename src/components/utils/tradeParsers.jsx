@@ -12,7 +12,7 @@ export const parsers = {
 
     for (let i = 1; i < lines.length; i++) {
       try {
-        const values = lines[i].split(',').map(v => v.trim().replace(/['"]/g, ''));
+        const values = parseCSVLine(lines[i]);
         const trade = mapCSVToTrade(headers, values);
         if (trade.symbol && trade.pnl !== undefined) {
           trades.push(trade);
@@ -43,29 +43,23 @@ export const parsers = {
 
           const cleanCell = (cell) => cell.replace(/<[^>]*>/g, '').trim();
           
-          const ticket = cleanCell(cells[0]);
-          const openTime = cleanCell(cells[1]);
           const type = cleanCell(cells[2]);
-          const size = parseFloat(cleanCell(cells[3]));
           const symbol = cleanCell(cells[4]);
           const openPrice = parseFloat(cleanCell(cells[5]));
-          const closeTime = cells[8] ? cleanCell(cells[8]) : null;
           const closePrice = cells[9] ? parseFloat(cleanCell(cells[9])) : null;
-          const commission = cells[10] ? parseFloat(cleanCell(cells[10])) : 0;
-          const swap = cells[11] ? parseFloat(cleanCell(cells[11])) : 0;
           const profit = cells[12] ? parseFloat(cleanCell(cells[12])) : 0;
 
           if (symbol && !isNaN(profit)) {
             trades.push({
               symbol: symbol,
               side: type.toLowerCase().includes('buy') ? 'Long' : 'Short',
-              entry_date: new Date(openTime).toISOString(),
-              exit_date: closeTime ? new Date(closeTime).toISOString() : null,
+              entry_date: new Date(cleanCell(cells[1])).toISOString(),
+              exit_date: cells[8] ? new Date(cleanCell(cells[8])).toISOString() : null,
               entry_price: openPrice,
               exit_price: closePrice,
-              quantity: size,
-              commission: commission,
-              swap: swap,
+              quantity: parseFloat(cleanCell(cells[3])),
+              commission: cells[10] ? parseFloat(cleanCell(cells[10])) : 0,
+              swap: cells[11] ? parseFloat(cleanCell(cells[11])) : 0,
               pnl: profit,
               platform: 'MT4/MT5',
               instrument_type: 'Forex',
@@ -91,7 +85,7 @@ export const parsers = {
 
     for (let i = 1; i < lines.length; i++) {
       try {
-        const values = lines[i].split(',').map(v => v.trim());
+        const values = parseCSVLine(lines[i]);
         if (values.length < 10) continue;
 
         const type = values[2];
@@ -130,11 +124,11 @@ export const parsers = {
     const trades = [];
     const errors = [];
 
-    const headers = lines[0].toLowerCase().split(',');
+    const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
     
     for (let i = 1; i < lines.length; i++) {
       try {
-        const values = lines[i].split(',').map(v => v.trim());
+        const values = parseCSVLine(lines[i]);
         
         const symbolIdx = headers.findIndex(h => h.includes('symbol'));
         const sideIdx = headers.findIndex(h => h.includes('side') || h.includes('direction'));
@@ -176,11 +170,11 @@ export const parsers = {
     const trades = [];
     const errors = [];
     
-    const headers = lines[0].toLowerCase().split(',');
+    const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
     
     for (let i = 1; i < lines.length; i++) {
       try {
-        const values = lines[i].split(',').map(v => v.trim());
+        const values = parseCSVLine(lines[i]);
         const trade = mapCSVToTrade(headers, values);
         
         if (trade.symbol && trade.pnl !== undefined) {
@@ -194,8 +188,110 @@ export const parsers = {
     }
 
     return { trades, errors, format: 'DXTrade' };
+  },
+
+  // MatchTrader format
+  matchTrader: (text) => {
+    const lines = text.split('\n').filter(line => line.trim());
+    const trades = [];
+    const errors = [];
+    
+    const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
+    
+    for (let i = 1; i < lines.length; i++) {
+      try {
+        const values = parseCSVLine(lines[i]);
+        const trade = mapCSVToTrade(headers, values);
+        
+        if (trade.symbol && trade.pnl !== undefined) {
+          trade.platform = 'MatchTrader';
+          trade.import_source = 'MatchTrader Export';
+          trades.push(trade);
+        }
+      } catch (error) {
+        errors.push({ line: i + 1, error: error.message });
+      }
+    }
+
+    return { trades, errors, format: 'MatchTrader' };
+  },
+
+  // Rithmic format
+  rithmic: (text) => {
+    const lines = text.split('\n').filter(line => line.trim());
+    const trades = [];
+    const errors = [];
+    
+    const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
+    
+    for (let i = 1; i < lines.length; i++) {
+      try {
+        const values = parseCSVLine(lines[i]);
+        const trade = mapCSVToTrade(headers, values);
+        
+        if (trade.symbol && trade.pnl !== undefined) {
+          trade.platform = 'Rithmic';
+          trade.instrument_type = 'Futures';
+          trade.import_source = 'Rithmic Report';
+          trades.push(trade);
+        }
+      } catch (error) {
+        errors.push({ line: i + 1, error: error.message });
+      }
+    }
+
+    return { trades, errors, format: 'Rithmic' };
+  },
+
+  // TradingView Paper Trading format
+  tradingView: (text) => {
+    const lines = text.split('\n').filter(line => line.trim());
+    const trades = [];
+    const errors = [];
+    
+    const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
+    
+    for (let i = 1; i < lines.length; i++) {
+      try {
+        const values = parseCSVLine(lines[i]);
+        const trade = mapCSVToTrade(headers, values);
+        
+        if (trade.symbol && trade.pnl !== undefined) {
+          trade.platform = 'TradingView';
+          trade.import_source = 'TradingView Paper Trading';
+          trades.push(trade);
+        }
+      } catch (error) {
+        errors.push({ line: i + 1, error: error.message });
+      }
+    }
+
+    return { trades, errors, format: 'TradingView Paper Trading' };
   }
 };
+
+// Parse CSV line handling quoted values
+function parseCSVLine(line) {
+  const values = [];
+  let current = '';
+  let inQuotes = false;
+  
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    
+    if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      values.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  
+  values.push(current.trim());
+  return values.map(v => v.replace(/^["']|["']$/g, ''));
+}
 
 // Helper function to map CSV columns to trade object
 function mapCSVToTrade(headers, values) {
@@ -209,55 +305,73 @@ function mapCSVToTrade(headers, values) {
 
     const h = header.toLowerCase();
 
-    if (h.includes('symbol') || h.includes('instrument') || h.includes('item') || h === 'pair') {
-      trade.symbol = value;
+    // Symbol detection
+    if (h.includes('symbol') || h.includes('instrument') || h.includes('item') || h === 'pair' || h === 'ticker') {
+      trade.symbol = value.replace(/['"]/g, '');
     }
-    else if (h.includes('side') || h.includes('direction') || h.includes('type')) {
+    // Side/Direction detection
+    else if (h.includes('side') || h.includes('direction') || h.includes('type') || h.includes('action')) {
       const v = value.toLowerCase();
       trade.side = (v.includes('buy') || v.includes('long')) ? 'Long' : 'Short';
     }
+    // Entry price
     else if ((h.includes('entry') || h.includes('open')) && h.includes('price')) {
       trade.entry_price = parseFloat(value);
     }
-    else if ((h.includes('exit') || h.includes('close')) && h.includes('price')) {
+    // Exit price
+    else if ((h.includes('exit') || h.includes('close') || h.includes('fill')) && h.includes('price')) {
       trade.exit_price = parseFloat(value);
     }
+    // Generic price
     else if (h === 'price' && !trade.entry_price) {
       trade.entry_price = parseFloat(value);
     }
-    else if (h.includes('quantity') || h.includes('volume') || h.includes('lots') || h.includes('size') || h.includes('amount')) {
+    // Quantity variations
+    else if (h.includes('quantity') || h.includes('volume') || h.includes('lots') || 
+             h.includes('size') || h.includes('amount') || h.includes('contracts') || h === 'qty') {
       trade.quantity = parseFloat(value);
     }
-    else if (h.includes('profit') || h.includes('pnl') || h.includes('p/l') || h.includes('p&l') || h === 'net') {
+    // P&L variations
+    else if (h.includes('profit') || h.includes('pnl') || h.includes('p/l') || 
+             h.includes('p&l') || h === 'net' || h.includes('realized')) {
       trade.pnl = parseFloat(value);
     }
-    else if ((h.includes('entry') || h.includes('open')) && (h.includes('date') || h.includes('time'))) {
+    // Entry date/time
+    else if ((h.includes('entry') || h.includes('open') || h.includes('fill')) && 
+             (h.includes('date') || h.includes('time') || h.includes('timestamp'))) {
       try {
         trade.entry_date = new Date(value).toISOString();
       } catch (e) {
         trade.entry_date = value;
       }
     }
-    else if ((h.includes('exit') || h.includes('close')) && (h.includes('date') || h.includes('time'))) {
+    // Exit date/time
+    else if ((h.includes('exit') || h.includes('close')) && 
+             (h.includes('date') || h.includes('time') || h.includes('timestamp'))) {
       try {
         trade.exit_date = new Date(value).toISOString();
       } catch (e) {
         trade.exit_date = value;
       }
     }
-    else if (h.includes('stop') && (h.includes('loss') || h.includes('sl'))) {
+    // Stop loss
+    else if ((h.includes('stop') && (h.includes('loss') || h.includes('sl'))) || h === 'sl') {
       trade.stop_loss = parseFloat(value);
     }
-    else if (h.includes('take') && (h.includes('profit') || h.includes('tp'))) {
+    // Take profit
+    else if ((h.includes('take') && (h.includes('profit') || h.includes('tp'))) || h === 'tp') {
       trade.take_profit = parseFloat(value);
     }
-    else if (h.includes('commission') || h.includes('fee')) {
+    // Commission/Fees
+    else if (h.includes('commission') || h.includes('fee') || h.includes('cost')) {
       trade.commission = parseFloat(value);
     }
-    else if (h.includes('swap') || h.includes('rollover')) {
+    // Swap/Rollover
+    else if (h.includes('swap') || h.includes('rollover') || h.includes('financing')) {
       trade.swap = parseFloat(value);
     }
-    else if (h.includes('platform') || h.includes('broker')) {
+    // Platform/Broker
+    else if (h.includes('platform') || h.includes('broker') || h.includes('account')) {
       trade.platform = value;
     }
   });
@@ -268,14 +382,16 @@ function mapCSVToTrade(headers, values) {
 // Auto-detect file format
 export function detectFormat(filename, content) {
   const lower = filename.toLowerCase();
+  const firstLines = content.split('\n').slice(0, 10).join('\n').toLowerCase();
   
+  // HTML Detection
   if (lower.endsWith('.html') || lower.endsWith('.htm') || content.includes('<html') || content.includes('<table')) {
     return 'mt4Html';
   }
   
+  // CSV/TXT Detection
   if (lower.endsWith('.csv') || lower.endsWith('.txt')) {
-    const firstLines = content.split('\n').slice(0, 5).join('\n').toLowerCase();
-    
+    // Platform-specific detection
     if (firstLines.includes('metatrader') || firstLines.includes('ticket')) {
       return 'mt4Csv';
     }
@@ -285,7 +401,17 @@ export function detectFormat(filename, content) {
     if (firstLines.includes('dxtrade') || firstLines.includes('devexperts')) {
       return 'dxTrade';
     }
+    if (firstLines.includes('match-trader') || firstLines.includes('matchtrader')) {
+      return 'matchTrader';
+    }
+    if (firstLines.includes('rithmic') || firstLines.includes('r | trader')) {
+      return 'rithmic';
+    }
+    if (firstLines.includes('tradingview') || firstLines.includes('paper trading')) {
+      return 'tradingView';
+    }
     
+    // Generic CSV fallback
     return 'csv';
   }
   
