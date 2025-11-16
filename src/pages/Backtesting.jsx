@@ -3,15 +3,18 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Play, Info, TrendingUp, AlertCircle } from 'lucide-react';
+import { Play, Info, Layers } from 'lucide-react';
 import AdvancedBacktestForm from '@/components/backtesting/AdvancedBacktestForm';
 import BacktestResults from '@/components/backtesting/BacktestResults';
 import BacktestHistory from '@/components/backtesting/BacktestHistory';
+import StrategySelector from '@/components/backtesting/StrategySelector';
+import AIAnalysis from '@/components/backtesting/AIAnalysis';
 import { runBacktest, optimizeParameters } from '@/components/backtesting/BacktestEngine';
 
 export default function Backtesting() {
-  const [showForm, setShowForm] = useState(false);
+  const [view, setView] = useState('strategies'); // 'strategies' | 'form' | 'results'
   const [selectedBacktest, setSelectedBacktest] = useState(null);
+  const [selectedStrategy, setSelectedStrategy] = useState(null);
   const [running, setRunning] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
   const [optimizationResults, setOptimizationResults] = useState(null);
@@ -35,6 +38,11 @@ export default function Backtesting() {
     }
   });
 
+  const handleStrategySelect = (strategy) => {
+    setSelectedStrategy(strategy);
+    setView('form');
+  };
+
   const handleRunBacktest = async (config, optimizationParams) => {
     try {
       if (optimizationParams) {
@@ -43,7 +51,6 @@ export default function Backtesting() {
         setOptimizationResults(results);
         setOptimizing(false);
         
-        // Run backtest with best parameters
         const bestParams = results[0].params;
         const finalConfig = { ...config, ...bestParams };
         await executeBacktest(finalConfig);
@@ -65,7 +72,7 @@ export default function Backtesting() {
     
     const backtestData = {
       name: config.name || `${config.symbol} Backtest`,
-      strategy_name: config.name,
+      strategy_name: selectedStrategy?.name || config.name,
       symbol: config.symbol,
       timeframe: config.timeframe,
       start_date: config.startDate,
@@ -92,8 +99,14 @@ export default function Backtesting() {
 
     const created = await createBacktestMutation.mutateAsync(backtestData);
     setSelectedBacktest(created);
-    setShowForm(false);
+    setView('results');
     setRunning(false);
+  };
+
+  const handleOptimizeFromResults = () => {
+    // Re-run optimization with current backtest parameters
+    setView('form');
+    // Could auto-populate form with current backtest settings
   };
 
   return (
@@ -102,20 +115,31 @@ export default function Backtesting() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-4xl font-bold text-slate-900">Strategy Backtesting</h1>
-            <p className="text-slate-600 mt-1">Test your strategies with advanced simulation</p>
+            <p className="text-slate-600 mt-1">Test and optimize your trading strategies</p>
           </div>
-          <Button
-            onClick={() => {
-              setShowForm(true);
-              setSelectedBacktest(null);
-              setOptimizationResults(null);
-            }}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
-            disabled={running || optimizing}
-          >
-            <Play className="h-4 w-4" />
-            New Backtest
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setView('strategies')}
+              variant={view === 'strategies' ? 'default' : 'outline'}
+              disabled={running || optimizing}
+            >
+              <Layers className="h-4 w-4 mr-2" />
+              Strategies
+            </Button>
+            <Button
+              onClick={() => {
+                setView('form');
+                setSelectedStrategy(null);
+                setSelectedBacktest(null);
+                setOptimizationResults(null);
+              }}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+              disabled={running || optimizing}
+            >
+              <Play className="h-4 w-4" />
+              Custom Backtest
+            </Button>
+          </div>
         </div>
 
         <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
@@ -125,11 +149,11 @@ export default function Backtesting() {
               <div className="flex-1">
                 <h3 className="font-bold text-slate-900 mb-2">Advanced Backtesting Features</h3>
                 <ul className="text-sm text-slate-700 space-y-1">
-                  <li>✓ Real-time historical data fetching with AI</li>
-                  <li>✓ Custom technical indicators (SMA, EMA, RSI, MACD, Bollinger Bands, ATR)</li>
-                  <li>✓ Flexible entry/exit rules using JavaScript conditions</li>
-                  <li>✓ Parameter optimization to find best settings</li>
-                  <li>✓ Comprehensive performance metrics and equity curves</li>
+                  <li>✓ Test saved strategies or create custom rules</li>
+                  <li>✓ Real-time historical data with AI-powered market simulation</li>
+                  <li>✓ Technical indicators (SMA, EMA, RSI, MACD, Bollinger, ATR)</li>
+                  <li>✓ AI parameter optimization to maximize performance</li>
+                  <li>✓ Comprehensive metrics, equity curves, and AI analysis</li>
                 </ul>
               </div>
             </div>
@@ -142,7 +166,7 @@ export default function Backtesting() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
               <div>
                 <p className="font-medium text-blue-900">Running backtest simulation...</p>
-                <p className="text-sm text-blue-700">Fetching data and executing strategy rules</p>
+                <p className="text-sm text-blue-700">Fetching historical data and executing strategy</p>
               </div>
             </CardContent>
           </Card>
@@ -153,8 +177,8 @@ export default function Backtesting() {
             <CardContent className="p-6 flex items-center gap-3">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600" />
               <div>
-                <p className="font-medium text-purple-900">Optimizing parameters...</p>
-                <p className="text-sm text-purple-700">Testing different parameter combinations</p>
+                <p className="font-medium text-purple-900">AI Optimization in progress...</p>
+                <p className="text-sm text-purple-700">Testing parameter combinations to find optimal settings</p>
               </div>
             </CardContent>
           </Card>
@@ -163,7 +187,7 @@ export default function Backtesting() {
         {optimizationResults && (
           <Card>
             <CardHeader>
-              <CardTitle>Optimization Results</CardTitle>
+              <CardTitle>Optimization Results - Top 5 Configurations</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -192,24 +216,46 @@ export default function Backtesting() {
           </Card>
         )}
 
-        {selectedBacktest && (
-          <BacktestResults
-            backtest={selectedBacktest}
-            onClose={() => setSelectedBacktest(null)}
+        {view === 'strategies' && (
+          <div>
+            <h2 className="text-xl font-bold text-slate-900 mb-4">Select a Strategy to Backtest</h2>
+            <StrategySelector strategies={strategies} onSelect={handleStrategySelect} />
+          </div>
+        )}
+
+        {view === 'results' && selectedBacktest && (
+          <div className="space-y-6">
+            <BacktestResults
+              backtest={selectedBacktest}
+              onClose={() => setView('strategies')}
+            />
+            <AIAnalysis 
+              backtest={selectedBacktest}
+              onOptimize={handleOptimizeFromResults}
+            />
+          </div>
+        )}
+
+        {view === 'form' && (
+          <AdvancedBacktestForm
+            onRun={handleRunBacktest}
+            onCancel={() => setView('strategies')}
+            strategies={strategies}
+            selectedStrategy={selectedStrategy}
           />
         )}
 
-        <BacktestHistory
-          backtests={backtests}
-          onSelect={setSelectedBacktest}
-        />
-
-        {showForm && (
-          <AdvancedBacktestForm
-            onRun={handleRunBacktest}
-            onCancel={() => setShowForm(false)}
-            strategies={strategies}
-          />
+        {view === 'strategies' && backtests.length > 0 && (
+          <div>
+            <h2 className="text-xl font-bold text-slate-900 mb-4">Recent Backtests</h2>
+            <BacktestHistory
+              backtests={backtests}
+              onSelect={(bt) => {
+                setSelectedBacktest(bt);
+                setView('results');
+              }}
+            />
+          </div>
         )}
       </div>
     </div>
