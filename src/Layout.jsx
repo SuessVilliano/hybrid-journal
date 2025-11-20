@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { base44 } from '@/api/base44Client';
-import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText, Menu, X, Wallet, Sun, Moon, Home, Users, User } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText, Menu, X, Wallet, Sun, Moon, Home, Users, User, Brain } from 'lucide-react';
+import FloatingAIAssistant from '@/components/ai/FloatingAIAssistant';
 
 export default function Layout({ children, currentPageName }) {
   // Don't render layout for Landing page
@@ -11,6 +12,7 @@ export default function Layout({ children, currentPageName }) {
   }
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [showAI, setShowAI] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('theme');
     return saved ? saved === 'dark' : true;
@@ -153,6 +155,19 @@ export default function Layout({ children, currentPageName }) {
 
         <div className={`absolute bottom-0 left-0 right-0 p-4 border-t ${darkMode ? 'border-cyan-500/20 bg-slate-950/50' : 'border-cyan-500/30 bg-white/50'} ${!sidebarOpen && 'hidden'}`}>
           <button
+            onClick={() => setShowAI(!showAI)}
+            className={`w-full mb-3 flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-all shadow-lg ${
+              showAI
+                ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white'
+                : darkMode 
+                  ? 'bg-gradient-to-r from-cyan-500/20 to-purple-600/20 text-cyan-400 hover:from-cyan-500/30 hover:to-purple-600/30' 
+                  : 'bg-gradient-to-r from-cyan-100 to-purple-100 text-cyan-700 hover:from-cyan-200 hover:to-purple-200'
+            }`}
+          >
+            <Brain className="h-4 w-4" />
+            <span className="text-sm font-medium">AI Assistant</span>
+          </button>
+          <button
             onClick={() => base44.auth.logout(createPageUrl('Landing'))}
             className={`w-full mb-3 flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-all ${
               darkMode 
@@ -203,6 +218,21 @@ export default function Layout({ children, currentPageName }) {
       <main className={`transition-all duration-300 ${sidebarOpen ? 'ml-64' : isMobile ? 'ml-0' : 'ml-16'}`}>
         {children}
       </main>
-    </div>
-  );
-}
+
+      {/* Floating AI Assistant */}
+      <FloatingAIAssistant isOpen={showAI} onClose={() => setShowAI(false)} />
+
+      {/* Floating AI Toggle Button - Always visible */}
+      {!showAI && (
+        <button
+          onClick={() => setShowAI(true)}
+          className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-full shadow-2xl hover:scale-110 transition-transform z-50 flex items-center justify-center group"
+          title="Open AI Assistant"
+        >
+          <Brain className="h-6 w-6 text-white" />
+          <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
+        </button>
+      )}
+      </div>
+      );
+      }
