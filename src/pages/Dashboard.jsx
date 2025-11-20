@@ -16,6 +16,7 @@ import WidgetSelector from '@/components/dashboard/WidgetSelector';
 import EmotionalPatternsWidget from '@/components/dashboard/EmotionalPatternsWidget';
 import StrategyPerformanceWidget from '@/components/dashboard/StrategyPerformanceWidget';
 import InstrumentAnalysisWidget from '@/components/dashboard/InstrumentAnalysisWidget';
+import CompoundCalculatorWidget from '@/components/dashboard/CompoundCalculatorWidget';
 
 export default function Dashboard() {
   const [timeframe, setTimeframe] = useState('all');
@@ -316,11 +317,12 @@ export default function Dashboard() {
               )}
             </div>
 
+            {enabledWidgets.includes('compound') && <CompoundCalculatorWidget trades={trades} />}
             {enabledWidgets.includes('strategies') && <StrategyPerformanceWidget trades={trades} />}
             {enabledWidgets.includes('instruments') && <InstrumentAnalysisWidget trades={trades} />}
             {enabledWidgets.includes('emotions') && <EmotionalPatternsWidget trades={trades} />}
             {enabledWidgets.includes('performance') && <PerformanceMetrics trades={trades} />}
-          </TabsContent>
+            </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
             <PerformanceMetrics trades={trades} detailed />

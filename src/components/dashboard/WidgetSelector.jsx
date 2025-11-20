@@ -16,7 +16,8 @@ const AVAILABLE_WIDGETS = [
   { id: 'performance', name: 'Performance Breakdown', description: 'Detailed metrics' },
   { id: 'emotions', name: 'Emotional Patterns', description: 'Psychology tracking' },
   { id: 'strategies', name: 'Strategy Performance', description: 'Strategy breakdown' },
-  { id: 'instruments', name: 'Instrument Analysis', description: 'Performance by symbol' }
+  { id: 'instruments', name: 'Instrument Analysis', description: 'Performance by symbol' },
+  { id: 'compound', name: 'Compound Calculator', description: 'Simulate profit growth' }
 ];
 
 export default function WidgetSelector({ enabledWidgets, onToggle, onClose }) {
