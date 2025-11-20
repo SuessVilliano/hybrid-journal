@@ -135,8 +135,6 @@ export default function MarketData() {
               </CardContent>
             </Card>
 
-            <LivePriceTicker symbols={watchlist} onSymbolClick={setSelectedSymbol} />
-
             <ResizableWidget 
               title={`${selectedSymbol} Chart`}
               defaultHeight="900px"
