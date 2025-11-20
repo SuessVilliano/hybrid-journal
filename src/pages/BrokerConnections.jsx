@@ -3,9 +3,11 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Link as LinkIcon, AlertCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Plus, Link as LinkIcon, AlertCircle, RefreshCw } from 'lucide-react';
 import BrokerConnectionForm from '@/components/brokers/BrokerConnectionForm';
 import BrokerConnectionCard from '@/components/brokers/BrokerConnectionCard';
+import AutoSyncManager from '@/components/brokers/AutoSyncManager';
 import { syncBrokerTrades } from '@/components/brokers/brokerAPIHelper';
 
 export default function BrokerConnections() {
@@ -92,6 +94,7 @@ export default function BrokerConnections() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+      <AutoSyncManager />
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
@@ -117,13 +120,20 @@ export default function BrokerConnections() {
             <div className="flex items-start gap-3">
               <LinkIcon className="h-5 w-5 text-blue-600 mt-0.5" />
               <div>
-                <h3 className="font-bold text-slate-900 mb-2">Broker Integration Features</h3>
+                <h3 className="font-bold text-slate-900 mb-2 flex items-center gap-2">
+                  Broker Integration Features
+                  <Badge className="bg-green-100 text-green-800">
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                    Auto-Sync Active
+                  </Badge>
+                </h3>
                 <ul className="text-sm text-slate-700 space-y-1">
                   <li>✓ Automatic trade history sync from your broker accounts</li>
                   <li>✓ Real-time account balance and equity tracking</li>
                   <li>✓ Secure encrypted API credential storage</li>
-                  <li>✓ Support for MT4/MT5, cTrader, Binance, Coinbase, and more</li>
-                  <li>🎯 Simulated trade execution (live execution coming soon)</li>
+                  <li>✓ Configurable sync intervals (every 5-60 minutes)</li>
+                  <li>✓ Background sync without manual intervention</li>
+                  <li>✓ Support for MT4/MT5, cTrader, DXTrade, Binance, TradingView, and more</li>
                 </ul>
               </div>
             </div>

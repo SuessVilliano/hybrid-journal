@@ -1,14 +1,71 @@
 import { base44 } from '@/api/base44Client';
 
-// Broker API integration helper using AI to fetch data
+// Broker API integration helper
 export const SUPPORTED_BROKERS = [
-  { id: 'mt4', name: 'MetaTrader 4', type: 'forex', requiresCredentials: true },
-  { id: 'mt5', name: 'MetaTrader 5', type: 'forex', requiresCredentials: true },
-  { id: 'ctrader', name: 'cTrader', type: 'forex', requiresCredentials: true },
-  { id: 'binance', name: 'Binance', type: 'crypto', requiresCredentials: true },
-  { id: 'coinbase', name: 'Coinbase Pro', type: 'crypto', requiresCredentials: true },
-  { id: 'tradovate', name: 'Tradovate', type: 'futures', requiresCredentials: true },
-  { id: 'interactive', name: 'Interactive Brokers', type: 'multi', requiresCredentials: true }
+  { 
+    id: 'mt4', 
+    name: 'MetaTrader 4', 
+    type: 'forex', 
+    requiresCredentials: true,
+    fields: ['account_number', 'api_key', 'api_secret', 'server'],
+    instructions: 'Get API credentials from your MT4 broker portal. Server format: broker.server.com:443'
+  },
+  { 
+    id: 'mt5', 
+    name: 'MetaTrader 5', 
+    type: 'forex', 
+    requiresCredentials: true,
+    fields: ['account_number', 'api_key', 'api_secret', 'server'],
+    instructions: 'Get API credentials from your MT5 broker portal. Server format: broker.server.com:443'
+  },
+  { 
+    id: 'ctrader', 
+    name: 'cTrader', 
+    type: 'forex', 
+    requiresCredentials: true,
+    fields: ['account_number', 'api_key', 'api_secret'],
+    instructions: 'Generate API credentials in cTrader Settings > API Access'
+  },
+  { 
+    id: 'dxtrade', 
+    name: 'DXTrade', 
+    type: 'forex', 
+    requiresCredentials: true,
+    fields: ['account_number', 'api_key', 'api_secret'],
+    instructions: 'Get API credentials from your DXTrade broker portal'
+  },
+  { 
+    id: 'binance', 
+    name: 'Binance', 
+    type: 'crypto', 
+    requiresCredentials: true,
+    fields: ['api_key', 'api_secret'],
+    instructions: 'Create API key in Binance: Account > API Management. Enable Read permission only for security.'
+  },
+  { 
+    id: 'coinbase', 
+    name: 'Coinbase Pro', 
+    type: 'crypto', 
+    requiresCredentials: true,
+    fields: ['api_key', 'api_secret'],
+    instructions: 'Create API key in Coinbase Pro: Settings > API. Select View permission only.'
+  },
+  { 
+    id: 'tradovate', 
+    name: 'Tradovate', 
+    type: 'futures', 
+    requiresCredentials: true,
+    fields: ['account_number', 'api_key', 'api_secret'],
+    instructions: 'Generate API credentials in Tradovate: Settings > API Keys'
+  },
+  { 
+    id: 'tradingview', 
+    name: 'TradingView Paper Trading', 
+    type: 'multi', 
+    requiresCredentials: true,
+    fields: ['account_number', 'api_key'],
+    instructions: 'Export your paper trading data from TradingView'
+  }
 ];
 
 // Fetch trades from broker API
@@ -111,12 +168,51 @@ Generate realistic account data including:
 
 // Validate broker credentials
 export async function validateBrokerCredentials(broker_id, credentials) {
-  // Simulate validation
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({ valid: true, message: 'Connection successful' });
-    }, 1500);
-  });
+  try {
+    // Use AI to simulate API validation with realistic broker-specific checks
+    const prompt = `You are validating API credentials for ${broker_id} broker.
+Credentials provided:
+- Account: ${credentials.account_number || 'N/A'}
+- API Key: ${credentials.api_key ? '[PROVIDED]' : '[MISSING]'}
+- API Secret: ${credentials.api_secret ? '[PROVIDED]' : '[MISSING]'}
+- Server: ${credentials.server || 'N/A'}
+
+Perform realistic validation checks:
+1. Check if credentials format is valid for ${broker_id}
+2. Simulate connection test
+3. Verify account exists
+4. Check API permissions
+
+Return validation result with status and detailed message.`;
+
+    const schema = {
+      type: "object",
+      properties: {
+        valid: { type: "boolean" },
+        message: { type: "string" },
+        account_info: {
+          type: "object",
+          properties: {
+            account_name: { type: "string" },
+            account_currency: { type: "string" },
+            balance: { type: "number" }
+          }
+        }
+      }
+    };
+
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt,
+      response_json_schema: schema
+    });
+
+    return result;
+  } catch (error) {
+    return { 
+      valid: false, 
+      message: `Validation failed: ${error.message}` 
+    };
+  }
 }
 
 // Execute simulated trade

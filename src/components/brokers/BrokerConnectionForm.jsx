@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { X, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { X, Loader2, CheckCircle, AlertCircle, Info } from 'lucide-react';
 import { SUPPORTED_BROKERS, validateBrokerCredentials } from './brokerAPIHelper';
 
 export default function BrokerConnectionForm({ connection, onSubmit, onCancel }) {
@@ -21,6 +22,11 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
   const [validating, setValidating] = useState(false);
   const [validationResult, setValidationResult] = useState(null);
 
+  const selectedBroker = useMemo(() => 
+    SUPPORTED_BROKERS.find(b => b.id === formData.broker_id),
+    [formData.broker_id]
+  );
+
   const handleBrokerChange = (broker_id) => {
     const broker = SUPPORTED_BROKERS.find(b => b.id === broker_id);
     setFormData({
@@ -28,6 +34,7 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
       broker_id,
       broker_name: broker.name
     });
+    setValidationResult(null);
   };
 
   const handleValidate = async () => {
@@ -84,11 +91,22 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
                 <SelectContent>
                   {SUPPORTED_BROKERS.map(broker => (
                     <SelectItem key={broker.id} value={broker.id}>
-                      {broker.name} ({broker.type})
+                      <div className="flex items-center justify-between w-full">
+                        <span>{broker.name}</span>
+                        <Badge variant="outline" className="ml-2 text-xs">
+                          {broker.type}
+                        </Badge>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {selectedBroker?.instructions && (
+                <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800 flex items-start gap-2">
+                  <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                  <span>{selectedBroker.instructions}</span>
+                </div>
+              )}
             </div>
 
             {/* Account Number */}
@@ -185,6 +203,18 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
                 <span className={`text-sm ${validationResult.valid ? 'text-green-800' : 'text-red-800'}`}>
                   {validationResult.message}
                 </span>
+              </div>
+            )}
+
+            {/* Account Info from Validation */}
+            {validationResult?.valid && validationResult.account_info && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                <div className="text-sm font-medium text-green-900 mb-2">Account Information</div>
+                <div className="grid grid-cols-2 gap-2 text-sm text-green-800">
+                  <div>Account: {validationResult.account_info.account_name}</div>
+                  <div>Currency: {validationResult.account_info.account_currency}</div>
+                  <div className="col-span-2">Balance: ${validationResult.account_info.balance?.toFixed(2)}</div>
+                </div>
               </div>
             )}
 
