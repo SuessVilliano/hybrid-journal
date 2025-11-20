@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, X, BarChart3, TrendingUp, Flame, DollarSign, Newspaper, Calendar } from 'lucide-react';
+import { Plus, X, BarChart3, TrendingUp, Flame, DollarSign, Newspaper, Calendar, Maximize2, Minimize2 } from 'lucide-react';
 import LivePriceTicker from '@/components/market/LivePriceTicker';
 import TradingChart from '@/components/market/TradingChart';
 import QuickTradePanel from '@/components/market/QuickTradePanel';
@@ -24,6 +24,7 @@ export default function MarketData() {
   const [selectedSymbol, setSelectedSymbol] = useState('EURUSD');
   const [showTradePanel, setShowTradePanel] = useState(false);
   const [tradePanelData, setTradePanelData] = useState(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const darkMode = document.documentElement.classList.contains('dark');
 
   const addSymbol = () => {
@@ -138,9 +139,20 @@ export default function MarketData() {
 
             <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
               <CardHeader>
-                <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>
-                  {selectedSymbol} Chart
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>
+                    {selectedSymbol} Chart
+                  </CardTitle>
+                  <Button
+                    onClick={() => setIsFullscreen(true)}
+                    variant="outline"
+                    size="sm"
+                    className={darkMode ? 'border-cyan-500/30 text-cyan-400' : ''}
+                  >
+                    <Maximize2 className="h-4 w-4 mr-2" />
+                    Fullscreen
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <TradingViewWidget 
@@ -154,56 +166,52 @@ export default function MarketData() {
 
           {/* Heatmaps Tab */}
           <TabsContent value="heatmaps" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
-                <CardHeader>
-                  <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>
-                    Stock Market Heatmap
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <TradingViewWidget type="stockHeatmap" height="500px" />
-                </CardContent>
-              </Card>
+            <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
+              <CardHeader>
+                <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>
+                  Stock Market Heatmap
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TradingViewWidget type="stockHeatmap" height="700px" />
+              </CardContent>
+            </Card>
 
-              <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
-                <CardHeader>
-                  <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>
-                    Crypto Heatmap
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <TradingViewWidget type="cryptoHeatmap" height="500px" />
-                </CardContent>
-              </Card>
-            </div>
+            <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
+              <CardHeader>
+                <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>
+                  Crypto Heatmap
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TradingViewWidget type="cryptoHeatmap" height="700px" />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Forex Tab */}
           <TabsContent value="forex" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
-                <CardHeader>
-                  <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>
-                    Forex Cross Rates
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <TradingViewWidget type="forexCross" height="500px" />
-                </CardContent>
-              </Card>
+            <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
+              <CardHeader>
+                <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>
+                  Forex Cross Rates
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TradingViewWidget type="forexCross" height="700px" />
+              </CardContent>
+            </Card>
 
-              <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
-                <CardHeader>
-                  <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>
-                    Forex Heatmap
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <TradingViewWidget type="forexHeatmap" height="500px" />
-                </CardContent>
-              </Card>
-            </div>
+            <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
+              <CardHeader>
+                <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>
+                  Forex Heatmap
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TradingViewWidget type="forexHeatmap" height="700px" />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* News Tab */}
@@ -215,7 +223,7 @@ export default function MarketData() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <TradingViewWidget type="news" height="700px" />
+                <TradingViewWidget type="news" height="1000px" />
               </CardContent>
             </Card>
           </TabsContent>
@@ -229,7 +237,7 @@ export default function MarketData() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <TradingViewWidget type="calendar" height="700px" />
+                <TradingViewWidget type="calendar" height="1000px" />
               </CardContent>
             </Card>
           </TabsContent>
@@ -242,6 +250,35 @@ export default function MarketData() {
             currentPrice={tradePanelData.price}
             onClose={() => setShowTradePanel(false)}
           />
+        )}
+
+        {/* Fullscreen Chart */}
+        {isFullscreen && (
+          <div className="fixed inset-0 z-50 bg-slate-950 flex flex-col">
+            <div className={`p-4 border-b flex items-center justify-between ${
+              darkMode ? 'border-cyan-500/20 bg-slate-950' : 'border-cyan-500/30 bg-white'
+            }`}>
+              <h2 className={`text-2xl font-bold ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
+                {selectedSymbol} Chart
+              </h2>
+              <Button
+                onClick={() => setIsFullscreen(false)}
+                variant="outline"
+                size="sm"
+                className={darkMode ? 'border-cyan-500/30 text-cyan-400' : ''}
+              >
+                <Minimize2 className="h-4 w-4 mr-2" />
+                Exit Fullscreen
+              </Button>
+            </div>
+            <div className="flex-1 p-4">
+              <TradingViewWidget 
+                type="chart" 
+                symbol={`OANDA:${selectedSymbol}`}
+                height="100%"
+              />
+            </div>
+          </div>
         )}
       </div>
     </div>
