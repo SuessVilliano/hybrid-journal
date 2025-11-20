@@ -3,14 +3,18 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TrendingUp, TrendingDown, Activity, DollarSign, Target, Calendar } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { TrendingUp, TrendingDown, Activity, DollarSign, Target, Calendar, Share2 } from 'lucide-react';
 import EquityCurve from '@/components/trading/EquityCurve';
 import TradeCalendar from '@/components/trading/TradeCalendar';
 import PerformanceMetrics from '@/components/trading/PerformanceMetrics';
 import RecentTrades from '@/components/trading/RecentTrades';
+import ExportMenu from '@/components/sharing/ExportMenu';
+import ShareModal from '@/components/sharing/ShareModal';
 
 export default function Dashboard() {
   const [timeframe, setTimeframe] = useState('all');
+  const [showShareModal, setShowShareModal] = useState(false);
   
   const { data: trades = [], isLoading } = useQuery({
     queryKey: ['trades'],
@@ -67,7 +71,13 @@ export default function Dashboard() {
             <h1 className="text-4xl font-bold text-slate-900">Trading Dashboard</h1>
             <p className="text-slate-600 mt-1">Track your performance and grow consistently</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-3">
+            {stats && <ExportMenu trades={trades} stats={stats} />}
+            <Button onClick={() => setShowShareModal(true)} variant="outline" className="flex items-center gap-2">
+              <Share2 className="h-4 w-4" />
+              Share
+            </Button>
+            <div className="flex gap-2">
             <button className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-white rounded-lg transition">
               7D
             </button>
@@ -206,6 +216,9 @@ export default function Dashboard() {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Share Modal */}
+        {showShareModal && <ShareModal onClose={() => setShowShareModal(false)} />}
       </div>
     </div>
   );
