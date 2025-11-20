@@ -78,15 +78,16 @@ export default function Dashboard() {
               Share
             </Button>
             <div className="flex gap-2">
-            <button className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-white rounded-lg transition">
-              7D
-            </button>
-            <button className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-white rounded-lg transition">
-              30D
-            </button>
-            <button className="px-4 py-2 text-sm font-medium bg-white text-slate-900 rounded-lg shadow-sm">
-              All
-            </button>
+              <button className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-white rounded-lg transition">
+                7D
+              </button>
+              <button className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-white rounded-lg transition">
+                30D
+              </button>
+              <button className="px-4 py-2 text-sm font-medium bg-white text-slate-900 rounded-lg shadow-sm">
+                All
+              </button>
+            </div>
           </div>
         </div>
 
