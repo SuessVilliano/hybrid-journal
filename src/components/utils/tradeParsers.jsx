@@ -449,130 +449,156 @@ export async function parseTradeFile(file, aiHelper) {
   return parser(text);
 }
 
-// AI-powered PDF parser
+// AI-powered PDF parser - Universal for all trading platforms
 async function parsePDFWithAI(file, aiHelper) {
   try {
     const schema = {
       type: "object",
       properties: {
+        platform: { type: "string", description: "Detected broker/platform name" },
         trades: {
           type: "array",
           items: {
             type: "object",
             properties: {
-              transaction_id: { type: "string" },
-              transaction_time: { type: "string" },
-              direction: { type: "string" },
-              size: { type: "number" },
-              symbol: { type: "string" },
-              price: { type: "number" },
-              order_id: { type: "string" },
-              settled_pnl: { type: "number" },
-              commission: { type: "number" }
-            }
+              symbol: { type: "string", description: "Trading symbol" },
+              side: { type: "string", description: "Long or Short" },
+              entry_date: { type: "string", description: "Entry date/time in ISO format" },
+              exit_date: { type: "string", description: "Exit date/time in ISO format, null if still open" },
+              entry_price: { type: "number", description: "Entry price" },
+              exit_price: { type: "number", description: "Exit price, null if still open" },
+              quantity: { type: "number", description: "Position size" },
+              pnl: { type: "number", description: "Profit/Loss in account currency" },
+              commission: { type: "number", description: "Total commission/fees" },
+              swap: { type: "number", description: "Swap/overnight fees if any" }
+            },
+            required: ["symbol", "pnl"]
           }
         }
       }
     };
 
-    const prompt = `Extract all trading transactions from this DXTrade PDF statement.
+    const prompt = `You are analyzing a trading account statement PDF. Extract ALL completed trades from this document.
 
-For each transaction, extract:
-- transaction_id: The transaction ID
-- transaction_time: Date and time (convert to ISO format if possible)
-- direction: "Buy" or "Sell"
-- size: Position size/quantity
-- symbol: Trading symbol (e.g., NAS100, SOL/USD.crypto)
-- price: Execution price
-- order_id: Order ID
-- settled_pnl: Settled P&L (profit/loss, can be null if not closed)
-- commission: Commission fee
+INSTRUCTIONS:
+1. Identify the broker/platform (DXTrade, MetaTrader, cTrader, etc.)
+2. Extract EVERY completed trade (trades that have been closed with a final P&L)
+3. Match opening and closing transactions to create complete trade records
+4. For each completed trade, extract:
+   - symbol: The trading instrument (e.g., EURUSD, NAS100, BTC/USD)
+   - side: "Long" (for buy/long positions) or "Short" (for sell/short positions)
+   - entry_date: When the position was opened (ISO format: YYYY-MM-DDTHH:mm:ss)
+   - exit_date: When the position was closed (ISO format)
+   - entry_price: Price at which position was opened
+   - exit_price: Price at which position was closed
+   - quantity: Position size (lots, contracts, shares, etc.)
+   - pnl: Final profit or loss (negative for losses)
+   - commission: Total fees/commission (set to 0 if not shown)
+   - swap: Overnight financing charges (set to 0 if not shown)
 
-IMPORTANT: 
-- Extract ALL transactions from the Transactions section
-- Only include rows with actual trade data
-- settled_pnl will be empty (null) for opening trades, and have a value for closing trades
-- Convert all numeric values to numbers, not strings`;
+IMPORTANT:
+- Only include COMPLETED trades (both entry and exit)
+- Do NOT include open positions or pending orders
+- Match buy/sell pairs to create complete trades
+- Convert all dates to ISO format (YYYY-MM-DDTHH:mm:ss)
+- Use negative numbers for losses
+- If you see a table with transactions, look for pairs where:
+  * Opening transaction (Buy or Sell)
+  * Closing transaction (opposite direction, same symbol and size)
+  * The closing transaction typically has the P&L value
+
+Look for sections like: "Closed Trades", "Trade History", "Transactions", "Positions", "Orders"
+
+Return the platform name and the array of trades. If you cannot find any completed trades, return an empty array.`;
 
     const result = await aiHelper({
       prompt,
-      file_urls: [file],
       response_json_schema: schema
     });
 
     if (!result.trades || result.trades.length === 0) {
-      return { trades: [], errors: [{ line: 0, error: 'No trades found in PDF' }], format: 'DXTrade PDF' };
+      return { 
+        trades: [], 
+        errors: [{ 
+          line: 0, 
+          error: 'No completed trades found in PDF. The statement may only contain open positions, or the format is not recognized. Try exporting as CSV if available.' 
+        }], 
+        format: result.platform || 'PDF Statement' 
+      };
     }
 
-    // Match buy/sell pairs to create complete trades
-    const completedTrades = [];
+    // Process and validate trades
+    const validTrades = [];
     const errors = [];
-    const transactions = result.trades;
 
-    // Group by symbol and match pairs
-    const symbolGroups = {};
-    transactions.forEach(t => {
-      if (!symbolGroups[t.symbol]) {
-        symbolGroups[t.symbol] = [];
-      }
-      symbolGroups[t.symbol].push(t);
-    });
-
-    Object.keys(symbolGroups).forEach(symbol => {
-      const txns = symbolGroups[symbol].sort((a, b) => 
-        new Date(a.transaction_time) - new Date(b.transaction_time)
-      );
-
-      for (let i = 0; i < txns.length; i++) {
-        const txn = txns[i];
-        
-        // If this transaction has a settled P&L, it's a closing trade
-        if (txn.settled_pnl !== null && txn.settled_pnl !== undefined && txn.settled_pnl !== 0) {
-          // Find the matching opening trade
-          let openTrade = null;
-          for (let j = i - 1; j >= 0; j--) {
-            const prevTxn = txns[j];
-            if (prevTxn.direction !== txn.direction && 
-                prevTxn.size === txn.size &&
-                !prevTxn.matched) {
-              openTrade = prevTxn;
-              prevTxn.matched = true;
-              break;
-            }
-          }
-
-          if (openTrade) {
-            const trade = {
-              symbol: txn.symbol,
-              side: openTrade.direction === 'Buy' ? 'Long' : 'Short',
-              entry_date: new Date(openTrade.transaction_time).toISOString(),
-              exit_date: new Date(txn.transaction_time).toISOString(),
-              entry_price: openTrade.price,
-              exit_price: txn.price,
-              quantity: txn.size,
-              pnl: txn.settled_pnl,
-              commission: (openTrade.commission || 0) + (txn.commission || 0),
-              platform: 'DXTrade',
-              instrument_type: txn.symbol.includes('crypto') ? 'Crypto' : 
-                             txn.symbol.includes('100') || txn.symbol.includes('SPX') ? 'Futures' : 'Forex',
-              import_source: 'DXTrade PDF Statement'
-            };
-            completedTrades.push(trade);
-          }
+    result.trades.forEach((trade, index) => {
+      try {
+        // Validate required fields
+        if (!trade.symbol || trade.pnl === undefined || trade.pnl === null) {
+          errors.push({ 
+            line: index + 1, 
+            error: `Missing required fields (symbol or P&L)` 
+          });
+          return;
         }
+
+        // Normalize the trade
+        const normalizedTrade = {
+          symbol: trade.symbol.trim().toUpperCase(),
+          side: trade.side === 'Long' || trade.side === 'Buy' ? 'Long' : 'Short',
+          entry_date: trade.entry_date || new Date().toISOString(),
+          exit_date: trade.exit_date || new Date().toISOString(),
+          entry_price: trade.entry_price || 0,
+          exit_price: trade.exit_price || 0,
+          quantity: trade.quantity || 1,
+          pnl: trade.pnl,
+          commission: trade.commission || 0,
+          swap: trade.swap || 0,
+          platform: result.platform || 'Unknown',
+          instrument_type: detectInstrumentType(trade.symbol),
+          import_source: `${result.platform || 'PDF'} Statement`
+        };
+
+        validTrades.push(normalizedTrade);
+      } catch (error) {
+        errors.push({ 
+          line: index + 1, 
+          error: `Error processing trade: ${error.message}` 
+        });
       }
     });
 
     return { 
-      trades: completedTrades, 
+      trades: validTrades, 
       errors, 
-      format: 'DXTrade PDF Statement' 
+      format: `${result.platform || 'PDF'} Statement` 
     };
   } catch (error) {
     return { 
       trades: [], 
-      errors: [{ line: 0, error: `PDF parsing failed: ${error.message}` }], 
-      format: 'DXTrade PDF' 
+      errors: [{ 
+        line: 0, 
+        error: `AI parsing failed: ${error.message}. The PDF format may not be supported. Try exporting your trades as CSV from your broker platform.` 
+      }], 
+      format: 'PDF Statement' 
     };
   }
+}
+
+// Helper to detect instrument type from symbol
+function detectInstrumentType(symbol) {
+  const s = symbol.toUpperCase();
+  if (s.includes('USD') || s.includes('EUR') || s.includes('GBP') || s.includes('JPY')) {
+    return 'Forex';
+  }
+  if (s.includes('BTC') || s.includes('ETH') || s.includes('CRYPTO')) {
+    return 'Crypto';
+  }
+  if (s.includes('100') || s.includes('SPX') || s.includes('NQ') || s.includes('ES')) {
+    return 'Futures';
+  }
+  if (s.includes('CALL') || s.includes('PUT')) {
+    return 'Options';
+  }
+  return 'Stocks';
 }
