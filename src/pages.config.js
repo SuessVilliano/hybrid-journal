@@ -11,7 +11,7 @@ import Automation from './pages/Automation';
 import TradingCoach from './pages/TradingCoach';
 import RiskManagement from './pages/RiskManagement';
 import TradingSummaries from './pages/TradingSummaries';
-import Layout from './Layout.jsx';
+import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
@@ -33,5 +33,5 @@ export const PAGES = {
 export const pagesConfig = {
     mainPage: "Dashboard",
     Pages: PAGES,
-    Layout: Layout,
+    Layout: __Layout,
 };
