@@ -22,7 +22,7 @@ export default function PublicDashboard() {
     queryKey: ['publicTrades', shareSettings?.created_by],
     queryFn: async () => {
       if (!shareSettings?.created_by) return [];
-      return await base44.entities.Trade.filter({ created_by: shareSettings.created_by });
+      return await base44.entities.Trade.filter({ created_by: shareSettings.created_by }, '-entry_date', 1000);
     },
     enabled: !!shareSettings?.created_by && shareSettings?.is_public
   });
@@ -75,15 +75,29 @@ export default function PublicDashboard() {
 
   if (loadingSettings || loadingTrades) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-purple-50 to-pink-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-600"></div>
+      </div>
+    );
+  }
+
+  if (!token) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-purple-50 to-pink-50 flex items-center justify-center p-6">
+        <Card className="max-w-md w-full">
+          <CardContent className="p-12 text-center">
+            <Activity className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">No Share Token</h2>
+            <p className="text-slate-600">Please provide a valid share token in the URL.</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   if (!shareSettings || !shareSettings.is_public) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-purple-50 to-pink-50 flex items-center justify-center p-6">
         <Card className="max-w-md w-full">
           <CardContent className="p-12 text-center">
             <Activity className="h-16 w-16 text-slate-300 mx-auto mb-4" />
@@ -98,29 +112,31 @@ export default function PublicDashboard() {
   const hideDollars = shareSettings.hide_dollar_amounts;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-purple-50 to-pink-50 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-slate-900">{shareSettings.custom_title || 'Trading Performance'}</h1>
-          <p className="text-slate-600 mt-2">
-            Public Dashboard • Last Updated: {new Date(shareSettings.last_updated).toLocaleDateString()}
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-600 to-purple-600 bg-clip-text text-transparent">
+            {shareSettings.custom_title || 'Trading Performance'}
+          </h1>
+          <p className="text-cyan-700/70 mt-2">
+            Public Dashboard • Last Updated: {new Date(shareSettings.last_updated || shareSettings.created_date).toLocaleDateString()}
           </p>
         </div>
 
         {/* Key Metrics */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className={hideDollars ? '' : 'bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0'}>
+            <Card className="bg-gradient-to-br from-cyan-500 to-purple-600 text-white border-0 shadow-lg shadow-cyan-500/20">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className={`text-sm font-medium ${hideDollars ? 'text-slate-600' : 'text-blue-100'}`}>
+                <CardTitle className="text-sm font-medium text-white/90">
                   Total P&L
                 </CardTitle>
-                <DollarSign className={`h-4 w-4 ${hideDollars ? 'text-slate-400' : 'text-blue-100'}`} />
+                <DollarSign className="h-4 w-4 text-white/90" />
               </CardHeader>
               <CardContent>
                 {hideDollars ? (
-                  <div className="text-3xl font-bold text-slate-900">
+                  <div className="text-3xl font-bold">
                     {stats.totalPnl >= 0 ? '+' : ''}{((stats.totalPnl / 10000) * 100).toFixed(1)}%
                   </div>
                 ) : (
@@ -128,40 +144,40 @@ export default function PublicDashboard() {
                     ${stats.totalPnl.toFixed(2)}
                   </div>
                 )}
-                <p className={`text-xs mt-1 ${hideDollars ? 'text-slate-500' : 'text-blue-100'}`}>
+                <p className="text-xs mt-1 text-white/80">
                   {stats.totalTrades} total trades
                 </p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-white/80 backdrop-blur-xl border-cyan-500/30">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-slate-600">Win Rate</CardTitle>
-                <Target className="h-4 w-4 text-slate-400" />
+                <CardTitle className="text-sm font-medium text-cyan-700">Win Rate</CardTitle>
+                <Target className="h-4 w-4 text-cyan-600" />
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-slate-900">{stats.winRate.toFixed(1)}%</div>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-cyan-700/70 mt-1">
                   {stats.winningTrades}W / {stats.losingTrades}L
                 </p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-white/80 backdrop-blur-xl border-purple-500/30">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-slate-600">Profit Factor</CardTitle>
-                <Activity className="h-4 w-4 text-slate-400" />
+                <CardTitle className="text-sm font-medium text-purple-700">Profit Factor</CardTitle>
+                <Activity className="h-4 w-4 text-purple-600" />
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-slate-900">{stats.profitFactor.toFixed(2)}</div>
-                <p className="text-xs text-slate-500 mt-1">Risk-adjusted performance</p>
+                <p className="text-xs text-purple-700/70 mt-1">Risk-adjusted performance</p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-white/80 backdrop-blur-xl border-green-500/30">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-slate-600">Avg Win/Loss</CardTitle>
-                <TrendingUp className="h-4 w-4 text-green-500" />
+                <CardTitle className="text-sm font-medium text-green-700">Avg Win/Loss</CardTitle>
+                <TrendingUp className="h-4 w-4 text-green-600" />
               </CardHeader>
               <CardContent>
                 {hideDollars ? (
@@ -175,7 +191,7 @@ export default function PublicDashboard() {
                     <span className="text-red-600">${stats.avgLoss.toFixed(0)}</span>
                   </div>
                 )}
-                <p className="text-xs text-slate-500 mt-1">Win to loss ratio</p>
+                <p className="text-xs text-green-700/70 mt-1">Win to loss ratio</p>
               </CardContent>
             </Card>
           </div>
@@ -184,9 +200,9 @@ export default function PublicDashboard() {
         {/* Charts */}
         {chartData && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="lg:col-span-2">
+            <Card className="lg:col-span-2 bg-white/80 backdrop-blur-xl border-cyan-500/30">
               <CardHeader>
-                <CardTitle>Equity Curve</CardTitle>
+                <CardTitle className="text-cyan-700">Equity Curve</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -197,15 +213,15 @@ export default function PublicDashboard() {
                     <Tooltip 
                       formatter={(val) => hideDollars ? [`${val.toFixed(1)}%`, 'Return'] : [`$${val.toFixed(2)}`, 'Equity']}
                     />
-                    <Line type="monotone" dataKey="equity" stroke="#3b82f6" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="equity" stroke="#06b6d4" strokeWidth={2} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-white/80 backdrop-blur-xl border-purple-500/30">
               <CardHeader>
-                <CardTitle>Win/Loss Distribution</CardTitle>
+                <CardTitle className="text-purple-700">Win/Loss Distribution</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -233,25 +249,25 @@ export default function PublicDashboard() {
 
         {/* Trade History */}
         {shareSettings.show_individual_trades && trades.length > 0 && (
-          <Card>
+          <Card className="bg-white/80 backdrop-blur-xl border-cyan-500/30">
             <CardHeader>
-              <CardTitle>Recent Trades</CardTitle>
+              <CardTitle className="text-cyan-700">Recent Trades</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="border-b">
+                  <thead className="border-b border-cyan-500/30">
                     <tr className="text-left">
-                      <th className="pb-2 font-medium text-slate-600">Date</th>
-                      <th className="pb-2 font-medium text-slate-600">Symbol</th>
-                      <th className="pb-2 font-medium text-slate-600">Side</th>
-                      <th className="pb-2 font-medium text-slate-600">P&L</th>
-                      <th className="pb-2 font-medium text-slate-600">Platform</th>
+                      <th className="pb-2 font-medium text-cyan-700">Date</th>
+                      <th className="pb-2 font-medium text-cyan-700">Symbol</th>
+                      <th className="pb-2 font-medium text-cyan-700">Side</th>
+                      <th className="pb-2 font-medium text-cyan-700">P&L</th>
+                      <th className="pb-2 font-medium text-cyan-700">Platform</th>
                     </tr>
                   </thead>
                   <tbody>
                     {trades.slice(0, 20).map((trade, idx) => (
-                      <tr key={idx} className="border-b">
+                      <tr key={idx} className="border-b border-slate-200">
                         <td className="py-2 text-slate-700">
                           {new Date(trade.entry_date).toLocaleDateString()}
                         </td>
@@ -279,8 +295,8 @@ export default function PublicDashboard() {
         )}
 
         {/* Footer */}
-        <div className="text-center text-sm text-slate-500 py-6">
-          Powered by TradeHybrid • Real-time Trading Journal
+        <div className="text-center text-sm text-cyan-700/70 py-6">
+          Powered by Hybrid Journal • Real-time Trading Journal
         </div>
       </div>
     </div>
