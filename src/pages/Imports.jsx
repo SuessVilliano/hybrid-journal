@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Upload, FileText, CheckCircle, XCircle, Clock, Plus, BarChart3 } from 'lucide-react';
+import { Upload, FileText, CheckCircle, XCircle, Clock, Plus, BarChart3, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import ImportModal from '@/components/trading/ImportModal';
 import ImportVisualization from '@/components/trading/ImportVisualization';
@@ -12,6 +12,8 @@ import ImportVisualization from '@/components/trading/ImportVisualization';
 export default function Imports() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [selectedImport, setSelectedImport] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const queryClient = useQueryClient();
 
   const { data: imports = [], isLoading } = useQuery({
     queryKey: ['imports'],
@@ -23,6 +25,37 @@ export default function Imports() {
     'Processing': { icon: Clock, color: 'bg-blue-100 text-blue-700', iconColor: 'text-blue-600' },
     'Completed': { icon: CheckCircle, color: 'bg-green-100 text-green-700', iconColor: 'text-green-600' },
     'Failed': { icon: XCircle, color: 'bg-red-100 text-red-700', iconColor: 'text-red-600' }
+  };
+
+  const deleteMutation = useMutation({
+    mutationFn: async (importId) => {
+      // First, get all trades from this import
+      const allTrades = await base44.entities.Trade.list();
+      const importTrades = allTrades.filter(t => t.import_source?.includes(importId));
+      
+      // Delete all trades from this import
+      for (const trade of importTrades) {
+        await base44.entities.Trade.delete(trade.id);
+      }
+      
+      // Delete the import record
+      await base44.entities.Import.delete(importId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['imports']);
+      queryClient.invalidateQueries(['trades']);
+      setDeleteConfirm(null);
+    }
+  });
+
+  const handleDelete = (importRecord) => {
+    setDeleteConfirm(importRecord);
+  };
+
+  const confirmDelete = () => {
+    if (deleteConfirm) {
+      deleteMutation.mutate(deleteConfirm.id);
+    }
   };
 
   return (
@@ -149,6 +182,14 @@ export default function Imports() {
                             </a>
                           </Button>
                         )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDelete(imp)}
+                          className="text-red-600 hover:bg-red-50 border-red-200"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
@@ -160,6 +201,56 @@ export default function Imports() {
 
         {showImportModal && (
           <ImportModal onClose={() => setShowImportModal(false)} />
+        )}
+
+        {deleteConfirm && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <Card className="max-w-md w-full">
+              <CardHeader>
+                <CardTitle className="text-red-600 flex items-center gap-2">
+                  <Trash2 className="h-5 w-5" />
+                  Delete Import?
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <p className="text-slate-900 font-medium">{deleteConfirm.filename}</p>
+                  <p className="text-slate-600">
+                    This will permanently delete this import record and all {deleteConfirm.trades_imported || 0} associated trades.
+                  </p>
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+                    ⚠️ This action cannot be undone. All trade data from this import will be removed from your account.
+                  </div>
+                </div>
+                <div className="flex gap-3 justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={() => setDeleteConfirm(null)}
+                    disabled={deleteMutation.isPending}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={confirmDelete}
+                    disabled={deleteMutation.isPending}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    {deleteMutation.isPending ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete Import & Trades
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         )}
       </div>
     </div>
