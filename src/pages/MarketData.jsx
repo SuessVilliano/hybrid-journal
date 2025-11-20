@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, X, BarChart3 } from 'lucide-react';
+import { Plus, X, BarChart3, TrendingUp, Flame, DollarSign, Newspaper, Calendar } from 'lucide-react';
 import LivePriceTicker from '@/components/market/LivePriceTicker';
 import TradingChart from '@/components/market/TradingChart';
 import QuickTradePanel from '@/components/market/QuickTradePanel';
+import TradingViewWidget from '@/components/market/TradingViewWidget';
 
 export default function MarketData() {
   const [watchlist, setWatchlist] = useState([
@@ -22,6 +24,7 @@ export default function MarketData() {
   const [selectedSymbol, setSelectedSymbol] = useState('EURUSD');
   const [showTradePanel, setShowTradePanel] = useState(false);
   const [tradePanelData, setTradePanelData] = useState(null);
+  const darkMode = document.documentElement.classList.contains('dark');
 
   const addSymbol = () => {
     if (newSymbol && !watchlist.includes(newSymbol.toUpperCase())) {
@@ -40,85 +43,197 @@ export default function MarketData() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+    <div className={`min-h-screen p-4 md:p-6 transition-colors ${
+      darkMode 
+        ? 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900' 
+        : 'bg-gradient-to-br from-cyan-50 via-purple-50 to-pink-50'
+    }`}>
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-4xl font-bold text-slate-900">Live Market Data</h1>
-          <p className="text-slate-600 mt-1">Real-time quotes, charts, and simulated trading</p>
+          <h1 className={`text-3xl md:text-4xl font-bold bg-gradient-to-r ${
+            darkMode ? 'from-cyan-400 to-purple-500' : 'from-cyan-600 to-purple-600'
+          } bg-clip-text text-transparent`}>
+            Live Market Data
+          </h1>
+          <p className={darkMode ? 'text-cyan-400/70 mt-1' : 'text-cyan-700/70 mt-1'}>
+            Real-time quotes, charts, and market insights
+          </p>
         </div>
 
-        {/* Info Banner */}
-        <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
-          <CardContent className="p-6">
-            <div className="flex items-start gap-3">
-              <BarChart3 className="h-5 w-5 text-blue-600 mt-0.5" />
-              <div>
-                <h3 className="font-bold text-slate-900 mb-2">Market Data Features</h3>
-                <ul className="text-sm text-slate-700 space-y-1">
-                  <li>✓ Live price feeds for Forex, Crypto, Stocks, and Futures</li>
-                  <li>✓ Interactive charts with technical indicators (SMA, EMA, RSI, Bollinger Bands)</li>
-                  <li>✓ Quick simulated trading directly from charts</li>
-                  <li>✓ Customizable watchlist for your favorite symbols</li>
-                  <li>🔮 Future: Direct broker integration (MT4/MT5, cTrader) for live execution</li>
-                </ul>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Main Tabs */}
+        <Tabs defaultValue="charts" className="space-y-6">
+          <TabsList className={darkMode ? 'bg-slate-950/80 border border-cyan-500/20' : 'bg-white border border-cyan-500/30'}>
+            <TabsTrigger value="charts" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Charts
+            </TabsTrigger>
+            <TabsTrigger value="heatmaps" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
+              <Flame className="h-4 w-4 mr-2" />
+              Heatmaps
+            </TabsTrigger>
+            <TabsTrigger value="forex" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
+              <DollarSign className="h-4 w-4 mr-2" />
+              Forex
+            </TabsTrigger>
+            <TabsTrigger value="news" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
+              <Newspaper className="h-4 w-4 mr-2" />
+              News
+            </TabsTrigger>
+            <TabsTrigger value="calendar" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
+              <Calendar className="h-4 w-4 mr-2" />
+              Calendar
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Watchlist Management */}
-        <Card>
-          <CardHeader>
-            <CardTitle>My Watchlist</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-2 mb-4">
-              <Input
-                value={newSymbol}
-                onChange={(e) => setNewSymbol(e.target.value.toUpperCase())}
-                placeholder="Add symbol (e.g., EURUSD, AAPL, BTCUSD)"
-                onKeyPress={(e) => e.key === 'Enter' && addSymbol()}
-              />
-              <Button onClick={addSymbol}>
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {watchlist.map(symbol => (
-                <div
-                  key={symbol}
-                  className="flex items-center gap-2 bg-slate-100 px-3 py-1 rounded-full"
-                >
-                  <button
-                    onClick={() => setSelectedSymbol(symbol)}
-                    className={`font-medium ${selectedSymbol === symbol ? 'text-blue-600' : 'text-slate-700'}`}
-                  >
-                    {symbol}
-                  </button>
-                  <button
-                    onClick={() => removeSymbol(symbol)}
-                    className="text-slate-400 hover:text-red-600"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
+          {/* Charts Tab */}
+          <TabsContent value="charts" className="space-y-6">
+            <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
+              <CardHeader>
+                <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>My Watchlist</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-2 mb-4">
+                  <Input
+                    value={newSymbol}
+                    onChange={(e) => setNewSymbol(e.target.value.toUpperCase())}
+                    placeholder="Add symbol (e.g., EURUSD, AAPL, BTCUSD)"
+                    onKeyPress={(e) => e.key === 'Enter' && addSymbol()}
+                  />
+                  <Button onClick={addSymbol} className="bg-gradient-to-r from-cyan-500 to-purple-600">
+                    <Plus className="h-4 w-4" />
+                  </Button>
                 </div>
-              ))}
+                <div className="flex flex-wrap gap-2">
+                  {watchlist.map(symbol => (
+                    <div
+                      key={symbol}
+                      className={`flex items-center gap-2 px-3 py-1 rounded-full ${
+                        darkMode ? 'bg-slate-800' : 'bg-slate-100'
+                      }`}
+                    >
+                      <button
+                        onClick={() => setSelectedSymbol(symbol)}
+                        className={`font-medium ${
+                          selectedSymbol === symbol 
+                            ? 'text-cyan-500' 
+                            : darkMode ? 'text-slate-300' : 'text-slate-700'
+                        }`}
+                      >
+                        {symbol}
+                      </button>
+                      <button
+                        onClick={() => removeSymbol(symbol)}
+                        className={`${darkMode ? 'text-slate-500 hover:text-red-400' : 'text-slate-400 hover:text-red-600'}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <LivePriceTicker symbols={watchlist} onSymbolClick={setSelectedSymbol} />
+
+            <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
+              <CardHeader>
+                <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>
+                  {selectedSymbol} Chart
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TradingViewWidget 
+                  type="chart" 
+                  symbol={`OANDA:${selectedSymbol}`}
+                  height="600px"
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Heatmaps Tab */}
+          <TabsContent value="heatmaps" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
+                <CardHeader>
+                  <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>
+                    Stock Market Heatmap
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <TradingViewWidget type="stockHeatmap" height="500px" />
+                </CardContent>
+              </Card>
+
+              <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
+                <CardHeader>
+                  <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>
+                    Crypto Heatmap
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <TradingViewWidget type="cryptoHeatmap" height="500px" />
+                </CardContent>
+              </Card>
             </div>
-          </CardContent>
-        </Card>
+          </TabsContent>
 
-        {/* Live Price Ticker */}
-        <LivePriceTicker
-          symbols={watchlist}
-          onSymbolClick={setSelectedSymbol}
-        />
+          {/* Forex Tab */}
+          <TabsContent value="forex" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
+                <CardHeader>
+                  <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>
+                    Forex Cross Rates
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <TradingViewWidget type="forexCross" height="500px" />
+                </CardContent>
+              </Card>
 
-        {/* Trading Chart */}
-        <TradingChart
-          symbol={selectedSymbol}
-          onTrade={handleTrade}
-        />
+              <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
+                <CardHeader>
+                  <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>
+                    Forex Heatmap
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <TradingViewWidget type="forexHeatmap" height="500px" />
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* News Tab */}
+          <TabsContent value="news">
+            <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
+              <CardHeader>
+                <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>
+                  Market News & Updates
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TradingViewWidget type="news" height="700px" />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Calendar Tab */}
+          <TabsContent value="calendar">
+            <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
+              <CardHeader>
+                <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>
+                  Economic Calendar
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TradingViewWidget type="calendar" height="700px" />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         {/* Quick Trade Panel */}
         {showTradePanel && tradePanelData && (
