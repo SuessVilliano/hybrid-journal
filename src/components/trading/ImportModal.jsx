@@ -29,7 +29,15 @@ export default function ImportModal({ onClose }) {
 
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
 
-      const parseResult = await parseTradeFile(file);
+      const aiHelper = async (params) => {
+        return await base44.integrations.Core.InvokeLLM({
+          prompt: params.prompt,
+          file_urls: [file_url],
+          response_json_schema: params.response_json_schema
+        });
+      };
+
+      const parseResult = await parseTradeFile(file, aiHelper);
       const { trades: parsedTrades, errors, format } = parseResult;
 
       setImportResult({
@@ -141,7 +149,7 @@ export default function ImportModal({ onClose }) {
           >
             <input
               type="file"
-              accept=".csv,.txt,.html,.htm,.xlsx,.xls"
+              accept=".csv,.txt,.html,.htm,.pdf,.xlsx,.xls"
               onChange={handleFileSelect}
               className="hidden"
               id="file-upload"
@@ -161,7 +169,7 @@ export default function ImportModal({ onClose }) {
                 <div className="space-y-2">
                   <Upload className="h-12 w-12 text-slate-400 mx-auto" />
                   <p className="font-medium text-slate-900">Click to upload</p>
-                  <p className="text-sm text-slate-500">CSV, TXT, HTML, Excel files</p>
+                  <p className="text-sm text-slate-500">CSV, TXT, HTML, PDF, Excel files</p>
                 </div>
               )}
             </label>
@@ -183,11 +191,19 @@ export default function ImportModal({ onClose }) {
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-slate-700">DXTrade (CSV)</span>
+                <span className="text-slate-700">DXTrade (PDF, CSV)</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 <span className="text-slate-700">MatchTrader (CSV)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-slate-700">Rithmic (CSV)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-slate-700">TradingView (CSV)</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
