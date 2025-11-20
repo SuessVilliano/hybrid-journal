@@ -267,6 +267,12 @@ export const parsers = {
     }
 
     return { trades, errors, format: 'TradingView Paper Trading' };
+  },
+
+  // DXTrade PDF Statement parser (AI-powered)
+  dxTradePdf: async (content, filename) => {
+    // This will be called from parseTradeFile with special handling for PDFs
+    return { trades: [], errors: [], format: 'DXTrade PDF', requiresAI: true };
   }
 };
 
@@ -384,6 +390,11 @@ export function detectFormat(filename, content) {
   const lower = filename.toLowerCase();
   const firstLines = content.split('\n').slice(0, 10).join('\n').toLowerCase();
   
+  // PDF Detection
+  if (lower.endsWith('.pdf') || content.startsWith('%PDF')) {
+    return 'dxTradePdf';
+  }
+  
   // HTML Detection
   if (lower.endsWith('.html') || lower.endsWith('.htm') || content.includes('<html') || content.includes('<table')) {
     return 'mt4Html';
@@ -419,14 +430,149 @@ export function detectFormat(filename, content) {
 }
 
 // Parse trades from file
-export async function parseTradeFile(file) {
-  const text = await file.text();
-  const format = detectFormat(file.name, text);
+export async function parseTradeFile(file, aiHelper) {
+  const format = detectFormat(file.name, '');
   
-  const parser = parsers[format];
+  // Handle PDF files with AI parsing
+  if (format === 'dxTradePdf' && aiHelper) {
+    return await parsePDFWithAI(file, aiHelper);
+  }
+  
+  const text = await file.text();
+  const detectedFormat = detectFormat(file.name, text);
+  
+  const parser = parsers[detectedFormat];
   if (!parser) {
-    throw new Error(`Unsupported format: ${format}`);
+    throw new Error(`Unsupported format: ${detectedFormat}`);
   }
   
   return parser(text);
+}
+
+// AI-powered PDF parser
+async function parsePDFWithAI(file, aiHelper) {
+  try {
+    const schema = {
+      type: "object",
+      properties: {
+        trades: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              transaction_id: { type: "string" },
+              transaction_time: { type: "string" },
+              direction: { type: "string" },
+              size: { type: "number" },
+              symbol: { type: "string" },
+              price: { type: "number" },
+              order_id: { type: "string" },
+              settled_pnl: { type: "number" },
+              commission: { type: "number" }
+            }
+          }
+        }
+      }
+    };
+
+    const prompt = `Extract all trading transactions from this DXTrade PDF statement.
+
+For each transaction, extract:
+- transaction_id: The transaction ID
+- transaction_time: Date and time (convert to ISO format if possible)
+- direction: "Buy" or "Sell"
+- size: Position size/quantity
+- symbol: Trading symbol (e.g., NAS100, SOL/USD.crypto)
+- price: Execution price
+- order_id: Order ID
+- settled_pnl: Settled P&L (profit/loss, can be null if not closed)
+- commission: Commission fee
+
+IMPORTANT: 
+- Extract ALL transactions from the Transactions section
+- Only include rows with actual trade data
+- settled_pnl will be empty (null) for opening trades, and have a value for closing trades
+- Convert all numeric values to numbers, not strings`;
+
+    const result = await aiHelper({
+      prompt,
+      file_urls: [file],
+      response_json_schema: schema
+    });
+
+    if (!result.trades || result.trades.length === 0) {
+      return { trades: [], errors: [{ line: 0, error: 'No trades found in PDF' }], format: 'DXTrade PDF' };
+    }
+
+    // Match buy/sell pairs to create complete trades
+    const completedTrades = [];
+    const errors = [];
+    const transactions = result.trades;
+
+    // Group by symbol and match pairs
+    const symbolGroups = {};
+    transactions.forEach(t => {
+      if (!symbolGroups[t.symbol]) {
+        symbolGroups[t.symbol] = [];
+      }
+      symbolGroups[t.symbol].push(t);
+    });
+
+    Object.keys(symbolGroups).forEach(symbol => {
+      const txns = symbolGroups[symbol].sort((a, b) => 
+        new Date(a.transaction_time) - new Date(b.transaction_time)
+      );
+
+      for (let i = 0; i < txns.length; i++) {
+        const txn = txns[i];
+        
+        // If this transaction has a settled P&L, it's a closing trade
+        if (txn.settled_pnl !== null && txn.settled_pnl !== undefined && txn.settled_pnl !== 0) {
+          // Find the matching opening trade
+          let openTrade = null;
+          for (let j = i - 1; j >= 0; j--) {
+            const prevTxn = txns[j];
+            if (prevTxn.direction !== txn.direction && 
+                prevTxn.size === txn.size &&
+                !prevTxn.matched) {
+              openTrade = prevTxn;
+              prevTxn.matched = true;
+              break;
+            }
+          }
+
+          if (openTrade) {
+            const trade = {
+              symbol: txn.symbol,
+              side: openTrade.direction === 'Buy' ? 'Long' : 'Short',
+              entry_date: new Date(openTrade.transaction_time).toISOString(),
+              exit_date: new Date(txn.transaction_time).toISOString(),
+              entry_price: openTrade.price,
+              exit_price: txn.price,
+              quantity: txn.size,
+              pnl: txn.settled_pnl,
+              commission: (openTrade.commission || 0) + (txn.commission || 0),
+              platform: 'DXTrade',
+              instrument_type: txn.symbol.includes('crypto') ? 'Crypto' : 
+                             txn.symbol.includes('100') || txn.symbol.includes('SPX') ? 'Futures' : 'Forex',
+              import_source: 'DXTrade PDF Statement'
+            };
+            completedTrades.push(trade);
+          }
+        }
+      }
+    });
+
+    return { 
+      trades: completedTrades, 
+      errors, 
+      format: 'DXTrade PDF Statement' 
+    };
+  } catch (error) {
+    return { 
+      trades: [], 
+      errors: [{ line: 0, error: `PDF parsing failed: ${error.message}` }], 
+      format: 'DXTrade PDF' 
+    };
+  }
 }
