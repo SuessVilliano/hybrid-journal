@@ -14,6 +14,7 @@ const AVAILABLE_WIDGETS = [
   { id: 'recentTrades', name: 'Recent Trades', description: 'Latest 5 trades' },
   { id: 'calendar', name: 'Trade Calendar', description: 'Calendar view of trades' },
   { id: 'performance', name: 'Performance Breakdown', description: 'Detailed metrics' },
+  { id: 'hybridScore', name: 'Hybrid Score™', description: 'Patent-pending performance score' },
   { id: 'emotions', name: 'Emotional Patterns', description: 'Psychology tracking' },
   { id: 'strategies', name: 'Strategy Performance', description: 'Strategy breakdown' },
   { id: 'instruments', name: 'Instrument Analysis', description: 'Performance by symbol' },

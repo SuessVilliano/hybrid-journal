@@ -17,6 +17,7 @@ import EmotionalPatternsWidget from '@/components/dashboard/EmotionalPatternsWid
 import StrategyPerformanceWidget from '@/components/dashboard/StrategyPerformanceWidget';
 import InstrumentAnalysisWidget from '@/components/dashboard/InstrumentAnalysisWidget';
 import CompoundCalculatorWidget from '@/components/dashboard/CompoundCalculatorWidget';
+import HybridScoreWidget from '@/components/dashboard/HybridScoreWidget';
 
 export default function Dashboard() {
   const [timeframe, setTimeframe] = useState('all');
@@ -25,7 +26,7 @@ export default function Dashboard() {
   const [showWidgetSelector, setShowWidgetSelector] = useState(false);
   const [selectedAccounts, setSelectedAccounts] = useState([]);
   const [enabledWidgets, setEnabledWidgets] = useState([
-    'pnl', 'winRate', 'profitFactor', 'avgWin', 'equityCurve', 'recentTrades', 'performance'
+    'pnl', 'winRate', 'profitFactor', 'avgWin', 'hybridScore', 'equityCurve', 'recentTrades', 'performance'
   ]);
 
   const queryClient = useQueryClient();
@@ -317,6 +318,7 @@ export default function Dashboard() {
               )}
             </div>
 
+            {enabledWidgets.includes('hybridScore') && <HybridScoreWidget trades={trades} />}
             {enabledWidgets.includes('compound') && <CompoundCalculatorWidget trades={trades} />}
             {enabledWidgets.includes('strategies') && <StrategyPerformanceWidget trades={trades} />}
             {enabledWidgets.includes('instruments') && <InstrumentAnalysisWidget trades={trades} />}
