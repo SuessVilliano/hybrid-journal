@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { base44 } from '@/api/base44Client';
-import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText, Menu, X, Wallet, Sun, Moon, Home } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText, Menu, X, Wallet, Sun, Moon, Home, Users, User } from 'lucide-react';
 
 export default function Layout({ children, currentPageName }) {
   // Don't render layout for Landing page
@@ -38,6 +38,8 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Home', page: 'Landing', icon: Home },
     { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard },
     { name: 'Get Funded', external: 'https://hybridfunding.co', icon: TrendingUp },
+    { name: 'Community', page: 'SocialFeed', icon: Users },
+    { name: 'My Profile', page: 'MyProfile', icon: User },
     { name: 'Accounts', page: 'Accounts', icon: Wallet },
     { name: 'Live Market', page: 'MarketData', icon: TrendingUp },
     { name: 'Trades', page: 'Trades', icon: BookOpen },

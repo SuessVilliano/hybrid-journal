@@ -14,6 +14,8 @@ import TradingSummaries from './pages/TradingSummaries';
 import PublicDashboard from './pages/PublicDashboard';
 import Accounts from './pages/Accounts';
 import Landing from './pages/Landing';
+import SocialFeed from './pages/SocialFeed';
+import MyProfile from './pages/MyProfile';
 import __Layout from './Layout.jsx';
 
 
@@ -34,6 +36,8 @@ export const PAGES = {
     "PublicDashboard": PublicDashboard,
     "Accounts": Accounts,
     "Landing": Landing,
+    "SocialFeed": SocialFeed,
+    "MyProfile": MyProfile,
 }
 
 export const pagesConfig = {
