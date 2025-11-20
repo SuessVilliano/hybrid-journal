@@ -12,6 +12,7 @@ import TradingCoach from './pages/TradingCoach';
 import RiskManagement from './pages/RiskManagement';
 import TradingSummaries from './pages/TradingSummaries';
 import PublicDashboard from './pages/PublicDashboard';
+import Accounts from './pages/Accounts';
 import __Layout from './Layout.jsx';
 
 
@@ -30,6 +31,7 @@ export const PAGES = {
     "RiskManagement": RiskManagement,
     "TradingSummaries": TradingSummaries,
     "PublicDashboard": PublicDashboard,
+    "Accounts": Accounts,
 }
 
 export const pagesConfig = {
