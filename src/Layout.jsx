@@ -31,6 +31,7 @@ export default function Layout({ children, currentPageName }) {
 
   const navigation = [
     { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard },
+    { name: 'Get Funded', external: 'https://hybridfunding.co', icon: TrendingUp },
     { name: 'Accounts', page: 'Accounts', icon: Wallet },
     { name: 'Live Market', page: 'MarketData', icon: TrendingUp },
     { name: 'Trades', page: 'Trades', icon: BookOpen },
@@ -99,7 +100,24 @@ export default function Layout({ children, currentPageName }) {
           {navigation.map((item) => {
             const Icon = item.icon;
             const isActive = currentPageName === item.page;
-            
+
+            if (item.external) {
+              return (
+                <a
+                  key={item.name}
+                  href={item.external}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group relative overflow-hidden bg-gradient-to-r from-green-500/20 to-emerald-600/20 border border-green-500/30 hover:from-green-500/30 hover:to-emerald-600/30"
+                  title={!sidebarOpen ? item.name : ''}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-emerald-600/10 animate-pulse" />
+                  <Icon className="h-5 w-5 relative z-10 text-green-400 drop-shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
+                  {sidebarOpen && <span className="font-medium relative z-10 text-green-400">{item.name}</span>}
+                </a>
+              );
+            }
+
             return (
               <Link
                 key={item.page}

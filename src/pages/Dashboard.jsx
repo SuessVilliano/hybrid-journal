@@ -171,6 +171,26 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Funding Banner */}
+        <Card className="bg-gradient-to-r from-green-500 to-emerald-600 border-0 shadow-lg shadow-green-500/20">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-bold text-white mb-2">🚀 Ready to Trade with Capital?</h3>
+                <p className="text-green-50 text-sm">Get funded up to $200,000 and keep 80% of profits</p>
+              </div>
+              <a
+                href="https://hybridfunding.co"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-6 py-3 bg-white text-green-600 font-bold rounded-lg hover:bg-green-50 transition shadow-lg"
+              >
+                Get Funded Now
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Account Filter */}
         {accounts.length > 0 && (
           <div className="flex flex-wrap gap-2">
