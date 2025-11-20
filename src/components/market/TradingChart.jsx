@@ -71,7 +71,7 @@ export default function TradingChart({ symbol, onTrade }) {
             <CardTitle className="text-2xl">{symbol}</CardTitle>
             <div className="flex items-center gap-3 mt-2">
               <span className="text-3xl font-bold text-slate-900">
-                {currentPrice.toFixed(5)}
+                {currentPrice ? currentPrice.toFixed(5) : '0.00000'}
               </span>
               <span className={`text-lg font-medium ${priceChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {priceChange >= 0 ? '+' : ''}{priceChange.toFixed(2)}%
