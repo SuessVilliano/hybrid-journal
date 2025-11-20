@@ -106,7 +106,7 @@ export default function Layout({ children, currentPageName }) {
           </div>
         </div>
 
-        <nav className="p-4 space-y-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+        <nav className="p-4 space-y-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 350px)' }}>
           {navigation.map((item) => {
             const Icon = item.icon;
             const isActive = currentPageName === item.page;
