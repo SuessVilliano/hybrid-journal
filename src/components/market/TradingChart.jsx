@@ -58,8 +58,8 @@ export default function TradingChart({ symbol, onTrade }) {
     return () => clearInterval(interval);
   }, [symbol, timeframe, indicators]);
 
-  const currentPrice = chartData.length > 0 ? chartData[chartData.length - 1].close : 0;
-  const priceChange = chartData.length > 1 
+  const currentPrice = chartData.length > 0 && chartData[chartData.length - 1]?.close ? chartData[chartData.length - 1].close : 0;
+  const priceChange = chartData.length > 1 && chartData[chartData.length - 1]?.close && chartData[0]?.close
     ? ((chartData[chartData.length - 1].close - chartData[0].close) / chartData[0].close * 100)
     : 0;
 

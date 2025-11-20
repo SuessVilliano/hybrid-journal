@@ -72,7 +72,7 @@ export default function LivePriceTicker({ symbols, onSymbolClick }) {
                 <div>
                  <div className="font-bold text-slate-900">{item.symbol}</div>
                  <div className="text-xs text-slate-500">
-                   Bid: {item.bid ? item.bid.toFixed(5) : 'N/A'} | Ask: {item.ask ? item.ask.toFixed(5) : 'N/A'}
+                   Bid: {item.bid && typeof item.bid === 'number' ? item.bid.toFixed(5) : 'N/A'} | Ask: {item.ask && typeof item.ask === 'number' ? item.ask.toFixed(5) : 'N/A'}
                  </div>
                 </div>
                 {item.changePercent >= 0 ? (
@@ -83,17 +83,17 @@ export default function LivePriceTicker({ symbols, onSymbolClick }) {
               </div>
               
               <div className="text-2xl font-bold text-slate-900 mb-1">
-                {item.price ? item.price.toFixed(5) : 'Loading...'}
+                {item.price && typeof item.price === 'number' ? item.price.toFixed(5) : 'Loading...'}
               </div>
               
-              <div className={`text-sm font-medium ${item.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {item.changePercent !== undefined ? `${item.changePercent >= 0 ? '+' : ''}${item.changePercent.toFixed(2)}%` : '+%'}
+              <div className={`text-sm font-medium ${(item.changePercent || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {item.changePercent !== undefined && item.changePercent !== null ? `${item.changePercent >= 0 ? '+' : ''}${item.changePercent.toFixed(2)}%` : '+0%'}
               </div>
               
               <div className="mt-2 pt-2 border-t border-slate-200 text-xs text-slate-600">
                 <div className="flex justify-between">
-                  <span>H: {item.high24h ? item.high24h.toFixed(5) : ''}</span>
-                  <span>L: {item.low24h ? item.low24h.toFixed(5) : ''}</span>
+                  <span>H: {item.high24h && typeof item.high24h === 'number' ? item.high24h.toFixed(5) : '-'}</span>
+                  <span>L: {item.low24h && typeof item.low24h === 'number' ? item.low24h.toFixed(5) : '-'}</span>
                 </div>
               </div>
             </CardContent>
