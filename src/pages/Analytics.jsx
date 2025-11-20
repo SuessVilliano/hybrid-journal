@@ -10,9 +10,13 @@ import PerformanceMetrics from '@/components/trading/PerformanceMetrics';
 import ComprehensiveStats from '@/components/analytics/ComprehensiveStats';
 import DetailedCharts from '@/components/analytics/DetailedCharts';
 import TradeList from '@/components/trading/TradeList';
+import AITradeAnalysis from '@/components/analytics/AITradeAnalysis';
+import { Button } from '@/components/ui/button';
 
 export default function Analytics() {
   const [view, setView] = useState('overview');
+  const [showAIAnalysis, setShowAIAnalysis] = useState(false);
+  const darkMode = document.documentElement.classList.contains('dark');
 
   const { data: trades = [], isLoading } = useQuery({
     queryKey: ['trades'],
@@ -28,11 +32,32 @@ export default function Analytics() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+    <div className={`min-h-screen p-6 transition-colors ${
+      darkMode 
+        ? 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900' 
+        : 'bg-gradient-to-br from-cyan-50 via-purple-50 to-pink-50'
+    }`}>
       <div className="max-w-7xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-4xl font-bold text-slate-900">Advanced Analytics</h1>
-          <p className="text-slate-600 mt-1">Comprehensive performance analysis and detailed statistics</p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className={`text-4xl font-bold bg-gradient-to-r ${
+              darkMode ? 'from-cyan-400 to-purple-500' : 'from-cyan-600 to-purple-600'
+            } bg-clip-text text-transparent`}>
+              Advanced Analytics
+            </h1>
+            <p className={`mt-1 ${darkMode ? 'text-cyan-400/70' : 'text-cyan-700/70'}`}>
+              Comprehensive performance analysis and detailed statistics
+            </p>
+          </div>
+          {trades.length > 0 && (
+            <Button 
+              onClick={() => setShowAIAnalysis(true)} 
+              className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700"
+            >
+              <Brain className="h-5 w-5 mr-2" />
+              Full AI Analysis
+            </Button>
+          )}
         </div>
 
         <Tabs value={view} onValueChange={setView} className="space-y-6">
@@ -92,6 +117,8 @@ export default function Analytics() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {showAIAnalysis && <AITradeAnalysis trades={trades} onClose={() => setShowAIAnalysis(false)} />}
       </div>
     </div>
   );
