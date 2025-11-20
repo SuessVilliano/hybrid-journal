@@ -23,48 +23,40 @@ export default function ImportModal({ onClose }) {
   const handleImport = async () => {
     if (!file) return;
 
+    setUploading(true);
+    
     try {
-      setUploading(true);
       setImportResult({ status: 'processing', message: 'Uploading file...' });
-
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
 
-      setImportResult({ status: 'processing', message: file.name.toLowerCase().endsWith('.pdf') ? 'Analyzing PDF with AI (this may take 30-60 seconds)...' : 'Parsing file...' });
+      setImportResult({ status: 'processing', message: file.name.toLowerCase().endsWith('.pdf') ? 'Analyzing PDF with AI (30-60 seconds)...' : 'Parsing trades...' });
 
-      const aiHelper = async (params) => {
+      const aiHelper = file.name.toLowerCase().endsWith('.pdf') ? async (params) => {
         return await base44.integrations.Core.InvokeLLM({
           prompt: params.prompt,
           file_urls: [file_url],
           response_json_schema: params.response_json_schema
         });
-      };
+      } : null;
 
       const parseResult = await parseTradeFile(file, aiHelper);
       const { trades: parsedTrades, errors, format } = parseResult;
 
-      setImportResult({
-        status: 'parsed',
-        format,
-        totalParsed: parsedTrades.length,
-        errors: errors.length,
-        message: `Detected ${format} format. Found ${parsedTrades.length} trades.`
-      });
-
       if (parsedTrades.length === 0) {
         setImportResult({
           status: 'error',
-          message: 'No valid trades found in file. Please check the format.',
-          errors: errors
+          message: 'No valid trades found. Please check the file format.',
+          errors: errors.length > 0 ? errors : [{ error: 'No trades detected in file' }]
         });
-        setUploading(false);
         return;
       }
 
+      setImportResult({ status: 'processing', message: 'Creating import record...' });
       const importRecord = await base44.entities.Import.create({
         filename: file.name,
         file_url: file_url,
         platform: format,
-        import_type: file.name.endsWith('.html') || file.name.endsWith('.htm') ? 'MT4 Statement' : 'CSV',
+        import_type: file.name.endsWith('.pdf') ? 'PDF' : 'CSV',
         status: 'Processing',
         trades_imported: 0
       });
@@ -82,24 +74,24 @@ export default function ImportModal({ onClose }) {
         try {
           const created = await base44.entities.Trade.create(parsedTrades[i]);
           imported.push(created);
-          
+        } catch (error) {
+          console.error(`Trade ${i} failed:`, error);
+          failed.push({ trade: parsedTrades[i], error: error.message });
+        }
+        
+        if ((i + 1) % 5 === 0 || i === parsedTrades.length - 1) {
           setImportResult({
             status: 'importing',
             message: `Importing trades... ${i + 1}/${parsedTrades.length}`,
             progress: ((i + 1) / parsedTrades.length) * 100
           });
-        } catch (error) {
-          failed.push({
-            trade: parsedTrades[i],
-            error: error.message
-          });
         }
       }
 
       await base44.entities.Import.update(importRecord.id, {
-        status: failed.length === 0 ? 'Completed' : 'Completed',
+        status: 'Completed',
         trades_imported: imported.length,
-        error_message: failed.length > 0 ? `${failed.length} trades failed to import` : null
+        error_message: failed.length > 0 ? `${failed.length} trades failed` : null
       });
 
       setImportResult({
@@ -118,7 +110,7 @@ export default function ImportModal({ onClose }) {
       console.error('Import error:', error);
       setImportResult({
         status: 'error',
-        message: error.message || 'Import failed. Please try again.',
+        message: error.message || 'Import failed',
         errors: [{ error: error.message }]
       });
     } finally {
