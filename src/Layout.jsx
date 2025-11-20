@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
-import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText, Menu, X, Wallet, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText, Menu, X, Wallet, Sun, Moon, Home } from 'lucide-react';
 
 export default function Layout({ children, currentPageName }) {
   // Don't render layout for Landing page
@@ -34,6 +34,7 @@ export default function Layout({ children, currentPageName }) {
   }, [darkMode]);
 
   const navigation = [
+    { name: 'Home', page: 'Landing', icon: Home },
     { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard },
     { name: 'Get Funded', external: 'https://hybridfunding.co', icon: TrendingUp },
     { name: 'Accounts', page: 'Accounts', icon: Wallet },
@@ -148,6 +149,16 @@ export default function Layout({ children, currentPageName }) {
         </nav>
 
         <div className={`absolute bottom-0 left-0 right-0 p-4 border-t ${darkMode ? 'border-cyan-500/20 bg-slate-950/50' : 'border-cyan-500/30 bg-white/50'} ${!sidebarOpen && 'hidden'}`}>
+          <button
+            onClick={() => base44.auth.logout()}
+            className={`w-full mb-3 flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-all ${
+              darkMode 
+                ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' 
+                : 'bg-red-100 text-red-700 hover:bg-red-200'
+            }`}
+          >
+            <span className="text-sm font-medium">Sign Out</span>
+          </button>
           <button
             onClick={() => setDarkMode(!darkMode)}
             className={`w-full mb-3 flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-all ${
