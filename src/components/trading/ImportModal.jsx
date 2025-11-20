@@ -25,9 +25,11 @@ export default function ImportModal({ onClose }) {
 
     try {
       setUploading(true);
-      setImportResult({ status: 'processing', message: 'Processing file...' });
+      setImportResult({ status: 'processing', message: 'Uploading file...' });
 
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
+
+      setImportResult({ status: 'processing', message: file.name.toLowerCase().endsWith('.pdf') ? 'Analyzing PDF with AI (this may take 30-60 seconds)...' : 'Parsing file...' });
 
       const aiHelper = async (params) => {
         return await base44.integrations.Core.InvokeLLM({
