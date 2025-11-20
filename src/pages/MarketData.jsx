@@ -146,7 +146,7 @@ export default function MarketData() {
                 <TradingViewWidget 
                   type="chart" 
                   symbol={`OANDA:${selectedSymbol}`}
-                  height="600px"
+                  height="800px"
                 />
               </CardContent>
             </Card>
