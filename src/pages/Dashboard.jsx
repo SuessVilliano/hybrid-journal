@@ -72,20 +72,28 @@ export default function Dashboard() {
     );
   }
 
+  const darkMode = document.documentElement.classList.contains('dark');
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 md:p-6">
+    <div className={`min-h-screen p-4 md:p-6 transition-colors ${
+      darkMode 
+        ? 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900' 
+        : 'bg-gradient-to-br from-cyan-50 via-purple-50 to-pink-50'
+    }`}>
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
+            <h1 className={`text-3xl md:text-4xl font-bold bg-gradient-to-r ${
+              darkMode ? 'from-cyan-400 to-purple-500' : 'from-cyan-600 to-purple-600'
+            } bg-clip-text text-transparent`}>
               Trading Dashboard
             </h1>
-            <p className="text-cyan-400/70 mt-1">Track your performance and grow consistently</p>
+            <p className={darkMode ? 'text-cyan-400/70 mt-1' : 'text-cyan-700/70 mt-1'}>Track your performance and grow consistently</p>
           </div>
           <div className="flex flex-wrap gap-3">
             {stats && <ExportMenu trades={trades} stats={stats} />}
-            <Button onClick={() => setShowShareModal(true)} variant="outline" className="border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10">
+            <Button onClick={() => setShowShareModal(true)} variant="outline" className={`border-cyan-500/30 ${darkMode ? 'text-cyan-400 hover:bg-cyan-500/10' : 'text-cyan-700 hover:bg-cyan-100'}`}>
               <Share2 className="h-4 w-4 mr-2" />
               Share
             </Button>
@@ -100,7 +108,9 @@ export default function Dashboard() {
               className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
                 selectedAccounts.length === 0
                   ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white shadow-lg shadow-cyan-500/20'
-                  : 'bg-slate-900/50 text-slate-400 hover:text-white border border-cyan-500/20'
+                  : darkMode 
+                    ? 'bg-slate-900/50 text-slate-400 hover:text-white border border-cyan-500/20'
+                    : 'bg-white text-slate-600 hover:text-slate-900 border border-cyan-300/50'
               }`}
             >
               All Accounts
@@ -118,7 +128,9 @@ export default function Dashboard() {
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
                   selectedAccounts.includes(acc.id)
                     ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white shadow-lg shadow-cyan-500/20'
-                    : 'bg-slate-900/50 text-slate-400 hover:text-white border border-cyan-500/20'
+                    : darkMode 
+                      ? 'bg-slate-900/50 text-slate-400 hover:text-white border border-cyan-500/20'
+                      : 'bg-white text-slate-600 hover:text-slate-900 border border-cyan-300/50'
                 }`}
               >
                 {acc.name}
@@ -143,38 +155,38 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-950/80 backdrop-blur-xl border-cyan-500/20">
+            <Card className={darkMode ? 'bg-slate-950/80 backdrop-blur-xl border-cyan-500/20' : 'bg-white/80 backdrop-blur-xl border-cyan-500/30'}>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-cyan-400">Win Rate</CardTitle>
-                <Target className="h-4 w-4 text-cyan-400" />
+                <CardTitle className={`text-sm font-medium ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>Win Rate</CardTitle>
+                <Target className={`h-4 w-4 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`} />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl md:text-3xl font-bold text-white">{stats.winRate.toFixed(1)}%</div>
-                <p className="text-xs text-cyan-400/70 mt-1">
+                <div className={`text-2xl md:text-3xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>{stats.winRate.toFixed(1)}%</div>
+                <p className={`text-xs mt-1 ${darkMode ? 'text-cyan-400/70' : 'text-cyan-700/70'}`}>
                   {stats.winningTrades}W / {stats.losingTrades}L
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-950/80 backdrop-blur-xl border-green-500/20">
+            <Card className={darkMode ? 'bg-slate-950/80 backdrop-blur-xl border-green-500/20' : 'bg-white/80 backdrop-blur-xl border-green-500/30'}>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-green-400">Avg Win</CardTitle>
-                <TrendingUp className="h-4 w-4 text-green-400" />
+                <CardTitle className={`text-sm font-medium ${darkMode ? 'text-green-400' : 'text-green-700'}`}>Avg Win</CardTitle>
+                <TrendingUp className={`h-4 w-4 ${darkMode ? 'text-green-400' : 'text-green-600'}`} />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl md:text-3xl font-bold text-green-400">${stats.avgWin.toFixed(2)}</div>
-                <p className="text-xs text-green-400/70 mt-1">Per winning trade</p>
+                <div className={`text-2xl md:text-3xl font-bold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>${stats.avgWin.toFixed(2)}</div>
+                <p className={`text-xs mt-1 ${darkMode ? 'text-green-400/70' : 'text-green-700/70'}`}>Per winning trade</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-950/80 backdrop-blur-xl border-purple-500/20">
+            <Card className={darkMode ? 'bg-slate-950/80 backdrop-blur-xl border-purple-500/20' : 'bg-white/80 backdrop-blur-xl border-purple-500/30'}>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-purple-400">Profit Factor</CardTitle>
-                <Activity className="h-4 w-4 text-purple-400" />
+                <CardTitle className={`text-sm font-medium ${darkMode ? 'text-purple-400' : 'text-purple-700'}`}>Profit Factor</CardTitle>
+                <Activity className={`h-4 w-4 ${darkMode ? 'text-purple-400' : 'text-purple-600'}`} />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl md:text-3xl font-bold text-white">{stats.profitFactor.toFixed(2)}</div>
-                <p className="text-xs text-purple-400/70 mt-1">Risk-adjusted</p>
+                <div className={`text-2xl md:text-3xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>{stats.profitFactor.toFixed(2)}</div>
+                <p className={`text-xs mt-1 ${darkMode ? 'text-purple-400/70' : 'text-purple-700/70'}`}>Risk-adjusted</p>
               </CardContent>
             </Card>
           </div>
@@ -182,27 +194,27 @@ export default function Dashboard() {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="bg-slate-950/80 border border-cyan-500/20">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white text-cyan-400">Overview</TabsTrigger>
-            <TabsTrigger value="analytics" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white text-cyan-400">Analytics</TabsTrigger>
-            <TabsTrigger value="calendar" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white text-cyan-400">Calendar</TabsTrigger>
-            <TabsTrigger value="psychology" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white text-cyan-400">Psychology</TabsTrigger>
+          <TabsList className={darkMode ? 'bg-slate-950/80 border border-cyan-500/20' : 'bg-white border border-cyan-500/30'}>
+            <TabsTrigger value="overview" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>Overview</TabsTrigger>
+            <TabsTrigger value="analytics" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>Analytics</TabsTrigger>
+            <TabsTrigger value="calendar" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>Calendar</TabsTrigger>
+            <TabsTrigger value="psychology" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>Psychology</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-              <Card className="lg:col-span-2 bg-slate-950/80 backdrop-blur-xl border-cyan-500/20">
+              <Card className={`lg:col-span-2 backdrop-blur-xl ${darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white/80 border-cyan-500/30'}`}>
                 <CardHeader>
-                  <CardTitle className="text-cyan-400">Equity Curve</CardTitle>
+                  <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>Equity Curve</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <EquityCurve trades={trades} />
                 </CardContent>
               </Card>
 
-              <Card className="bg-slate-950/80 backdrop-blur-xl border-cyan-500/20">
+              <Card className={`backdrop-blur-xl ${darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white/80 border-cyan-500/30'}`}>
                 <CardHeader>
-                  <CardTitle className="text-cyan-400">Recent Trades</CardTitle>
+                  <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>Recent Trades</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <RecentTrades trades={trades.slice(0, 5)} />
@@ -218,9 +230,9 @@ export default function Dashboard() {
           </TabsContent>
 
           <TabsContent value="calendar">
-            <Card className="bg-slate-950/80 backdrop-blur-xl border-cyan-500/20">
+            <Card className={`backdrop-blur-xl ${darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white/80 border-cyan-500/30'}`}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-cyan-400">
+                <CardTitle className={`flex items-center gap-2 ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
                   <Calendar className="h-5 w-5" />
                   Trading Calendar
                 </CardTitle>
@@ -233,21 +245,21 @@ export default function Dashboard() {
 
           <TabsContent value="psychology">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-              <Card className="bg-slate-950/80 backdrop-blur-xl border-cyan-500/20">
+              <Card className={`backdrop-blur-xl ${darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white/80 border-cyan-500/30'}`}>
                 <CardHeader>
-                  <CardTitle className="text-cyan-400">Emotional Patterns</CardTitle>
+                  <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>Emotional Patterns</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-cyan-400/70">Track your emotional state and identify patterns affecting your trading.</p>
+                  <p className={darkMode ? 'text-cyan-400/70' : 'text-cyan-700/70'}>Track your emotional state and identify patterns affecting your trading.</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-slate-950/80 backdrop-blur-xl border-cyan-500/20">
+              <Card className={`backdrop-blur-xl ${darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white/80 border-cyan-500/30'}`}>
                 <CardHeader>
-                  <CardTitle className="text-cyan-400">Behavioral Insights</CardTitle>
+                  <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>Behavioral Insights</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-cyan-400/70">AI-powered insights into your trading behavior and decision-making.</p>
+                  <p className={darkMode ? 'text-cyan-400/70' : 'text-cyan-700/70'}>AI-powered insights into your trading behavior and decision-making.</p>
                 </CardContent>
               </Card>
             </div>

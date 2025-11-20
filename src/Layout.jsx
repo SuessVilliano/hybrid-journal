@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
-import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText, Menu, X, Wallet } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText, Menu, X, Wallet, Sun, Moon } from 'lucide-react';
 
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('theme');
+    return saved ? saved === 'dark' : true;
+  });
 
   useEffect(() => {
     const checkMobile = () => {
@@ -19,6 +23,11 @@ export default function Layout({ children, currentPageName }) {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+    document.documentElement.classList.toggle('dark', darkMode);
+  }, [darkMode]);
 
   const navigation = [
     { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard },
@@ -38,7 +47,11 @@ export default function Layout({ children, currentPageName }) {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className={`min-h-screen transition-colors duration-300 ${
+      darkMode 
+        ? 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900' 
+        : 'bg-gradient-to-br from-cyan-50 via-purple-50 to-pink-50'
+    }`}>
       <style>{`
         :root {
           --cyber-aqua: #00f0ff;
@@ -60,20 +73,24 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 h-full bg-slate-950/95 backdrop-blur-xl text-white shadow-2xl z-40 transition-all duration-300 border-r border-cyan-500/20 ${
+        className={`fixed left-0 top-0 h-full shadow-2xl z-40 transition-all duration-300 ${
+          darkMode 
+            ? 'bg-slate-950/95 border-cyan-500/20 text-white' 
+            : 'bg-white/95 border-cyan-500/30 text-slate-900'
+        } backdrop-blur-xl border-r ${
           sidebarOpen ? 'w-64' : isMobile ? 'w-0' : 'w-16'
         } overflow-hidden`}
       >
-        <div className={`p-6 border-b border-cyan-500/20 ${!sidebarOpen && 'hidden'}`}>
+        <div className={`p-6 border-b ${darkMode ? 'border-cyan-500/20' : 'border-cyan-500/30'} ${!sidebarOpen && 'hidden'}`}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-cyan-500/50">
-              <Zap className="h-6 w-6" />
+              <Zap className="h-6 w-6 text-white" />
             </div>
             <div>
               <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
                 TradeHybrid
               </h1>
-              <p className="text-xs text-cyan-400/70">Cyberpunk Edition</p>
+              <p className={`text-xs ${darkMode ? 'text-cyan-400/70' : 'text-cyan-600/70'}`}>Cyberpunk Edition</p>
             </div>
           </div>
         </div>
@@ -90,8 +107,10 @@ export default function Layout({ children, currentPageName }) {
                 className={`
                   flex items-center gap-3 px-4 py-3 rounded-lg transition-all group relative overflow-hidden
                   ${isActive 
-                    ? 'bg-gradient-to-r from-cyan-500/20 to-purple-600/20 text-cyan-400 shadow-lg shadow-cyan-500/20 border border-cyan-500/30' 
-                    : 'text-slate-300 hover:bg-slate-800/50 hover:text-cyan-400 border border-transparent'
+                    ? 'bg-gradient-to-r from-cyan-500/20 to-purple-600/20 text-cyan-600 shadow-lg shadow-cyan-500/20 border border-cyan-500/30' 
+                    : darkMode 
+                      ? 'text-slate-300 hover:bg-slate-800/50 hover:text-cyan-400 border border-transparent'
+                      : 'text-slate-600 hover:bg-cyan-50 hover:text-cyan-600 border border-transparent'
                   }
                 `}
                 title={!sidebarOpen ? item.name : ''}
@@ -106,8 +125,19 @@ export default function Layout({ children, currentPageName }) {
           })}
         </nav>
 
-        <div className={`absolute bottom-0 left-0 right-0 p-4 border-t border-cyan-500/20 bg-slate-950/50 ${!sidebarOpen && 'hidden'}`}>
-          <div className="text-xs text-cyan-400/60 space-y-1">
+        <div className={`absolute bottom-0 left-0 right-0 p-4 border-t ${darkMode ? 'border-cyan-500/20 bg-slate-950/50' : 'border-cyan-500/30 bg-white/50'} ${!sidebarOpen && 'hidden'}`}>
+          <button
+            onClick={() => setDarkMode(!darkMode)}
+            className={`w-full mb-3 flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-all ${
+              darkMode 
+                ? 'bg-gradient-to-r from-cyan-500/20 to-purple-600/20 text-cyan-400 hover:from-cyan-500/30 hover:to-purple-600/30' 
+                : 'bg-gradient-to-r from-cyan-100 to-purple-100 text-cyan-700 hover:from-cyan-200 hover:to-purple-200'
+            }`}
+          >
+            {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            <span className="text-sm font-medium">{darkMode ? 'Light' : 'Dark'} Mode</span>
+          </button>
+          <div className={`text-xs ${darkMode ? 'text-cyan-400/60' : 'text-cyan-600/60'} space-y-1`}>
             <div className="flex items-center gap-1">
               <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse" />
               <span>AI Powered</span>
