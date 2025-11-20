@@ -238,52 +238,185 @@ export async function executeSimulatedTrade(brokerConnection, tradeParams) {
   });
 }
 
-// Sync trades from broker to database
-export async function syncBrokerTrades(brokerConnection) {
+// Sync trades from broker to database with enhanced error handling and conflict resolution
+export async function syncBrokerTrades(brokerConnection, syncType = 'manual') {
+  const startTime = Date.now();
+  const errors = [];
+  let status = 'success';
+  
   try {
     // Fetch trades from broker
     const brokerData = await fetchBrokerTrades(brokerConnection);
+    
+    if (!brokerData.trades || brokerData.trades.length === 0) {
+      await base44.entities.SyncLog.create({
+        broker_connection_id: brokerConnection.id,
+        sync_type: syncType,
+        status: 'success',
+        trades_fetched: 0,
+        trades_imported: 0,
+        trades_skipped: 0,
+        trades_updated: 0,
+        duration_ms: Date.now() - startTime,
+        sync_timestamp: new Date().toISOString()
+      });
+      
+      return {
+        success: true,
+        imported: 0,
+        skipped: 0,
+        updated: 0,
+        account_balance: brokerData.account_balance,
+        account_equity: brokerData.equity
+      };
+    }
     
     // Get existing trades from database
     const existingTrades = await base44.entities.Trade.filter({
       broker_connection_id: brokerConnection.id
     });
     
-    const existingBrokerIds = new Set(
-      existingTrades.map(t => t.broker_trade_id).filter(Boolean)
+    // Create maps for efficient lookup
+    const existingByBrokerId = new Map(
+      existingTrades
+        .filter(t => t.broker_trade_id)
+        .map(t => [t.broker_trade_id, t])
     );
     
-    // Filter out trades that already exist
-    const newTrades = brokerData.trades.filter(
-      t => !existingBrokerIds.has(t.broker_trade_id)
+    // Also check by symbol + entry date for fuzzy matching
+    const existingBySymbolDate = new Map(
+      existingTrades
+        .filter(t => t.symbol && t.entry_date)
+        .map(t => [`${t.symbol}_${new Date(t.entry_date).toISOString()}`, t])
     );
     
-    // Import new trades
     const imported = [];
-    for (const trade of newTrades) {
-      const tradeData = {
-        ...trade,
-        platform: brokerConnection.broker_id,
-        instrument_type: getBrokerInstrumentType(brokerConnection.broker_id),
-        broker_connection_id: brokerConnection.id,
-        import_source: `${brokerConnection.broker_id} API Sync`
-      };
-      
-      const created = await base44.entities.Trade.create(tradeData);
-      imported.push(created);
+    const updated = [];
+    let skipped = 0;
+    
+    // Process each trade with conflict resolution
+    for (const brokerTrade of brokerData.trades) {
+      try {
+        // Check for exact match by broker trade ID
+        if (brokerTrade.broker_trade_id && existingByBrokerId.has(brokerTrade.broker_trade_id)) {
+          const existingTrade = existingByBrokerId.get(brokerTrade.broker_trade_id);
+          
+          // Update if data has changed (e.g., trade was closed)
+          if (shouldUpdateTrade(existingTrade, brokerTrade)) {
+            await base44.entities.Trade.update(existingTrade.id, {
+              exit_date: brokerTrade.exit_date || existingTrade.exit_date,
+              exit_price: brokerTrade.exit_price || existingTrade.exit_price,
+              pnl: brokerTrade.pnl,
+              commission: brokerTrade.commission || existingTrade.commission,
+              swap: brokerTrade.swap || existingTrade.swap
+            });
+            updated.push(existingTrade.id);
+          } else {
+            skipped++;
+          }
+          continue;
+        }
+        
+        // Fuzzy match by symbol and entry date (within 1 minute)
+        const fuzzyKey = `${brokerTrade.symbol}_${new Date(brokerTrade.entry_date).toISOString()}`;
+        if (existingBySymbolDate.has(fuzzyKey)) {
+          const existingTrade = existingBySymbolDate.get(fuzzyKey);
+          
+          // Update with broker trade ID for future exact matching
+          if (!existingTrade.broker_trade_id && brokerTrade.broker_trade_id) {
+            await base44.entities.Trade.update(existingTrade.id, {
+              broker_trade_id: brokerTrade.broker_trade_id,
+              exit_date: brokerTrade.exit_date || existingTrade.exit_date,
+              exit_price: brokerTrade.exit_price || existingTrade.exit_price,
+              pnl: brokerTrade.pnl
+            });
+            updated.push(existingTrade.id);
+          } else {
+            skipped++;
+          }
+          continue;
+        }
+        
+        // New trade - import it
+        const tradeData = {
+          ...brokerTrade,
+          account_id: brokerConnection.account_id,
+          platform: brokerConnection.broker_id,
+          instrument_type: getBrokerInstrumentType(brokerConnection.broker_id),
+          broker_connection_id: brokerConnection.id,
+          import_source: `${brokerConnection.broker_id} API Sync`
+        };
+        
+        const created = await base44.entities.Trade.create(tradeData);
+        imported.push(created);
+        
+      } catch (tradeError) {
+        errors.push({
+          trade: brokerTrade.symbol || 'Unknown',
+          error: tradeError.message,
+          broker_trade_id: brokerTrade.broker_trade_id
+        });
+        status = 'partial';
+      }
     }
+    
+    // Log the sync operation
+    await base44.entities.SyncLog.create({
+      broker_connection_id: brokerConnection.id,
+      sync_type: syncType,
+      status: errors.length > 0 ? 'partial' : 'success',
+      trades_fetched: brokerData.trades.length,
+      trades_imported: imported.length,
+      trades_skipped: skipped,
+      trades_updated: updated.length,
+      errors: errors.length > 0 ? errors : undefined,
+      duration_ms: Date.now() - startTime,
+      sync_timestamp: new Date().toISOString()
+    });
     
     return {
       success: true,
       imported: imported.length,
-      skipped: brokerData.trades.length - imported.length,
+      updated: updated.length,
+      skipped: skipped,
+      errors: errors,
       account_balance: brokerData.account_balance,
       account_equity: brokerData.equity
     };
+    
   } catch (error) {
-    console.error('Sync error:', error);
+    // Log failed sync
+    await base44.entities.SyncLog.create({
+      broker_connection_id: brokerConnection.id,
+      sync_type: syncType,
+      status: 'failed',
+      trades_fetched: 0,
+      trades_imported: 0,
+      trades_skipped: 0,
+      trades_updated: 0,
+      error_message: error.message,
+      errors: [{ error: error.message }],
+      duration_ms: Date.now() - startTime,
+      sync_timestamp: new Date().toISOString()
+    });
+    
     throw error;
   }
+}
+
+// Helper to determine if trade should be updated
+function shouldUpdateTrade(existingTrade, brokerTrade) {
+  // Update if trade was opened but now closed
+  if (!existingTrade.exit_date && brokerTrade.exit_date) {
+    return true;
+  }
+  
+  // Update if P&L changed significantly (more than 0.01)
+  if (Math.abs((existingTrade.pnl || 0) - (brokerTrade.pnl || 0)) > 0.01) {
+    return true;
+  }
+  
+  return false;
 }
 
 function getBrokerInstrumentType(broker_id) {
