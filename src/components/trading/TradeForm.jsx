@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { X, Sparkles, Loader2 } from 'lucide-react';
+import { X, Sparkles, Loader2, ArrowLeft } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { autoPopulateTradeFields, detectInstrumentType } from './AITradeHelper';
+import TemplateSelector from './TemplateSelector';
 
 export default function TradeForm({ trade, onSubmit, onCancel }) {
+  const [showTemplateSelector, setShowTemplateSelector] = useState(!trade);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [formData, setFormData] = useState(trade || {
     symbol: '',
     platform: 'DXTrade',
@@ -37,6 +40,24 @@ export default function TradeForm({ trade, onSubmit, onCancel }) {
     queryKey: ['strategies'],
     queryFn: () => base44.entities.Strategy.list('-created_date', 100)
   });
+
+  const { data: templates = [] } = useQuery({
+    queryKey: ['tradeTemplates'],
+    queryFn: () => base44.entities.TradeTemplate.filter({ is_active: true }, '-created_date', 100)
+  });
+
+  // Apply template when selected
+  useEffect(() => {
+    if (selectedTemplate && !trade) {
+      const defaults = selectedTemplate.default_fields || {};
+      setFormData(prev => ({
+        ...prev,
+        ...defaults,
+        entry_date: new Date().toISOString().slice(0, 16),
+        template_id: selectedTemplate.id
+      }));
+    }
+  }, [selectedTemplate, trade]);
 
   // Auto-detect instrument type when symbol changes
   const handleSymbolChange = (value) => {
@@ -92,19 +113,66 @@ export default function TradeForm({ trade, onSubmit, onCancel }) {
     });
   };
 
+  const darkMode = document.documentElement.classList.contains('dark');
+
+  const handleTemplateSelect = (template) => {
+    setSelectedTemplate(template);
+    setShowTemplateSelector(false);
+  };
+
+  const getTemplatePrompt = (field) => {
+    if (!selectedTemplate?.analysis_prompts) return '';
+    return selectedTemplate.analysis_prompts[field] || '';
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex justify-between items-center z-10">
-          <h2 className="text-2xl font-bold text-slate-900">
-            {trade ? 'Edit Trade' : 'Add New Trade'}
-          </h2>
-          <button onClick={onCancel} className="text-slate-400 hover:text-slate-600">
-            <X className="h-6 w-6" />
-          </button>
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className={`rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto ${
+        darkMode ? 'bg-slate-950 border border-cyan-500/20' : 'bg-white'
+      }`}>
+        <div className={`sticky top-0 border-b p-6 flex justify-between items-center z-10 ${
+          darkMode ? 'bg-slate-950 border-cyan-500/20' : 'bg-white border-slate-200'
+        }`}>
+          <div className="flex items-center gap-3">
+            {showTemplateSelector && !trade && (
+              <button
+                type="button"
+                onClick={onCancel}
+                className={darkMode ? 'text-slate-400 hover:text-white' : 'text-slate-400 hover:text-slate-600'}
+              >
+                <X className="h-6 w-6" />
+              </button>
+            )}
+            {!showTemplateSelector && !trade && (
+              <button
+                type="button"
+                onClick={() => setShowTemplateSelector(true)}
+                className={darkMode ? 'text-slate-400 hover:text-white' : 'text-slate-400 hover:text-slate-600'}
+              >
+                <ArrowLeft className="h-6 w-6" />
+              </button>
+            )}
+            <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+              {trade ? 'Edit Trade' : showTemplateSelector ? 'Select Template' : selectedTemplate ? selectedTemplate.name : 'Add New Trade'}
+            </h2>
+          </div>
+          {!showTemplateSelector && (
+            <button onClick={onCancel} className={darkMode ? 'text-slate-400 hover:text-white' : 'text-slate-400 hover:text-slate-600'}>
+              <X className="h-6 w-6" />
+            </button>
+          )}
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        {showTemplateSelector && !trade ? (
+          <div className="p-6">
+            <TemplateSelector
+              templates={templates}
+              onSelect={handleTemplateSelect}
+              selectedTemplate={selectedTemplate}
+            />
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* AI Assistant Banner */}
           <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4">
             <div className="flex items-center justify-between">
@@ -370,28 +438,65 @@ export default function TradeForm({ trade, onSubmit, onCancel }) {
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
               Notes
               <span className="ml-2 text-xs text-purple-600">✨ AI-generated</span>
             </label>
             <Textarea
               value={formData.notes}
               onChange={(e) => setFormData({...formData, notes: e.target.value})}
-              placeholder="What was your reasoning? What went well? What could be improved?"
+              placeholder={getTemplatePrompt('notes') || "What was your reasoning? What went well? What could be improved?"}
               rows={4}
+              className={darkMode ? 'bg-slate-900 border-cyan-500/30 text-white' : ''}
             />
           </div>
 
+          {/* Template-specific Analysis Prompts */}
+          {selectedTemplate && (
+            <>
+              {selectedTemplate.analysis_prompts?.pre_trade_plan && (
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                    Pre-Trade Plan
+                  </label>
+                  <Textarea
+                    value={formData.pre_trade_plan || ''}
+                    onChange={(e) => setFormData({...formData, pre_trade_plan: e.target.value})}
+                    placeholder={selectedTemplate.analysis_prompts.pre_trade_plan}
+                    rows={3}
+                    className={darkMode ? 'bg-slate-900 border-cyan-500/30 text-white' : ''}
+                  />
+                </div>
+              )}
+
+              {formData.exit_price && selectedTemplate.analysis_prompts?.post_trade_review && (
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                    Post-Trade Review
+                  </label>
+                  <Textarea
+                    value={formData.post_trade_review || ''}
+                    onChange={(e) => setFormData({...formData, post_trade_review: e.target.value})}
+                    placeholder={selectedTemplate.analysis_prompts.post_trade_review}
+                    rows={3}
+                    className={darkMode ? 'bg-slate-900 border-cyan-500/30 text-white' : ''}
+                  />
+                </div>
+              )}
+            </>
+          )}
+
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
-            <Button type="button" variant="outline" onClick={onCancel}>
+          <div className={`flex justify-end gap-3 pt-4 border-t ${darkMode ? 'border-cyan-500/20' : 'border-slate-200'}`}>
+            <Button type="button" variant="outline" onClick={onCancel} className={darkMode ? 'border-cyan-500/30 text-cyan-400' : ''}>
               Cancel
             </Button>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+            <Button type="submit" className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700">
               {trade ? 'Update Trade' : 'Save Trade'}
             </Button>
           </div>
         </form>
+        )}
       </div>
     </div>
   );
