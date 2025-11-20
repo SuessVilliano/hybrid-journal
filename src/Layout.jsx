@@ -151,7 +151,7 @@ export default function Layout({ children, currentPageName }) {
 
         <div className={`absolute bottom-0 left-0 right-0 p-4 border-t ${darkMode ? 'border-cyan-500/20 bg-slate-950/50' : 'border-cyan-500/30 bg-white/50'} ${!sidebarOpen && 'hidden'}`}>
           <button
-            onClick={() => base44.auth.logout()}
+            onClick={() => base44.auth.logout(createPageUrl('Landing'))}
             className={`w-full mb-3 flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-all ${
               darkMode 
                 ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' 
