@@ -88,9 +88,9 @@ export default function Layout({ children, currentPageName }) {
             </div>
             <div>
               <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
-                TradeHybrid
+                Hybrid Journal
               </h1>
-              <p className={`text-xs ${darkMode ? 'text-cyan-400/70' : 'text-cyan-600/70'}`}>Cyberpunk Edition</p>
+              <p className={`text-xs ${darkMode ? 'text-cyan-400/70' : 'text-cyan-600/70'}`}>Trading Platform</p>
             </div>
           </div>
         </div>
