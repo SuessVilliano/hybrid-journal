@@ -13,6 +13,7 @@ import RiskManagement from './pages/RiskManagement';
 import TradingSummaries from './pages/TradingSummaries';
 import PublicDashboard from './pages/PublicDashboard';
 import Accounts from './pages/Accounts';
+import Landing from './pages/Landing';
 import __Layout from './Layout.jsx';
 
 
@@ -32,6 +33,7 @@ export const PAGES = {
     "TradingSummaries": TradingSummaries,
     "PublicDashboard": PublicDashboard,
     "Accounts": Accounts,
+    "Landing": Landing,
 }
 
 export const pagesConfig = {

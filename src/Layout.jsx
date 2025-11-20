@@ -4,6 +4,10 @@ import { createPageUrl } from './utils';
 import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText, Menu, X, Wallet, Sun, Moon } from 'lucide-react';
 
 export default function Layout({ children, currentPageName }) {
+  // Don't render layout for Landing page
+  if (currentPageName === 'Landing') {
+    return children;
+  }
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
