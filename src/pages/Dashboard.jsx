@@ -4,17 +4,19 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, TrendingDown, Activity, DollarSign, Target, Calendar, Share2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity, DollarSign, Target, Calendar, Share2, Brain } from 'lucide-react';
 import EquityCurve from '@/components/trading/EquityCurve';
 import TradeCalendar from '@/components/trading/TradeCalendar';
 import PerformanceMetrics from '@/components/trading/PerformanceMetrics';
 import RecentTrades from '@/components/trading/RecentTrades';
 import ExportMenu from '@/components/sharing/ExportMenu';
 import ShareModal from '@/components/sharing/ShareModal';
+import AITradeAnalysis from '@/components/analytics/AITradeAnalysis';
 
 export default function Dashboard() {
   const [timeframe, setTimeframe] = useState('all');
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showAIAnalysis, setShowAIAnalysis] = useState(false);
   const [selectedAccounts, setSelectedAccounts] = useState([]);
   
   const { data: allTrades = [], isLoading } = useQuery({
@@ -92,6 +94,15 @@ export default function Dashboard() {
             <p className={darkMode ? 'text-cyan-400/70 mt-1' : 'text-cyan-700/70 mt-1'}>Track your performance and grow consistently</p>
           </div>
           <div className="flex flex-wrap gap-3">
+            {stats && trades.length > 0 && (
+              <Button 
+                onClick={() => setShowAIAnalysis(true)} 
+                className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700"
+              >
+                <Brain className="h-4 w-4 mr-2" />
+                AI Analysis
+              </Button>
+            )}
             {stats && <ExportMenu trades={trades} stats={stats} />}
             <Button onClick={() => setShowShareModal(true)} variant="outline" className={`border-cyan-500/30 ${darkMode ? 'text-cyan-400 hover:bg-cyan-500/10' : 'text-cyan-700 hover:bg-cyan-100'}`}>
               <Share2 className="h-4 w-4 mr-2" />
@@ -268,6 +279,9 @@ export default function Dashboard() {
 
         {/* Share Modal */}
         {showShareModal && <ShareModal onClose={() => setShowShareModal(false)} />}
+
+        {/* AI Analysis Modal */}
+        {showAIAnalysis && <AITradeAnalysis trades={trades} onClose={() => setShowAIAnalysis(false)} />}
       </div>
     </div>
   );
