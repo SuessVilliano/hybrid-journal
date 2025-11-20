@@ -11,9 +11,15 @@ export default function LivePriceTicker({ symbols, onSymbolClick }) {
 
   const loadPrices = async () => {
     setLoading(true);
-    const data = await fetchLiveMarketData(symbols);
-    setPrices(data);
-    setLastUpdate(new Date());
+    try {
+      const data = await fetchLiveMarketData(symbols);
+      if (data && data.length > 0) {
+        setPrices(data);
+        setLastUpdate(new Date());
+      }
+    } catch (error) {
+      console.error('Error loading prices:', error);
+    }
     setLoading(false);
   };
 
@@ -64,10 +70,10 @@ export default function LivePriceTicker({ symbols, onSymbolClick }) {
             <CardContent className="p-4">
               <div className="flex justify-between items-start mb-2">
                 <div>
-                  <div className="font-bold text-slate-900">{item.symbol}</div>
-                  <div className="text-xs text-slate-500">
-                    Bid: {item.bid?.toFixed(5)} | Ask: {item.ask?.toFixed(5)}
-                  </div>
+                 <div className="font-bold text-slate-900">{item.symbol}</div>
+                 <div className="text-xs text-slate-500">
+                   Bid: {item.bid ? item.bid.toFixed(5) : 'N/A'} | Ask: {item.ask ? item.ask.toFixed(5) : 'N/A'}
+                 </div>
                 </div>
                 {item.changePercent >= 0 ? (
                   <TrendingUp className="h-5 w-5 text-green-500" />
@@ -77,17 +83,17 @@ export default function LivePriceTicker({ symbols, onSymbolClick }) {
               </div>
               
               <div className="text-2xl font-bold text-slate-900 mb-1">
-                {item.price?.toFixed(5)}
+                {item.price ? item.price.toFixed(5) : 'Loading...'}
               </div>
               
               <div className={`text-sm font-medium ${item.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {item.changePercent >= 0 ? '+' : ''}{item.changePercent?.toFixed(2)}%
+                {item.changePercent !== undefined ? `${item.changePercent >= 0 ? '+' : ''}${item.changePercent.toFixed(2)}%` : '+%'}
               </div>
               
               <div className="mt-2 pt-2 border-t border-slate-200 text-xs text-slate-600">
                 <div className="flex justify-between">
-                  <span>H: {item.high24h?.toFixed(5)}</span>
-                  <span>L: {item.low24h?.toFixed(5)}</span>
+                  <span>H: {item.high24h ? item.high24h.toFixed(5) : ''}</span>
+                  <span>L: {item.low24h ? item.low24h.toFixed(5) : ''}</span>
                 </div>
               </div>
             </CardContent>

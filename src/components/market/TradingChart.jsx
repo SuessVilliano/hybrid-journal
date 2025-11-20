@@ -19,30 +19,36 @@ export default function TradingChart({ symbol, onTrade }) {
 
   const loadChartData = async () => {
     setLoading(true);
-    const data = await fetchChartData(symbol, timeframe, 100);
-    
-    // Calculate indicators
-    const indicatorConfig = {};
-    if (indicators.sma) indicatorConfig.sma = { period: 20 };
-    if (indicators.ema) indicatorConfig.ema = { period: 12 };
-    if (indicators.rsi) indicatorConfig.rsi = { period: 14 };
-    if (indicators.bollinger) indicatorConfig.bollinger = { period: 20 };
-    
-    const calculatedIndicators = calculateIndicators(data, indicatorConfig);
-    
-    // Merge data with indicators
-    const enrichedData = data.map((candle, idx) => ({
-      ...candle,
-      time: new Date(candle.timestamp).toLocaleTimeString(),
-      sma: calculatedIndicators.sma?.[idx],
-      ema: calculatedIndicators.ema?.[idx],
-      rsi: calculatedIndicators.rsi?.[idx],
-      bb_upper: calculatedIndicators.bollinger?.upper[idx],
-      bb_middle: calculatedIndicators.bollinger?.middle[idx],
-      bb_lower: calculatedIndicators.bollinger?.lower[idx]
-    }));
-    
-    setChartData(enrichedData);
+    try {
+      const data = await fetchChartData(symbol, timeframe, 100);
+      
+      if (data && data.length > 0) {
+        // Calculate indicators
+        const indicatorConfig = {};
+        if (indicators.sma) indicatorConfig.sma = { period: 20 };
+        if (indicators.ema) indicatorConfig.ema = { period: 12 };
+        if (indicators.rsi) indicatorConfig.rsi = { period: 14 };
+        if (indicators.bollinger) indicatorConfig.bollinger = { period: 20 };
+        
+        const calculatedIndicators = calculateIndicators(data, indicatorConfig);
+        
+        // Merge data with indicators
+        const enrichedData = data.map((candle, idx) => ({
+          ...candle,
+          time: new Date(candle.timestamp).toLocaleTimeString(),
+          sma: calculatedIndicators.sma?.[idx],
+          ema: calculatedIndicators.ema?.[idx],
+          rsi: calculatedIndicators.rsi?.[idx],
+          bb_upper: calculatedIndicators.bollinger?.upper[idx],
+          bb_middle: calculatedIndicators.bollinger?.middle[idx],
+          bb_lower: calculatedIndicators.bollinger?.lower[idx]
+        }));
+        
+        setChartData(enrichedData);
+      }
+    } catch (error) {
+      console.error('Error loading chart data:', error);
+    }
     setLoading(false);
   };
 
