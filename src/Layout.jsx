@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { base44 } from '@/api/base44Client';
-import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText, Menu, X, Wallet, Sun, Moon, Home, Users, User, Brain, GripVertical } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText, Menu, X, Wallet, Sun, Moon, Home, Users, User, Brain, GripVertical, Star, Clock, List } from 'lucide-react';
 import FloatingAIAssistant from '@/components/ai/FloatingAIAssistant';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
@@ -20,6 +20,10 @@ export default function Layout({ children, currentPageName }) {
   });
   const [menuOrder, setMenuOrder] = useState([]);
   const [loadingMenu, setLoadingMenu] = useState(true);
+  const [favorites, setFavorites] = useState([]);
+  const [recentPages, setRecentPages] = useState([]);
+  const [menuView, setMenuView] = useState('all');
+  const [settingsId, setSettingsId] = useState(null);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -43,8 +47,13 @@ export default function Layout({ children, currentPageName }) {
     const loadMenuOrder = async () => {
       try {
         const settings = await base44.entities.DashboardSettings.list();
-        if (settings.length > 0 && settings[0].menu_order) {
-          setMenuOrder(settings[0].menu_order);
+        if (settings.length > 0) {
+          const s = settings[0];
+          setSettingsId(s.id);
+          setMenuOrder(s.menu_order || defaultNavigation.map(item => item.id));
+          setFavorites(s.favorites || []);
+          setRecentPages(s.recent_pages || []);
+          setMenuView(s.menu_view || 'all');
         } else {
           setMenuOrder(defaultNavigation.map(item => item.id));
         }
@@ -56,6 +65,31 @@ export default function Layout({ children, currentPageName }) {
     };
     loadMenuOrder();
   }, []);
+
+  useEffect(() => {
+    if (currentPageName && currentPageName !== 'Landing' && settingsId) {
+      const updateRecent = async () => {
+        const item = defaultNavigation.find(i => i.page === currentPageName);
+        if (!item) return;
+
+        const newRecent = [
+          { id: item.id, timestamp: Date.now() },
+          ...recentPages.filter(r => r.id !== item.id)
+        ].slice(0, 5);
+
+        setRecentPages(newRecent);
+
+        try {
+          await base44.entities.DashboardSettings.update(settingsId, {
+            recent_pages: newRecent
+          });
+        } catch (error) {
+          console.error('Failed to update recent pages:', error);
+        }
+      };
+      updateRecent();
+    }
+  }, [currentPageName]);
 
   const handleDragEnd = async (result) => {
     if (!result.destination) return;
@@ -103,9 +137,48 @@ export default function Layout({ children, currentPageName }) {
     { id: 'imports', name: 'Imports', page: 'Imports', icon: Upload },
   ];
 
-  const navigation = menuOrder.length > 0 
+  const allNavigation = menuOrder.length > 0 
     ? menuOrder.map(id => defaultNavigation.find(item => item.id === id)).filter(Boolean)
     : defaultNavigation;
+
+  const navigation = menuView === 'favorites' 
+    ? allNavigation.filter(item => favorites.includes(item.id))
+    : menuView === 'recent'
+    ? recentPages.map(r => allNavigation.find(item => item.id === r.id)).filter(Boolean)
+    : allNavigation;
+
+  const toggleFavorite = async (itemId) => {
+    const newFavorites = favorites.includes(itemId)
+      ? favorites.filter(id => id !== itemId)
+      : [...favorites, itemId];
+
+    setFavorites(newFavorites);
+
+    try {
+      if (settingsId) {
+        await base44.entities.DashboardSettings.update(settingsId, { favorites: newFavorites });
+      } else {
+        const created = await base44.entities.DashboardSettings.create({ 
+          favorites: newFavorites,
+          menu_order: menuOrder
+        });
+        setSettingsId(created.id);
+      }
+    } catch (error) {
+      console.error('Failed to update favorites:', error);
+    }
+  };
+
+  const switchView = async (view) => {
+    setMenuView(view);
+    try {
+      if (settingsId) {
+        await base44.entities.DashboardSettings.update(settingsId, { menu_view: view });
+      }
+    } catch (error) {
+      console.error('Failed to update menu view:', error);
+    }
+  };
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${
@@ -156,12 +229,50 @@ export default function Layout({ children, currentPageName }) {
           </div>
         </div>
 
+        {sidebarOpen && (
+          <div className={`px-4 pt-4 pb-2 flex items-center gap-2 border-b ${darkMode ? 'border-cyan-500/20' : 'border-cyan-500/30'}`}>
+            <button
+              onClick={() => switchView('all')}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                menuView === 'all'
+                  ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white'
+                  : darkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <List className="h-3 w-3" />
+              All
+            </button>
+            <button
+              onClick={() => switchView('favorites')}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                menuView === 'favorites'
+                  ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white'
+                  : darkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <Star className="h-3 w-3" />
+              Favorites
+            </button>
+            <button
+              onClick={() => switchView('recent')}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                menuView === 'recent'
+                  ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white'
+                  : darkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <Clock className="h-3 w-3" />
+              Recent
+            </button>
+          </div>
+        )}
+
         <DragDropContext onDragEnd={handleDragEnd}>
           <Droppable droppableId="navigation">
             {(provided) => (
               <nav 
                 className="p-4 space-y-2 overflow-y-auto" 
-                style={{ maxHeight: 'calc(100vh - 350px)' }}
+                style={{ maxHeight: 'calc(100vh - 400px)' }}
                 {...provided.droppableProps}
                 ref={provided.innerRef}
               >
@@ -188,14 +299,25 @@ export default function Layout({ children, currentPageName }) {
                                 className="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group relative overflow-hidden bg-gradient-to-r from-green-500/20 to-emerald-600/20 border border-green-500/30 hover:from-green-500/30 hover:to-emerald-600/30"
                                 title={!sidebarOpen ? item.name : ''}
                               >
-                                {sidebarOpen && (
+                                {sidebarOpen && menuView === 'all' && (
                                   <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
                                     <GripVertical className="h-4 w-4 text-green-400/50" />
                                   </div>
                                 )}
                                 <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-emerald-600/10 animate-pulse" />
                                 <Icon className="h-5 w-5 relative z-10 text-green-400 drop-shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
-                                {sidebarOpen && <span className="font-medium relative z-10 text-green-400">{item.name}</span>}
+                                {sidebarOpen && <span className="font-medium relative z-10 text-green-400 flex-1">{item.name}</span>}
+                                {sidebarOpen && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      toggleFavorite(item.id);
+                                    }}
+                                    className="relative z-10"
+                                  >
+                                    <Star className={`h-4 w-4 ${favorites.includes(item.id) ? 'fill-yellow-400 text-yellow-400' : 'text-slate-400'}`} />
+                                  </button>
+                                )}
                               </a>
                             ) : (
                               <Link
@@ -211,7 +333,7 @@ export default function Layout({ children, currentPageName }) {
                                 `}
                                 title={!sidebarOpen ? item.name : ''}
                               >
-                                {sidebarOpen && (
+                                {sidebarOpen && menuView === 'all' && (
                                   <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
                                     <GripVertical className={`h-4 w-4 ${isActive ? 'text-cyan-400/50' : 'text-slate-400/50'}`} />
                                   </div>
@@ -220,7 +342,18 @@ export default function Layout({ children, currentPageName }) {
                                   <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-purple-600/10 animate-pulse" />
                                 )}
                                 <Icon className={`h-5 w-5 relative z-10 ${isActive && 'drop-shadow-[0_0_8px_rgba(0,240,255,0.8)]'}`} />
-                                {sidebarOpen && <span className="font-medium relative z-10">{item.name}</span>}
+                                {sidebarOpen && <span className="font-medium relative z-10 flex-1">{item.name}</span>}
+                                {sidebarOpen && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      toggleFavorite(item.id);
+                                    }}
+                                    className="relative z-10"
+                                  >
+                                    <Star className={`h-4 w-4 ${favorites.includes(item.id) ? 'fill-yellow-400 text-yellow-400' : 'text-slate-400'}`} />
+                                  </button>
+                                )}
                               </Link>
                             )}
                           </div>
