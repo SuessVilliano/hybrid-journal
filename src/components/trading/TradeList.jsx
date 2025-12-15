@@ -24,8 +24,8 @@ export default function TradeList({ trades, onEdit, onDelete }) {
                   </div>
                 )}
                 <div>
-                  <div className="font-bold text-slate-900">{trade.symbol}</div>
-                  <div className="text-xs text-slate-500">{trade.platform}</div>
+                  <div className={`font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>{trade.symbol}</div>
+                  <div className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>{trade.platform}</div>
                 </div>
               </div>
 
@@ -94,7 +94,7 @@ export default function TradeList({ trades, onEdit, onDelete }) {
 
           {/* Notes Preview (Mobile) */}
           {trade.notes && (
-            <div className="mt-3 text-sm text-slate-600 line-clamp-2">
+            <div className={`mt-3 text-sm line-clamp-2 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
               {trade.notes}
             </div>
           )}
