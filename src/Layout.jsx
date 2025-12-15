@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { base44 } from '@/api/base44Client';
-import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText, Menu, X, Wallet, Sun, Moon, Home, Users, User, Brain } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText, Menu, X, Wallet, Sun, Moon, Home, Users, User, Brain, GripVertical } from 'lucide-react';
 import FloatingAIAssistant from '@/components/ai/FloatingAIAssistant';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 export default function Layout({ children, currentPageName }) {
   // Don't render layout for Landing page
@@ -17,6 +18,8 @@ export default function Layout({ children, currentPageName }) {
     const saved = localStorage.getItem('theme');
     return saved ? saved === 'dark' : true;
   });
+  const [menuOrder, setMenuOrder] = useState([]);
+  const [loadingMenu, setLoadingMenu] = useState(true);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -36,26 +39,73 @@ export default function Layout({ children, currentPageName }) {
     document.documentElement.classList.toggle('dark', darkMode);
   }, [darkMode]);
 
-  const navigation = [
-    { name: 'Home', page: 'Landing', icon: Home },
-    { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard },
-    { name: 'Get Funded', external: 'https://hybridfunding.co', icon: TrendingUp },
-    { name: 'Community', page: 'SocialFeed', icon: Users },
-    { name: 'My Profile', page: 'MyProfile', icon: User },
-    { name: 'Accounts', page: 'Accounts', icon: Wallet },
-    { name: 'Live Market', page: 'MarketData', icon: TrendingUp },
-    { name: 'Trades', page: 'Trades', icon: BookOpen },
-    { name: 'Summaries', page: 'TradingSummaries', icon: FileText },
-    { name: 'AI Coach', page: 'TradingCoach', icon: MessageSquare },
-    { name: 'Risk Manager', page: 'RiskManagement', icon: Shield },
-    { name: 'Broker Sync', page: 'BrokerConnections', icon: LinkIcon },
-    { name: 'Automation', page: 'Automation', icon: Bot },
-    { name: 'Strategies', page: 'Strategies', icon: Layers },
-    { name: 'Goals', page: 'Goals', icon: Target },
-    { name: 'Analytics', page: 'Analytics', icon: BarChart3 },
-    { name: 'Backtesting', page: 'Backtesting', icon: Play },
-    { name: 'Imports', page: 'Imports', icon: Upload },
+  useEffect(() => {
+    const loadMenuOrder = async () => {
+      try {
+        const settings = await base44.entities.DashboardSettings.list();
+        if (settings.length > 0 && settings[0].menu_order) {
+          setMenuOrder(settings[0].menu_order);
+        } else {
+          setMenuOrder(defaultNavigation.map(item => item.id));
+        }
+      } catch (error) {
+        setMenuOrder(defaultNavigation.map(item => item.id));
+      } finally {
+        setLoadingMenu(false);
+      }
+    };
+    loadMenuOrder();
+  }, []);
+
+  const handleDragEnd = async (result) => {
+    if (!result.destination) return;
+
+    const items = Array.from(menuOrder);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    setMenuOrder(items);
+
+    try {
+      const settings = await base44.entities.DashboardSettings.list();
+      if (settings.length > 0) {
+        await base44.entities.DashboardSettings.update(settings[0].id, {
+          menu_order: items
+        });
+      } else {
+        await base44.entities.DashboardSettings.create({
+          menu_order: items
+        });
+      }
+    } catch (error) {
+      console.error('Failed to save menu order:', error);
+    }
+  };
+
+  const defaultNavigation = [
+    { id: 'home', name: 'Home', page: 'Landing', icon: Home },
+    { id: 'dashboard', name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard },
+    { id: 'funded', name: 'Get Funded', external: 'https://hybridfunding.co', icon: TrendingUp },
+    { id: 'community', name: 'Community', page: 'SocialFeed', icon: Users },
+    { id: 'profile', name: 'My Profile', page: 'MyProfile', icon: User },
+    { id: 'accounts', name: 'Accounts', page: 'Accounts', icon: Wallet },
+    { id: 'market', name: 'Live Market', page: 'MarketData', icon: TrendingUp },
+    { id: 'trades', name: 'Trades', page: 'Trades', icon: BookOpen },
+    { id: 'summaries', name: 'Summaries', page: 'TradingSummaries', icon: FileText },
+    { id: 'coach', name: 'AI Coach', page: 'TradingCoach', icon: MessageSquare },
+    { id: 'risk', name: 'Risk Manager', page: 'RiskManagement', icon: Shield },
+    { id: 'broker', name: 'Broker Sync', page: 'BrokerConnections', icon: LinkIcon },
+    { id: 'automation', name: 'Automation', page: 'Automation', icon: Bot },
+    { id: 'strategies', name: 'Strategies', page: 'Strategies', icon: Layers },
+    { id: 'goals', name: 'Goals', page: 'Goals', icon: Target },
+    { id: 'analytics', name: 'Analytics', page: 'Analytics', icon: BarChart3 },
+    { id: 'backtesting', name: 'Backtesting', page: 'Backtesting', icon: Play },
+    { id: 'imports', name: 'Imports', page: 'Imports', icon: Upload },
   ];
+
+  const navigation = menuOrder.length > 0 
+    ? menuOrder.map(id => defaultNavigation.find(item => item.id === id)).filter(Boolean)
+    : defaultNavigation;
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${
@@ -106,52 +156,84 @@ export default function Layout({ children, currentPageName }) {
           </div>
         </div>
 
-        <nav className="p-4 space-y-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 350px)' }}>
-          {navigation.map((item) => {
-            const Icon = item.icon;
-            const isActive = currentPageName === item.page;
-
-            if (item.external) {
-              return (
-                <a
-                  key={item.name}
-                  href={item.external}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group relative overflow-hidden bg-gradient-to-r from-green-500/20 to-emerald-600/20 border border-green-500/30 hover:from-green-500/30 hover:to-emerald-600/30"
-                  title={!sidebarOpen ? item.name : ''}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-emerald-600/10 animate-pulse" />
-                  <Icon className="h-5 w-5 relative z-10 text-green-400 drop-shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
-                  {sidebarOpen && <span className="font-medium relative z-10 text-green-400">{item.name}</span>}
-                </a>
-              );
-            }
-
-            return (
-              <Link
-                key={item.page}
-                to={createPageUrl(item.page)}
-                className={`
-                  flex items-center gap-3 px-4 py-3 rounded-lg transition-all group relative overflow-hidden
-                  ${isActive 
-                    ? 'bg-gradient-to-r from-cyan-500/20 to-purple-600/20 text-cyan-600 shadow-lg shadow-cyan-500/20 border border-cyan-500/30' 
-                    : darkMode 
-                      ? 'text-slate-300 hover:bg-slate-800/50 hover:text-cyan-400 border border-transparent'
-                      : 'text-slate-600 hover:bg-cyan-50 hover:text-cyan-600 border border-transparent'
-                  }
-                `}
-                title={!sidebarOpen ? item.name : ''}
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="navigation">
+            {(provided) => (
+              <nav 
+                className="p-4 space-y-2 overflow-y-auto" 
+                style={{ maxHeight: 'calc(100vh - 350px)' }}
+                {...provided.droppableProps}
+                ref={provided.innerRef}
               >
-                {isActive && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-purple-600/10 animate-pulse" />
+                {loadingMenu ? (
+                  <div className="text-center py-8 text-slate-400">Loading menu...</div>
+                ) : (
+                  navigation.map((item, index) => {
+                    const Icon = item.icon;
+                    const isActive = currentPageName === item.page;
+
+                    return (
+                      <Draggable key={item.id} draggableId={item.id} index={index}>
+                        {(provided, snapshot) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            className={snapshot.isDragging ? 'opacity-50' : ''}
+                          >
+                            {item.external ? (
+                              <a
+                                href={item.external}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group relative overflow-hidden bg-gradient-to-r from-green-500/20 to-emerald-600/20 border border-green-500/30 hover:from-green-500/30 hover:to-emerald-600/30"
+                                title={!sidebarOpen ? item.name : ''}
+                              >
+                                {sidebarOpen && (
+                                  <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
+                                    <GripVertical className="h-4 w-4 text-green-400/50" />
+                                  </div>
+                                )}
+                                <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-emerald-600/10 animate-pulse" />
+                                <Icon className="h-5 w-5 relative z-10 text-green-400 drop-shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
+                                {sidebarOpen && <span className="font-medium relative z-10 text-green-400">{item.name}</span>}
+                              </a>
+                            ) : (
+                              <Link
+                                to={createPageUrl(item.page)}
+                                className={`
+                                  flex items-center gap-3 px-4 py-3 rounded-lg transition-all group relative overflow-hidden
+                                  ${isActive 
+                                    ? 'bg-gradient-to-r from-cyan-500/20 to-purple-600/20 text-cyan-600 shadow-lg shadow-cyan-500/20 border border-cyan-500/30' 
+                                    : darkMode 
+                                      ? 'text-slate-300 hover:bg-slate-800/50 hover:text-cyan-400 border border-transparent'
+                                      : 'text-slate-600 hover:bg-cyan-50 hover:text-cyan-600 border border-transparent'
+                                  }
+                                `}
+                                title={!sidebarOpen ? item.name : ''}
+                              >
+                                {sidebarOpen && (
+                                  <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
+                                    <GripVertical className={`h-4 w-4 ${isActive ? 'text-cyan-400/50' : 'text-slate-400/50'}`} />
+                                  </div>
+                                )}
+                                {isActive && (
+                                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-purple-600/10 animate-pulse" />
+                                )}
+                                <Icon className={`h-5 w-5 relative z-10 ${isActive && 'drop-shadow-[0_0_8px_rgba(0,240,255,0.8)]'}`} />
+                                {sidebarOpen && <span className="font-medium relative z-10">{item.name}</span>}
+                              </Link>
+                            )}
+                          </div>
+                        )}
+                      </Draggable>
+                    );
+                  })
                 )}
-                <Icon className={`h-5 w-5 relative z-10 ${isActive && 'drop-shadow-[0_0_8px_rgba(0,240,255,0.8)]'}`} />
-                {sidebarOpen && <span className="font-medium relative z-10">{item.name}</span>}
-              </Link>
-            );
-          })}
-        </nav>
+                {provided.placeholder}
+              </nav>
+            )}
+          </Droppable>
+        </DragDropContext>
 
         <div className={`absolute bottom-0 left-0 right-0 p-4 border-t ${darkMode ? 'border-cyan-500/20 bg-slate-950/50' : 'border-cyan-500/30 bg-white/50'} ${!sidebarOpen && 'hidden'}`}>
           <button
