@@ -85,6 +85,8 @@ export default function ImportModal({ onClose }) {
             message: `Importing trades... ${i + 1}/${parsedTrades.length}`,
             progress: ((i + 1) / parsedTrades.length) * 100
           });
+          // Invalidate queries during import to update UI in real-time
+          queryClient.invalidateQueries({ queryKey: ['trades'] });
         }
       }
 
@@ -103,8 +105,9 @@ export default function ImportModal({ onClose }) {
         trades: imported
       });
 
-      queryClient.invalidateQueries(['trades']);
-      queryClient.invalidateQueries(['imports']);
+      // Final invalidation to ensure all pages sync
+      queryClient.invalidateQueries({ queryKey: ['trades'] });
+      queryClient.invalidateQueries({ queryKey: ['imports'] });
 
     } catch (error) {
       console.error('Import error:', error);
@@ -120,7 +123,7 @@ export default function ImportModal({ onClose }) {
 
   const handleClose = () => {
     if (importResult?.status === 'complete') {
-      queryClient.invalidateQueries(['trades']);
+      queryClient.invalidateQueries({ queryKey: ['trades'] });
     }
     onClose();
   };
