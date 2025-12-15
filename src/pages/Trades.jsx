@@ -131,9 +131,9 @@ export default function Trades() {
     if (searchQuery && !trade.symbol?.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false;
     }
-    if (filters.platform && filters.platform !== 'all' && trade.platform !== filters.platform) return false;
-    if (filters.instrument_type && filters.instrument_type !== 'all' && trade.instrument_type !== filters.instrument_type) return false;
-    if (filters.side && filters.side !== 'all' && trade.side !== filters.side) return false;
+    if (filters.platform && trade.platform !== filters.platform) return false;
+    if (filters.instrument_type && trade.instrument_type !== filters.instrument_type) return false;
+    if (filters.side && trade.side !== filters.side) return false;
     return true;
   });
 
