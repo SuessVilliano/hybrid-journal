@@ -9,14 +9,20 @@ import { SUPPORTED_BROKERS, validateBrokerCredentials } from './brokerAPIHelper'
 
 export default function BrokerConnectionForm({ connection, onSubmit, onCancel }) {
   const [formData, setFormData] = useState(connection || {
-    broker_id: 'mt4',
-    broker_name: 'MetaTrader 4',
+    broker_id: 'dxtrade',
+    broker_name: 'DXTrade',
     account_number: '',
+    connection_type: 'credentials',
+    username: '',
+    password: '',
+    platform_username: '',
+    platform_url: '',
     api_key: '',
     api_secret: '',
     server: '',
-    auto_sync: true,
-    sync_interval: 3600
+    auto_sync: false,
+    sync_interval: 3600,
+    notes: ''
   });
 
   const [validating, setValidating] = useState(false);
@@ -61,7 +67,7 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
     e.preventDefault();
     onSubmit({
       ...formData,
-      status: validationResult?.valid ? 'connected' : 'pending'
+      status: formData.connection_type === 'credentials' ? 'manual' : (validationResult?.valid ? 'connected' : 'pending')
     });
   };
 
@@ -122,71 +128,161 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
               />
             </div>
 
-            {/* API Credentials */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  API Key *
-                </label>
-                <Input
-                  type="password"
-                  value={formData.api_key}
-                  onChange={(e) => setFormData({...formData, api_key: e.target.value})}
-                  placeholder="Your API key"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  API Secret *
-                </label>
-                <Input
-                  type="password"
-                  value={formData.api_secret}
-                  onChange={(e) => setFormData({...formData, api_secret: e.target.value})}
-                  placeholder="Your API secret"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Server/Endpoint */}
+            {/* Connection Type */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
-                Server/Endpoint
+                Connection Type *
+              </label>
+              <Select 
+                value={formData.connection_type} 
+                onValueChange={(val) => setFormData({...formData, connection_type: val})}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="credentials">Username & Password (Prop Firms)</SelectItem>
+                  <SelectItem value="api">API Keys</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {formData.connection_type === 'credentials' ? (
+              <>
+                {/* Platform Credentials */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Login *
+                  </label>
+                  <Input
+                    value={formData.username}
+                    onChange={(e) => setFormData({...formData, username: e.target.value})}
+                    placeholder="693115"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Password *
+                  </label>
+                  <Input
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({...formData, password: e.target.value})}
+                    placeholder="Your password"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Platform Username
+                  </label>
+                  <Input
+                    value={formData.platform_username}
+                    onChange={(e) => setFormData({...formData, platform_username: e.target.value})}
+                    placeholder="hyfu_C00008"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Platform URL/Link *
+                  </label>
+                  <Input
+                    value={formData.platform_url}
+                    onChange={(e) => setFormData({...formData, platform_url: e.target.value})}
+                    placeholder="https://trade.gooeytrade.com/"
+                  />
+                </div>
+
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p className="text-sm text-amber-800">
+                    ℹ️ <strong>Manual Import Only:</strong> Username/password credentials cannot be used for automatic syncing. 
+                    Export your statements from the platform and use the Import feature to add trades.
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* API Credentials */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      API Key *
+                    </label>
+                    <Input
+                      type="password"
+                      value={formData.api_key}
+                      onChange={(e) => setFormData({...formData, api_key: e.target.value})}
+                      placeholder="Your API key"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      API Secret *
+                    </label>
+                    <Input
+                      type="password"
+                      value={formData.api_secret}
+                      onChange={(e) => setFormData({...formData, api_secret: e.target.value})}
+                      placeholder="Your API secret"
+                    />
+                  </div>
+                </div>
+
+                {/* Server/Endpoint */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Server/Endpoint
+                  </label>
+                  <Input
+                    value={formData.server}
+                    onChange={(e) => setFormData({...formData, server: e.target.value})}
+                    placeholder="e.g., demo.server.com:443"
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Notes */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Notes
               </label>
               <Input
-                value={formData.server}
-                onChange={(e) => setFormData({...formData, server: e.target.value})}
-                placeholder="e.g., demo.server.com:443"
+                value={formData.notes}
+                onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                placeholder="Any additional notes or instructions"
               />
             </div>
 
-            {/* Auto Sync Settings */}
-            <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={formData.auto_sync}
-                  onChange={(e) => setFormData({...formData, auto_sync: e.target.checked})}
-                  className="w-4 h-4"
-                />
-                <span className="text-sm text-slate-700">Enable auto-sync</span>
-              </label>
-              {formData.auto_sync && (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-slate-600">Every</span>
-                  <Input
-                    type="number"
-                    value={formData.sync_interval / 60}
-                    onChange={(e) => setFormData({...formData, sync_interval: parseInt(e.target.value) * 60})}
-                    className="w-20"
-                    min="5"
+            {/* Auto Sync Settings - Only for API connections */}
+            {formData.connection_type === 'api' && (
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.auto_sync}
+                    onChange={(e) => setFormData({...formData, auto_sync: e.target.checked})}
+                    className="w-4 h-4"
                   />
-                  <span className="text-sm text-slate-600">minutes</span>
-                </div>
-              )}
-            </div>
+                  <span className="text-sm text-slate-700">Enable auto-sync</span>
+                </label>
+                {formData.auto_sync && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-slate-600">Every</span>
+                    <Input
+                      type="number"
+                      value={formData.sync_interval / 60}
+                      onChange={(e) => setFormData({...formData, sync_interval: parseInt(e.target.value) * 60})}
+                      className="w-20"
+                      min="5"
+                    />
+                    <span className="text-sm text-slate-600">minutes</span>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Validation Status */}
             {validationResult && (
@@ -219,37 +315,49 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
             )}
 
             {/* Info Box */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <p className="text-sm text-blue-800">
-                🔒 Your API credentials are encrypted and stored securely. 
-                We recommend using read-only API keys with trading permissions disabled for maximum security.
-              </p>
-            </div>
+            {formData.connection_type === 'api' && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  🔒 Your API credentials are encrypted and stored securely. 
+                  We recommend using read-only API keys with trading permissions disabled for maximum security.
+                </p>
+              </div>
+            )}
+            {formData.connection_type === 'credentials' && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  🔒 Your credentials are encrypted and stored securely for your reference. 
+                  To sync trades, export statements from your platform and use the Import feature on the Trades page.
+                </p>
+              </div>
+            )}
 
             {/* Actions */}
             <div className="flex justify-end gap-3 pt-4">
               <Button type="button" variant="outline" onClick={onCancel}>
                 Cancel
               </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleValidate}
-                disabled={validating || !formData.api_key || !formData.account_number}
-              >
-                {validating ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Validating...
-                  </>
-                ) : (
-                  'Test Connection'
-                )}
-              </Button>
+              {formData.connection_type === 'api' && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleValidate}
+                  disabled={validating || !formData.api_key || !formData.account_number}
+                >
+                  {validating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Validating...
+                    </>
+                  ) : (
+                    'Test Connection'
+                  )}
+                </Button>
+              )}
               <Button
                 type="submit"
                 className="bg-blue-600 hover:bg-blue-700"
-                disabled={!validationResult?.valid}
+                disabled={formData.connection_type === 'api' && !validationResult?.valid}
               >
                 Save Connection
               </Button>
