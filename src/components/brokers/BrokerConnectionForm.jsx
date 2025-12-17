@@ -72,8 +72,8 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <Card className="max-w-2xl w-full">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <Card className="max-w-2xl w-full my-8">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>
             {connection ? 'Edit Broker Connection' : 'Add Broker Connection'}
@@ -157,7 +157,7 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
                   <Input
                     value={formData.username}
                     onChange={(e) => setFormData({...formData, username: e.target.value})}
-                    placeholder="693115"
+                    placeholder="987654"
                   />
                 </div>
 
