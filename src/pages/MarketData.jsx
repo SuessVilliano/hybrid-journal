@@ -18,7 +18,7 @@ export default function MarketData() {
     'BTCUSD',
     'ETHUSD',
     'AAPL',
-    'NQ',
+    'NAS100',
     'ES'
   ]);
   const [newSymbol, setNewSymbol] = useState('');
