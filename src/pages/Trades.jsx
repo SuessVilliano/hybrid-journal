@@ -25,7 +25,10 @@ export default function Trades() {
 
   const { data: trades = [], isLoading } = useQuery({
     queryKey: ['trades'],
-    queryFn: () => base44.entities.Trade.list('-entry_date', 500)
+    queryFn: async () => {
+      const user = await base44.auth.me();
+      return base44.entities.Trade.filter({ created_by: user.email }, '-entry_date', 1000);
+    }
   });
 
   const { data: accounts = [] } = useQuery({

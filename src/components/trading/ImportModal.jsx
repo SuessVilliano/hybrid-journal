@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { X, Upload, FileText, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { parseTradeFile } from '@/components/utils/tradeParsers';
 import ImportResults from './ImportResults';
 
@@ -10,7 +12,13 @@ export default function ImportModal({ onClose }) {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [importResult, setImportResult] = useState(null);
+  const [selectedAccount, setSelectedAccount] = useState(null);
   const queryClient = useQueryClient();
+
+  const { data: accounts = [] } = useQuery({
+    queryKey: ['accounts'],
+    queryFn: () => base44.entities.Account.list()
+  });
 
   const handleFileSelect = (e) => {
     const selectedFile = e.target.files[0];
@@ -22,6 +30,14 @@ export default function ImportModal({ onClose }) {
 
   const handleImport = async () => {
     if (!file) return;
+    if (!selectedAccount) {
+      setImportResult({
+        status: 'error',
+        message: 'Please select an account',
+        errors: [{ error: 'Account selection is required' }]
+      });
+      return;
+    }
 
     setUploading(true);
     
@@ -72,7 +88,10 @@ export default function ImportModal({ onClose }) {
 
       for (let i = 0; i < parsedTrades.length; i++) {
         try {
-          const created = await base44.entities.Trade.create(parsedTrades[i]);
+          const created = await base44.entities.Trade.create({
+            ...parsedTrades[i],
+            account_id: selectedAccount
+          });
           imported.push(created);
         } catch (error) {
           console.error(`Trade ${i} failed:`, error);
@@ -172,6 +191,31 @@ export default function ImportModal({ onClose }) {
             </label>
           </div>
 
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-900 mb-2">
+                Import to Account *
+              </label>
+              <Select value={selectedAccount || ''} onValueChange={setSelectedAccount}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select account..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {accounts.map(acc => (
+                    <SelectItem key={acc.id} value={acc.id}>
+                      {acc.name} {acc.account_type && `(${acc.account_type})`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {accounts.length === 0 && (
+                <p className="text-xs text-amber-600 mt-1">
+                  ⚠️ No accounts found. Create an account first in the Accounts page.
+                </p>
+              )}
+            </div>
+          </div>
+
           <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 border border-blue-200">
             <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-blue-600" />
@@ -242,7 +286,7 @@ export default function ImportModal({ onClose }) {
             {importResult?.status !== 'complete' && (
               <Button 
                 onClick={handleImport} 
-                disabled={!file || uploading}
+                disabled={!file || uploading || !selectedAccount}
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 {uploading ? (

@@ -8,9 +8,23 @@ import { format } from 'date-fns';
 
 export default function TradeList({ trades, onEdit, onDelete, selectedTrades = [], onSelectTrade, onSelectAll, bulkMode }) {
   const darkMode = document.documentElement.classList.contains('dark');
+  const allSelected = trades.length > 0 && selectedTrades.length === trades.length;
   
   return (
     <div className="space-y-3">
+      {bulkMode && trades.length > 0 && (
+        <Card className={`p-4 ${darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}`}>
+          <div className="flex items-center gap-3">
+            <Checkbox
+              checked={allSelected}
+              onCheckedChange={onSelectAll}
+            />
+            <span className={`text-sm font-medium ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+              Select All ({trades.length} trades)
+            </span>
+          </div>
+        </Card>
+      )}
       {trades.map((trade) => (
         <Card key={trade.id} className={`p-4 hover:shadow-md transition-shadow ${
           darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'
