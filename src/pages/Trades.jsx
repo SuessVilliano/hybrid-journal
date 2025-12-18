@@ -23,17 +23,25 @@ export default function Trades() {
 
   const queryClient = useQueryClient();
 
+  const { data: user } = useQuery({
+    queryKey: ['user'],
+    queryFn: () => base44.auth.me()
+  });
+
   const { data: trades = [], isLoading } = useQuery({
-    queryKey: ['trades'],
+    queryKey: ['trades', user?.email],
     queryFn: async () => {
-      const user = await base44.auth.me();
       return base44.entities.Trade.filter({ created_by: user.email }, '-entry_date', 1000);
-    }
+    },
+    enabled: !!user
   });
 
   const { data: accounts = [] } = useQuery({
-    queryKey: ['accounts'],
-    queryFn: () => base44.entities.Account.list()
+    queryKey: ['accounts', user?.email],
+    queryFn: async () => {
+      return base44.entities.Account.filter({ created_by: user.email });
+    },
+    enabled: !!user
   });
 
   const createTradeMutation = useMutation({
