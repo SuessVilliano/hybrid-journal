@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 
 export default function MessageBubble({ message }) {
   const isUser = message.role === 'user';
+  const darkMode = document.documentElement.classList.contains('dark');
   
   const copyCode = (code) => {
     navigator.clipboard.writeText(code);
@@ -27,13 +28,18 @@ export default function MessageBubble({ message }) {
             "rounded-2xl px-4 py-3",
             isUser 
               ? "bg-blue-600 text-white" 
-              : "bg-white border border-slate-200 shadow-sm"
+              : darkMode 
+                ? "bg-slate-800 border border-slate-700 shadow-sm text-slate-100" 
+                : "bg-white border border-slate-200 shadow-sm text-slate-900"
           )}>
             {isUser ? (
               <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
             ) : (
               <ReactMarkdown 
-                className="text-sm prose prose-sm prose-slate max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
+                className={cn(
+                  "text-sm prose prose-sm max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+                  darkMode ? "prose-invert" : "prose-slate"
+                )}
                 components={{
                   code: ({ inline, className, children, ...props }) => {
                     const match = /language-(\w+)/.exec(className || '');
@@ -55,19 +61,22 @@ export default function MessageBubble({ message }) {
                       );
                     }
                     return (
-                      <code className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-800 text-xs font-mono">
+                      <code className={cn(
+                        "px-1.5 py-0.5 rounded text-xs font-mono",
+                        darkMode ? "bg-slate-700 text-cyan-300" : "bg-slate-100 text-slate-800"
+                      )}>
                         {children}
                       </code>
                     );
                   },
-                  p: ({ children }) => <p className="my-2 leading-relaxed">{children}</p>,
+                  p: ({ children }) => <p className={cn("my-2 leading-relaxed", darkMode ? "text-slate-100" : "text-slate-900")}>{children}</p>,
                   ul: ({ children }) => <ul className="my-2 ml-4 list-disc space-y-1">{children}</ul>,
                   ol: ({ children }) => <ol className="my-2 ml-4 list-decimal space-y-1">{children}</ol>,
-                  li: ({ children }) => <li className="text-slate-700">{children}</li>,
-                  h3: ({ children }) => <h3 className="text-base font-bold text-slate-900 mt-3 mb-2">{children}</h3>,
-                  strong: ({ children }) => <strong className="font-semibold text-slate-900">{children}</strong>,
+                  li: ({ children }) => <li className={darkMode ? "text-slate-200" : "text-slate-700"}>{children}</li>,
+                  h3: ({ children }) => <h3 className={cn("text-base font-bold mt-3 mb-2", darkMode ? "text-white" : "text-slate-900")}>{children}</h3>,
+                  strong: ({ children }) => <strong className={cn("font-semibold", darkMode ? "text-white" : "text-slate-900")}>{children}</strong>,
                   blockquote: ({ children }) => (
-                    <blockquote className="border-l-4 border-blue-500 pl-3 my-2 text-slate-600 italic">
+                    <blockquote className={cn("border-l-4 border-blue-500 pl-3 my-2 italic", darkMode ? "text-slate-300" : "text-slate-600")}>
                       {children}
                     </blockquote>
                   ),
@@ -77,12 +86,20 @@ export default function MessageBubble({ message }) {
                     </div>
                   ),
                   th: ({ children }) => (
-                    <th className="border border-slate-300 px-3 py-2 bg-slate-100 font-semibold text-left text-xs">
+                    <th className={cn(
+                      "border px-3 py-2 font-semibold text-left text-xs",
+                      darkMode 
+                        ? "border-slate-600 bg-slate-700 text-white" 
+                        : "border-slate-300 bg-slate-100 text-slate-900"
+                    )}>
                       {children}
                     </th>
                   ),
                   td: ({ children }) => (
-                    <td className="border border-slate-300 px-3 py-2 text-xs">{children}</td>
+                    <td className={cn(
+                      "border px-3 py-2 text-xs",
+                      darkMode ? "border-slate-600 text-slate-200" : "border-slate-300 text-slate-900"
+                    )}>{children}</td>
                   ),
                 }}
               >
@@ -101,16 +118,21 @@ export default function MessageBubble({ message }) {
               return (
                 <div
                   key={idx}
-                  className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 rounded px-2 py-1"
+                  className={cn(
+                    "flex items-center gap-2 text-xs rounded px-2 py-1",
+                    darkMode 
+                      ? "text-slate-300 bg-slate-700" 
+                      : "text-slate-600 bg-slate-50"
+                  )}
                 >
                   {isRunning ? (
                     <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
                   ) : isComplete ? (
                     <CheckCircle2 className="h-3 w-3 text-green-500" />
                   ) : (
-                    <div className="h-3 w-3 rounded-full bg-slate-300" />
+                    <div className={cn("h-3 w-3 rounded-full", darkMode ? "bg-slate-500" : "bg-slate-300")} />
                   )}
-                  <span className="text-slate-700">
+                  <span className={darkMode ? "text-slate-200" : "text-slate-700"}>
                     {toolCall.name?.split('.').pop() || 'Processing'}
                   </span>
                 </div>
