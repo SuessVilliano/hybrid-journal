@@ -9,9 +9,19 @@ export default function TradeCalendar({ trades }) {
   const darkMode = document.documentElement.classList.contains('dark');
 
   const calendarData = useMemo(() => {
-    const monthStart = startOfMonth(currentDate);
-    const monthEnd = endOfMonth(currentDate);
-    const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
+    let days;
+    
+    if (view === 'day') {
+      days = [currentDate];
+    } else if (view === 'week') {
+      const weekStart = startOfWeek(currentDate);
+      const weekEnd = endOfWeek(currentDate);
+      days = eachDayOfInterval({ start: weekStart, end: weekEnd });
+    } else {
+      const monthStart = startOfMonth(currentDate);
+      const monthEnd = endOfMonth(currentDate);
+      days = eachDayOfInterval({ start: monthStart, end: monthEnd });
+    }
 
     return days.map(day => {
       const dayTrades = trades.filter(t => 
@@ -21,11 +31,12 @@ export default function TradeCalendar({ trades }) {
       
       return {
         date: day,
-        trades: dayTrades.length,
+        trades: dayTrades,
+        tradeCount: dayTrades.length,
         pnl: dayPnl
       };
     });
-  }, [trades, currentDate]);
+  }, [trades, currentDate, view]);
 
   const previousMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
