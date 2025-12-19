@@ -196,6 +196,14 @@ export default function Layout({ children, currentPageName }) {
         }
       `}</style>
 
+      {/* Mobile Overlay */}
+      {isMobile && sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Mobile Menu Button */}
       {isMobile && (
         <button
@@ -214,7 +222,8 @@ export default function Layout({ children, currentPageName }) {
             : 'bg-white/95 border-cyan-500/30 text-slate-900'
         } backdrop-blur-xl border-r ${
           sidebarOpen ? 'w-64' : isMobile ? 'w-0' : 'w-16'
-        } overflow-hidden`}
+        } overflow-y-auto overflow-x-hidden`}
+        onClick={(e) => e.stopPropagation()}
       >
         <div className={`p-6 border-b ${darkMode ? 'border-cyan-500/20' : 'border-cyan-500/30'} ${!sidebarOpen && 'hidden'}`}>
           <div className="flex items-center gap-3">
