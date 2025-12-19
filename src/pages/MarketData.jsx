@@ -71,49 +71,30 @@ export default function MarketData() {
           </p>
         </div>
 
-        {/* Action Buttons */}
+        {/* Quick Access Platform Buttons */}
         <div className="flex flex-wrap gap-3">
           <a
             href="https://hybridfunding.co"
             target="_blank"
             rel="noopener noreferrer"
-            className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all shadow-lg flex items-center gap-2 font-medium"
+            className="px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all shadow-lg flex items-center gap-2 font-medium text-sm"
           >
             <TrendingUp className="h-4 w-4" />
             Get Funded
           </a>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button 
-                variant="outline" 
-                className={`flex items-center gap-2 ${
-                  darkMode 
-                    ? 'bg-slate-950/80 border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/10' 
-                    : 'bg-white border-cyan-500/30 text-cyan-700 hover:bg-cyan-50'
-                }`}
-              >
-                <BarChart3 className="h-4 w-4" />
-                Trading Platforms
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className={darkMode ? 'bg-slate-950 border-cyan-500/20' : 'bg-white'}>
-              {platforms.map(platform => (
-                <DropdownMenuItem
-                  key={platform.id}
-                  onClick={() => {
-                    setSelectedPlatform(platform.id);
-                    window.open(platform.url, '_blank');
-                  }}
-                  className="cursor-pointer"
-                >
-                  <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${platform.color} mr-2`} />
-                  {platform.name}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {platforms.map(platform => (
+            <a
+              key={platform.id}
+              href={platform.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`px-4 py-2.5 bg-gradient-to-r ${platform.color} text-white rounded-lg hover:opacity-90 transition-all shadow-lg flex items-center gap-2 font-medium text-sm`}
+            >
+              <BarChart3 className="h-4 w-4" />
+              {platform.name}
+            </a>
+          ))}
         </div>
 
         {/* Main Tabs */}
