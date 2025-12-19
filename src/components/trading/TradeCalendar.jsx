@@ -55,64 +55,188 @@ export default function TradeCalendar({ trades }) {
   };
 
   return (
-    <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <button
-          onClick={previousMonth}
-          className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg"
+    <div className="space-y-4">
+      {/* View Selector */}
+      <div className="flex items-center justify-center gap-2">
+        <Button
+          onClick={() => setView('day')}
+          variant={view === 'day' ? 'default' : 'outline'}
+          size="sm"
+          className={view === 'day' ? 'bg-gradient-to-r from-cyan-500 to-purple-600' : ''}
         >
-          Previous
-        </button>
-        <h3 className="text-lg font-bold text-slate-900">
-          {format(currentDate, 'MMMM yyyy')}
+          Day
+        </Button>
+        <Button
+          onClick={() => setView('week')}
+          variant={view === 'week' ? 'default' : 'outline'}
+          size="sm"
+          className={view === 'week' ? 'bg-gradient-to-r from-cyan-500 to-purple-600' : ''}
+        >
+          Week
+        </Button>
+        <Button
+          onClick={() => setView('month')}
+          variant={view === 'month' ? 'default' : 'outline'}
+          size="sm"
+          className={view === 'month' ? 'bg-gradient-to-r from-cyan-500 to-purple-600' : ''}
+        >
+          Month
+        </Button>
+      </div>
+
+      {/* Navigation Header */}
+      <div className="flex items-center justify-between">
+        <Button
+          onClick={() => navigate('prev')}
+          variant="outline"
+          size="icon"
+          className={darkMode ? 'border-cyan-500/20' : ''}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+          {getHeaderText()}
         </h3>
-        <button
-          onClick={nextMonth}
-          className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg"
+        <Button
+          onClick={() => navigate('next')}
+          variant="outline"
+          size="icon"
+          className={darkMode ? 'border-cyan-500/20' : ''}
         >
-          Next
-        </button>
+          <ChevronRight className="h-4 w-4" />
+        </Button>
       </div>
 
-      {/* Day headers */}
-      <div className="grid grid-cols-7 gap-2 mb-2">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-          <div key={day} className="text-center text-xs font-medium text-slate-500 p-2">
-            {day}
-          </div>
-        ))}
-      </div>
-
-      {/* Calendar grid */}
-      <div className="grid grid-cols-7 gap-2">
-        {calendarData.map((day, idx) => (
-          <div
-            key={idx}
-            className={`
-              aspect-square p-2 rounded-lg border transition-all
-              ${day.trades === 0 
-                ? 'bg-slate-50 border-slate-200' 
-                : day.pnl >= 0 
-                  ? 'bg-green-50 border-green-200 hover:bg-green-100' 
-                  : 'bg-red-50 border-red-200 hover:bg-red-100'
-              }
-            `}
-          >
-            <div className="text-xs font-medium text-slate-900">
-              {format(day.date, 'd')}
-            </div>
-            {day.trades > 0 && (
-              <div className="mt-1">
-                <div className="text-xs text-slate-600">{day.trades} trades</div>
-                <div className={`text-xs font-bold ${day.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {day.pnl >= 0 ? '+' : ''}{day.pnl.toFixed(0)}
-                </div>
+      {/* Day View */}
+      {view === 'day' && calendarData.length > 0 && (
+        <div className={`p-6 rounded-lg border ${
+          darkMode ? 'bg-slate-900 border-cyan-500/20' : 'bg-white border-slate-200'
+        }`}>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <div className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                {calendarData[0].tradeCount} {calendarData[0].tradeCount === 1 ? 'Trade' : 'Trades'}
               </div>
-            )}
+              <div className={`text-2xl font-bold ${
+                calendarData[0].pnl >= 0 ? 'text-green-500' : 'text-red-500'
+              }`}>
+                {calendarData[0].pnl >= 0 ? '+' : ''}${calendarData[0].pnl.toFixed(2)}
+              </div>
+            </div>
           </div>
-        ))}
-      </div>
+          
+          {calendarData[0].trades.length > 0 ? (
+            <div className="space-y-2">
+              {calendarData[0].trades.map((trade, idx) => (
+                <div
+                  key={idx}
+                  className={`p-3 rounded-lg ${
+                    darkMode ? 'bg-slate-800' : 'bg-slate-50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className={`font-medium ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                        {trade.symbol}
+                      </div>
+                      <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                        {format(new Date(trade.entry_date), 'h:mm a')}
+                      </div>
+                    </div>
+                    <div className={`text-lg font-bold ${
+                      trade.pnl >= 0 ? 'text-green-500' : 'text-red-500'
+                    }`}>
+                      {trade.pnl >= 0 ? '+' : ''}${trade.pnl.toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className={`text-center py-8 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+              No trades on this day
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Week View */}
+      {view === 'week' && (
+        <div className="grid grid-cols-7 gap-2">
+          {calendarData.map((day, idx) => (
+            <div
+              key={idx}
+              className={`p-3 rounded-lg border ${
+                day.tradeCount === 0
+                  ? darkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-200'
+                  : day.pnl >= 0
+                    ? darkMode ? 'bg-green-900/30 border-green-700/30' : 'bg-green-50 border-green-200'
+                    : darkMode ? 'bg-red-900/30 border-red-700/30' : 'bg-red-50 border-red-200'
+              }`}
+            >
+              <div className={`text-xs font-medium ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                {format(day.date, 'EEE')}
+              </div>
+              <div className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                {format(day.date, 'd')}
+              </div>
+              {day.tradeCount > 0 && (
+                <div className="mt-2">
+                  <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                    {day.tradeCount} trades
+                  </div>
+                  <div className={`text-sm font-bold ${day.pnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    {day.pnl >= 0 ? '+' : ''}${day.pnl.toFixed(0)}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Month View */}
+      {view === 'month' && (
+        <>
+          <div className="grid grid-cols-7 gap-2 mb-2">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+              <div key={day} className={`text-center text-xs font-medium p-2 ${
+                darkMode ? 'text-slate-400' : 'text-slate-500'
+              }`}>
+                {day}
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-2">
+            {calendarData.map((day, idx) => (
+              <div
+                key={idx}
+                className={`aspect-square p-2 rounded-lg border transition-all cursor-pointer ${
+                  day.tradeCount === 0
+                    ? darkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-200'
+                    : day.pnl >= 0
+                      ? darkMode ? 'bg-green-900/30 border-green-700/30 hover:bg-green-900/50' : 'bg-green-50 border-green-200 hover:bg-green-100'
+                      : darkMode ? 'bg-red-900/30 border-red-700/30 hover:bg-red-900/50' : 'bg-red-50 border-red-200 hover:bg-red-100'
+                }`}
+              >
+                <div className={`text-xs font-medium ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  {format(day.date, 'd')}
+                </div>
+                {day.tradeCount > 0 && (
+                  <div className="mt-1 space-y-0.5">
+                    <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                      {day.tradeCount}
+                    </div>
+                    <div className={`text-xs font-bold ${day.pnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                      {day.pnl >= 0 ? '+' : ''}${day.pnl.toFixed(0)}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
