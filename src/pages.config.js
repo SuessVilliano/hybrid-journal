@@ -16,6 +16,7 @@ import Accounts from './pages/Accounts';
 import Landing from './pages/Landing';
 import SocialFeed from './pages/SocialFeed';
 import MyProfile from './pages/MyProfile';
+import TradingPlatforms from './pages/TradingPlatforms';
 import __Layout from './Layout.jsx';
 
 
@@ -38,6 +39,7 @@ export const PAGES = {
     "Landing": Landing,
     "SocialFeed": SocialFeed,
     "MyProfile": MyProfile,
+    "TradingPlatforms": TradingPlatforms,
 }
 
 export const pagesConfig = {

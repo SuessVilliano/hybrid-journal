@@ -69,6 +69,18 @@ export default function MarketData() {
               <BarChart3 className="h-4 w-4 mr-2" />
               Charts
             </TabsTrigger>
+            <TabsTrigger value="dxtrade" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-500 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
+              DX Trade
+            </TabsTrigger>
+            <TabsTrigger value="matchtrader" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-500 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
+              Match Trader
+            </TabsTrigger>
+            <TabsTrigger value="ctrader" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
+              cTrader
+            </TabsTrigger>
+            <TabsTrigger value="rithmic" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
+              Rithmic
+            </TabsTrigger>
             <TabsTrigger value="heatmaps" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
               <Flame className="h-4 w-4 mr-2" />
               Heatmaps
@@ -86,6 +98,67 @@ export default function MarketData() {
               Calendar
             </TabsTrigger>
           </TabsList>
+
+          {/* Platform Tabs */}
+          <TabsContent value="dxtrade">
+            <ResizableWidget 
+              title="DX Trade Platform"
+              defaultHeight="800px"
+              minHeight={600}
+              maxHeight={1200}
+            >
+              <iframe
+                src="https://trade.gooeytrade.com/"
+                className="w-full h-full rounded-lg"
+                style={{ minHeight: '600px' }}
+              />
+            </ResizableWidget>
+          </TabsContent>
+
+          <TabsContent value="matchtrader">
+            <ResizableWidget 
+              title="Match Trader Platform"
+              defaultHeight="800px"
+              minHeight={600}
+              maxHeight={1200}
+            >
+              <iframe
+                src="https://mtr.gooeytrade.com/login"
+                className="w-full h-full rounded-lg"
+                style={{ minHeight: '600px' }}
+              />
+            </ResizableWidget>
+          </TabsContent>
+
+          <TabsContent value="ctrader">
+            <ResizableWidget 
+              title="cTrader Platform"
+              defaultHeight="800px"
+              minHeight={600}
+              maxHeight={1200}
+            >
+              <iframe
+                src="https://app.gooeytrade.com/"
+                className="w-full h-full rounded-lg"
+                style={{ minHeight: '600px' }}
+              />
+            </ResizableWidget>
+          </TabsContent>
+
+          <TabsContent value="rithmic">
+            <ResizableWidget 
+              title="Rithmic Platform"
+              defaultHeight="800px"
+              minHeight={600}
+              maxHeight={1200}
+            >
+              <iframe
+                src="https://rtraderpro.rithmic.com/rtraderpro-web/"
+                className="w-full h-full rounded-lg"
+                style={{ minHeight: '600px' }}
+              />
+            </ResizableWidget>
+          </TabsContent>
 
           {/* Charts Tab */}
           <TabsContent value="charts" className="space-y-6">

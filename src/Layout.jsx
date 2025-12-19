@@ -120,6 +120,7 @@ export default function Layout({ children, currentPageName }) {
     { id: 'home', name: 'Home', page: 'Landing', icon: Home },
     { id: 'dashboard', name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard },
     { id: 'funded', name: 'Get Funded', external: 'https://hybridfunding.co', icon: TrendingUp },
+    { id: 'platforms', name: 'Platforms', page: 'TradingPlatforms', icon: Zap },
     { id: 'community', name: 'Community', page: 'SocialFeed', icon: Users },
     { id: 'profile', name: 'My Profile', page: 'MyProfile', icon: User },
     { id: 'accounts', name: 'Accounts', page: 'Accounts', icon: Wallet },
