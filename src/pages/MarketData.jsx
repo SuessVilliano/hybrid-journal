@@ -73,16 +73,6 @@ export default function MarketData() {
 
         {/* Quick Access Platform Buttons */}
         <div className="flex flex-wrap gap-3">
-          <a
-            href="https://hybridfunding.co"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all shadow-lg flex items-center gap-2 font-medium text-sm"
-          >
-            <TrendingUp className="h-4 w-4" />
-            Get Funded
-          </a>
-
           {platforms.map(platform => (
             <a
               key={platform.id}
