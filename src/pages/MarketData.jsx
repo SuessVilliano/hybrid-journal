@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, X, BarChart3, TrendingUp, Flame, DollarSign, Newspaper, Calendar } from 'lucide-react';
+import { Plus, X, BarChart3, TrendingUp, Flame, DollarSign, Newspaper, Calendar, ChevronDown } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import LivePriceTicker from '@/components/market/LivePriceTicker';
 import TradingChart from '@/components/market/TradingChart';
 import QuickTradePanel from '@/components/market/QuickTradePanel';
@@ -25,7 +26,15 @@ export default function MarketData() {
   const [selectedSymbol, setSelectedSymbol] = useState('EURUSD');
   const [showTradePanel, setShowTradePanel] = useState(false);
   const [tradePanelData, setTradePanelData] = useState(null);
+  const [selectedPlatform, setSelectedPlatform] = useState('dxtrade');
   const darkMode = document.documentElement.classList.contains('dark');
+
+  const platforms = [
+    { id: 'dxtrade', name: 'DX Trade', url: 'https://trade.gooeytrade.com/', color: 'from-orange-500 to-red-500' },
+    { id: 'matchtrader', name: 'Match Trader', url: 'https://mtr.gooeytrade.com/login', color: 'from-cyan-500 to-blue-500' },
+    { id: 'ctrader', name: 'cTrader', url: 'https://app.gooeytrade.com/', color: 'from-purple-500 to-pink-500' },
+    { id: 'rithmic', name: 'Rithmic', url: 'https://rtraderpro.rithmic.com/rtraderpro-web/', color: 'from-blue-500 to-indigo-500' },
+  ];
 
   const addSymbol = () => {
     if (newSymbol && !watchlist.includes(newSymbol.toUpperCase())) {
@@ -62,24 +71,57 @@ export default function MarketData() {
           </p>
         </div>
 
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-3">
+          <a
+            href="https://hybridfunding.co"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all shadow-lg flex items-center gap-2 font-medium"
+          >
+            <TrendingUp className="h-4 w-4" />
+            Get Funded
+          </a>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline" 
+                className={`flex items-center gap-2 ${
+                  darkMode 
+                    ? 'bg-slate-950/80 border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/10' 
+                    : 'bg-white border-cyan-500/30 text-cyan-700 hover:bg-cyan-50'
+                }`}
+              >
+                <BarChart3 className="h-4 w-4" />
+                Trading Platforms
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className={darkMode ? 'bg-slate-950 border-cyan-500/20' : 'bg-white'}>
+              {platforms.map(platform => (
+                <DropdownMenuItem
+                  key={platform.id}
+                  onClick={() => {
+                    setSelectedPlatform(platform.id);
+                    window.open(platform.url, '_blank');
+                  }}
+                  className="cursor-pointer"
+                >
+                  <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${platform.color} mr-2`} />
+                  {platform.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
         {/* Main Tabs */}
         <Tabs defaultValue="charts" className="space-y-6">
           <TabsList className={darkMode ? 'bg-slate-950/80 border border-cyan-500/20' : 'bg-white border border-cyan-500/30'}>
             <TabsTrigger value="charts" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
               <BarChart3 className="h-4 w-4 mr-2" />
               Charts
-            </TabsTrigger>
-            <TabsTrigger value="dxtrade" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-500 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
-              DX Trade
-            </TabsTrigger>
-            <TabsTrigger value="matchtrader" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-500 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
-              Match Trader
-            </TabsTrigger>
-            <TabsTrigger value="ctrader" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
-              cTrader
-            </TabsTrigger>
-            <TabsTrigger value="rithmic" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
-              Rithmic
             </TabsTrigger>
             <TabsTrigger value="heatmaps" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
               <Flame className="h-4 w-4 mr-2" />
@@ -98,67 +140,6 @@ export default function MarketData() {
               Calendar
             </TabsTrigger>
           </TabsList>
-
-          {/* Platform Tabs */}
-          <TabsContent value="dxtrade">
-            <ResizableWidget 
-              title="DX Trade Platform"
-              defaultHeight="800px"
-              minHeight={600}
-              maxHeight={1200}
-            >
-              <iframe
-                src="https://trade.gooeytrade.com/"
-                className="w-full h-full rounded-lg"
-                style={{ minHeight: '600px' }}
-              />
-            </ResizableWidget>
-          </TabsContent>
-
-          <TabsContent value="matchtrader">
-            <ResizableWidget 
-              title="Match Trader Platform"
-              defaultHeight="800px"
-              minHeight={600}
-              maxHeight={1200}
-            >
-              <iframe
-                src="https://mtr.gooeytrade.com/login"
-                className="w-full h-full rounded-lg"
-                style={{ minHeight: '600px' }}
-              />
-            </ResizableWidget>
-          </TabsContent>
-
-          <TabsContent value="ctrader">
-            <ResizableWidget 
-              title="cTrader Platform"
-              defaultHeight="800px"
-              minHeight={600}
-              maxHeight={1200}
-            >
-              <iframe
-                src="https://app.gooeytrade.com/"
-                className="w-full h-full rounded-lg"
-                style={{ minHeight: '600px' }}
-              />
-            </ResizableWidget>
-          </TabsContent>
-
-          <TabsContent value="rithmic">
-            <ResizableWidget 
-              title="Rithmic Platform"
-              defaultHeight="800px"
-              minHeight={600}
-              maxHeight={1200}
-            >
-              <iframe
-                src="https://rtraderpro.rithmic.com/rtraderpro-web/"
-                className="w-full h-full rounded-lg"
-                style={{ minHeight: '600px' }}
-              />
-            </ResizableWidget>
-          </TabsContent>
 
           {/* Charts Tab */}
           <TabsContent value="charts" className="space-y-6">
