@@ -38,12 +38,20 @@ export default function TradeCalendar({ trades }) {
     });
   }, [trades, currentDate, view]);
 
-  const previousMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+  const navigate = (direction) => {
+    if (view === 'day') {
+      setCurrentDate(new Date(currentDate.getTime() + (direction === 'prev' ? -1 : 1) * 24 * 60 * 60 * 1000));
+    } else if (view === 'week') {
+      setCurrentDate(direction === 'prev' ? subWeeks(currentDate, 1) : addWeeks(currentDate, 1));
+    } else {
+      setCurrentDate(direction === 'prev' ? subMonths(currentDate, 1) : addMonths(currentDate, 1));
+    }
   };
 
-  const nextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+  const getHeaderText = () => {
+    if (view === 'day') return format(currentDate, 'EEEE, MMMM d, yyyy');
+    if (view === 'week') return `${format(startOfWeek(currentDate), 'MMM d')} - ${format(endOfWeek(currentDate), 'MMM d, yyyy')}`;
+    return format(currentDate, 'MMMM yyyy');
   };
 
   return (
