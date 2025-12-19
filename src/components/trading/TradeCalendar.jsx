@@ -1,8 +1,12 @@
-import React, { useMemo } from 'react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth } from 'date-fns';
+import React, { useMemo, useState } from 'react';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, startOfWeek, endOfWeek, addWeeks, subWeeks, addMonths, subMonths } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function TradeCalendar({ trades }) {
-  const [currentDate, setCurrentDate] = React.useState(new Date());
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [view, setView] = useState('month'); // 'day', 'week', 'month'
+  const darkMode = document.documentElement.classList.contains('dark');
 
   const calendarData = useMemo(() => {
     const monthStart = startOfMonth(currentDate);
