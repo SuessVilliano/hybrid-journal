@@ -1,11 +1,28 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Filter } from 'lucide-react';
+import { Filter, X, Tag } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
-export default function TradeFilters({ filters, onFilterChange }) {
+export default function TradeFilters({ filters, onFilterChange, availableTags = [] }) {
+  const [tagInput, setTagInput] = useState('');
+  const selectedTags = filters.tags || [];
+
+  const addTag = () => {
+    if (tagInput && !selectedTags.includes(tagInput)) {
+      onFilterChange({ ...filters, tags: [...selectedTags, tagInput] });
+      setTagInput('');
+    }
+  };
+
+  const removeTag = (tag) => {
+    onFilterChange({ ...filters, tags: selectedTags.filter(t => t !== tag) });
+  };
+
   return (
-    <div className="flex items-center gap-3">
-      <Filter className="h-4 w-4 text-slate-400" />
+    <div className="space-y-3">
+      <div className="flex items-center gap-3">
+        <Filter className="h-4 w-4 text-slate-400" />
       
       <Select 
         value={filters.platform || 'all'} 
