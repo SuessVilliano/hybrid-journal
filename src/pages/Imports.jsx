@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Upload, FileText, CheckCircle, XCircle, Clock, Plus, BarChart3, Trash2 } from 'lucide-react';
+import { Upload, FileText, CheckCircle, XCircle, Clock, Plus, BarChart3, Trash2, Edit2, Check, X } from 'lucide-react';
 import { format } from 'date-fns';
 import ImportModal from '@/components/trading/ImportModal';
 import ImportVisualization from '@/components/trading/ImportVisualization';
