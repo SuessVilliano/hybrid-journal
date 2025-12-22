@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { X, Sparkles, Loader2, ArrowLeft } from 'lucide-react';
+import { X, Sparkles, Loader2, ArrowLeft, Plus, Upload, FileText, Paperclip } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { autoPopulateTradeFields, detectInstrumentType } from './AITradeHelper';
@@ -29,10 +29,13 @@ export default function TradeForm({ trade, onSubmit, onCancel }) {
     pnl: '',
     strategy: '',
     notes: '',
+    trade_setup: '',
     emotion_before: 'Calm',
     emotion_after: '',
     followed_rules: true,
-    tags: []
+    tags: [],
+    attachments: [],
+    custom_fields: {}
   });
 
   const [aiLoading, setAiLoading] = useState(false);
@@ -43,6 +46,10 @@ export default function TradeForm({ trade, onSubmit, onCancel }) {
     category: null
   });
   const [newTag, setNewTag] = useState('');
+  const [customFields, setCustomFields] = useState(trade?.custom_fields || {});
+  const [newFieldName, setNewFieldName] = useState('');
+  const [newFieldValue, setNewFieldValue] = useState('');
+  const [uploadingFiles, setUploadingFiles] = useState(false);
 
   const { data: strategies = [] } = useQuery({
     queryKey: ['strategies'],
@@ -151,6 +158,52 @@ Please provide:
     setFormData({ 
       ...formData, 
       tags: (formData.tags || []).filter(tag => tag !== tagToRemove) 
+    });
+  };
+
+  const addCustomField = () => {
+    if (newFieldName && newFieldValue) {
+      const updatedFields = { ...customFields, [newFieldName]: newFieldValue };
+      setCustomFields(updatedFields);
+      setFormData({ ...formData, custom_fields: updatedFields });
+      setNewFieldName('');
+      setNewFieldValue('');
+    }
+  };
+
+  const removeCustomField = (fieldName) => {
+    const updatedFields = { ...customFields };
+    delete updatedFields[fieldName];
+    setCustomFields(updatedFields);
+    setFormData({ ...formData, custom_fields: updatedFields });
+  };
+
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    setUploadingFiles(true);
+    try {
+      const uploadPromises = files.map(file => base44.integrations.Core.UploadFile({ file }));
+      const results = await Promise.all(uploadPromises);
+      const fileUrls = results.map(r => r.file_url);
+      
+      setFormData({
+        ...formData,
+        attachments: [...(formData.attachments || []), ...fileUrls]
+      });
+    } catch (error) {
+      console.error('File upload error:', error);
+      alert('Failed to upload files. Please try again.');
+    } finally {
+      setUploadingFiles(false);
+    }
+  };
+
+  const removeAttachment = (urlToRemove) => {
+    setFormData({
+      ...formData,
+      attachments: (formData.attachments || []).filter(url => url !== urlToRemove)
     });
   };
 
@@ -579,6 +632,21 @@ Please provide:
             </div>
           )}
 
+          {/* Trade Setup Section */}
+          <div>
+            <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+              Trade Setup
+              <span className="ml-2 text-xs text-slate-500">Describe the conditions that led to this trade</span>
+            </label>
+            <Textarea
+              value={formData.trade_setup}
+              onChange={(e) => setFormData({...formData, trade_setup: e.target.value})}
+              placeholder="What were the market conditions? What indicators aligned? What setup pattern did you see?"
+              rows={3}
+              className={darkMode ? 'bg-slate-900 border-cyan-500/30 text-white' : ''}
+            />
+          </div>
+
           {/* Notes */}
           <div>
             <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
@@ -592,6 +660,139 @@ Please provide:
               rows={4}
               className={darkMode ? 'bg-slate-900 border-cyan-500/30 text-white' : ''}
             />
+          </div>
+
+          {/* File Attachments */}
+          <div>
+            <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+              Attachments
+              <span className="ml-2 text-xs text-slate-500">Screenshots, charts, notes</span>
+            </label>
+            <div className="space-y-3">
+              <div className={`border-2 border-dashed rounded-lg p-4 ${
+                darkMode ? 'border-cyan-500/30 bg-slate-900/50' : 'border-slate-300 bg-slate-50'
+              }`}>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*,.pdf"
+                  onChange={handleFileUpload}
+                  disabled={uploadingFiles}
+                  className="hidden"
+                  id="file-upload"
+                />
+                <label
+                  htmlFor="file-upload"
+                  className={`flex flex-col items-center gap-2 cursor-pointer ${uploadingFiles ? 'opacity-50' : ''}`}
+                >
+                  {uploadingFiles ? (
+                    <>
+                      <Loader2 className="h-8 w-8 text-cyan-500 animate-spin" />
+                      <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Uploading...</p>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className={`h-8 w-8 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`} />
+                      <p className={`text-sm ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                        Click to upload or drag files here
+                      </p>
+                      <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                        Images and PDFs supported
+                      </p>
+                    </>
+                  )}
+                </label>
+              </div>
+
+              {formData.attachments && formData.attachments.length > 0 && (
+                <div className="space-y-2">
+                  {formData.attachments.map((url, idx) => (
+                    <div
+                      key={idx}
+                      className={`flex items-center justify-between p-3 rounded-lg ${
+                        darkMode ? 'bg-slate-900 border border-cyan-500/20' : 'bg-slate-50 border border-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <FileText className={`h-5 w-5 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`} />
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`text-sm hover:underline ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`}
+                        >
+                          Attachment {idx + 1}
+                        </a>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeAttachment(url)}
+                        className={`${darkMode ? 'text-slate-400 hover:text-red-400' : 'text-slate-500 hover:text-red-600'}`}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Custom Fields */}
+          <div>
+            <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+              Custom Fields
+              <span className="ml-2 text-xs text-slate-500">Add your own data points</span>
+            </label>
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <Input
+                  value={newFieldName}
+                  onChange={(e) => setNewFieldName(e.target.value)}
+                  placeholder="Field name (e.g., Market Sentiment)"
+                  className={`flex-1 ${darkMode ? 'bg-slate-900 border-cyan-500/30 text-white' : ''}`}
+                />
+                <Input
+                  value={newFieldValue}
+                  onChange={(e) => setNewFieldValue(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCustomField())}
+                  placeholder="Value"
+                  className={`flex-1 ${darkMode ? 'bg-slate-900 border-cyan-500/30 text-white' : ''}`}
+                />
+                <Button type="button" onClick={addCustomField} variant="outline" size="sm">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {Object.keys(customFields).length > 0 && (
+                <div className="space-y-2">
+                  {Object.entries(customFields).map(([name, value]) => (
+                    <div
+                      key={name}
+                      className={`flex items-center justify-between p-3 rounded-lg ${
+                        darkMode ? 'bg-slate-900 border border-cyan-500/20' : 'bg-slate-50 border border-slate-200'
+                      }`}
+                    >
+                      <div>
+                        <div className={`text-sm font-medium ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
+                          {name}
+                        </div>
+                        <div className={`text-sm ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                          {value}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeCustomField(name)}
+                        className={`${darkMode ? 'text-slate-400 hover:text-red-400' : 'text-slate-500 hover:text-red-600'}`}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Tags */}
