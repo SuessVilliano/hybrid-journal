@@ -31,10 +31,18 @@ export default function TradeForm({ trade, onSubmit, onCancel }) {
     notes: '',
     emotion_before: 'Calm',
     emotion_after: '',
-    followed_rules: true
+    followed_rules: true,
+    tags: []
   });
 
   const [aiLoading, setAiLoading] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState({
+    entryReasons: [],
+    exitReasons: [],
+    sentiment: null,
+    category: null
+  });
+  const [newTag, setNewTag] = useState('');
 
   const { data: strategies = [] } = useQuery({
     queryKey: ['strategies'],
