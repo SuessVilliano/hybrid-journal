@@ -503,11 +503,87 @@ Please provide:
             )}
           </div>
 
+          {/* AI Suggestions Panel */}
+          {(aiSuggestions.entryReasons.length > 0 || aiSuggestions.exitReasons.length > 0 || aiSuggestions.sentiment) && (
+            <div className={`p-4 rounded-lg border ${
+              darkMode ? 'bg-purple-900/20 border-purple-500/30' : 'bg-purple-50 border-purple-200'
+            }`}>
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="h-4 w-4 text-purple-600" />
+                <h3 className={`font-medium ${darkMode ? 'text-white' : 'text-slate-900'}`}>AI Analysis</h3>
+              </div>
+              
+              <div className="space-y-3">
+                {aiSuggestions.entryReasons.length > 0 && (
+                  <div>
+                    <div className={`text-xs font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                      Suggested Entry Reasons:
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {aiSuggestions.entryReasons.map((reason, idx) => (
+                        <span key={idx} className={`text-xs px-2 py-1 rounded ${
+                          darkMode ? 'bg-slate-800 text-slate-300' : 'bg-white text-slate-700'
+                        }`}>
+                          {reason}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {aiSuggestions.exitReasons.length > 0 && (
+                  <div>
+                    <div className={`text-xs font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                      Suggested Exit Reasons:
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {aiSuggestions.exitReasons.map((reason, idx) => (
+                        <span key={idx} className={`text-xs px-2 py-1 rounded ${
+                          darkMode ? 'bg-slate-800 text-slate-300' : 'bg-white text-slate-700'
+                        }`}>
+                          {reason}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {aiSuggestions.sentiment && aiSuggestions.sentiment !== 'None' && (
+                  <div>
+                    <div className={`text-xs font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                      Sentiment Analysis:
+                    </div>
+                    <span className={`text-xs px-2 py-1 rounded font-medium ${
+                      aiSuggestions.sentiment === 'Positive' ? 'bg-green-100 text-green-700' :
+                      aiSuggestions.sentiment === 'Negative' ? 'bg-red-100 text-red-700' :
+                      'bg-slate-100 text-slate-700'
+                    }`}>
+                      {aiSuggestions.sentiment}
+                    </span>
+                  </div>
+                )}
+
+                {aiSuggestions.category && (
+                  <div>
+                    <div className={`text-xs font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                      Trade Category:
+                    </div>
+                    <span className={`text-xs px-2 py-1 rounded ${
+                      darkMode ? 'bg-cyan-900/30 text-cyan-400' : 'bg-cyan-100 text-cyan-700'
+                    }`}>
+                      {aiSuggestions.category}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Notes */}
           <div>
             <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
               Notes
-              <span className="ml-2 text-xs text-purple-600">✨ AI-generated</span>
+              <span className="ml-2 text-xs text-purple-600">✨ AI-generated & sentiment-analyzed</span>
             </label>
             <Textarea
               value={formData.notes}
@@ -516,6 +592,45 @@ Please provide:
               rows={4}
               className={darkMode ? 'bg-slate-900 border-cyan-500/30 text-white' : ''}
             />
+          </div>
+
+          {/* Tags */}
+          <div>
+            <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+              Tags
+              <span className="ml-2 text-xs text-purple-600">✨ AI-suggested</span>
+            </label>
+            <div className="flex gap-2 mb-2">
+              <Input
+                value={newTag}
+                onChange={(e) => setNewTag(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                placeholder="Add tag (e.g., mistake, good-entry, news-trade)"
+                className={darkMode ? 'bg-slate-900 border-cyan-500/30 text-white' : ''}
+              />
+              <Button type="button" onClick={addTag} variant="outline" size="sm">
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {(formData.tags || []).map((tag, idx) => (
+                <span
+                  key={idx}
+                  className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm ${
+                    darkMode ? 'bg-cyan-900/30 text-cyan-400' : 'bg-cyan-100 text-cyan-700'
+                  }`}
+                >
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => removeTag(tag)}
+                    className="ml-1 hover:opacity-70"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
           </div>
 
           {/* Template-specific Analysis Prompts */}
