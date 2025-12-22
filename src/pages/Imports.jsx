@@ -166,7 +166,33 @@ export default function Imports() {
                         
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            <h3 className="font-bold text-slate-900">{imp.filename}</h3>
+                            {editingName === imp.id ? (
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  value={newName}
+                                  onChange={(e) => setNewName(e.target.value)}
+                                  onKeyPress={(e) => e.key === 'Enter' && saveRename(imp.id)}
+                                  className="max-w-xs"
+                                  autoFocus
+                                />
+                                <Button size="sm" onClick={() => saveRename(imp.id)} disabled={renameMutation.isPending}>
+                                  <Check className="h-4 w-4" />
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={cancelRename}>
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <>
+                                <h3 className="font-bold text-slate-900">{imp.filename}</h3>
+                                <button
+                                  onClick={() => handleRename(imp)}
+                                  className="text-slate-400 hover:text-slate-600"
+                                >
+                                  <Edit2 className="h-4 w-4" />
+                                </button>
+                              </>
+                            )}
                             <Badge className={config.color}>{imp.status}</Badge>
                             {imp.platform && <Badge variant="outline">{imp.platform}</Badge>}
                           </div>
