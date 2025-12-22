@@ -266,7 +266,11 @@ export default function Trades() {
                 className="pl-10"
               />
             </div>
-            <TradeFilters filters={filters} onFilterChange={setFilters} />
+            <TradeFilters 
+              filters={filters} 
+              onFilterChange={setFilters}
+              availableTags={availableTags}
+            />
           </div>
         </div>
 
