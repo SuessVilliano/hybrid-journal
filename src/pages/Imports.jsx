@@ -29,6 +29,17 @@ export default function Imports() {
     'Failed': { icon: XCircle, color: 'bg-red-100 text-red-700', iconColor: 'text-red-600' }
   };
 
+  const renameMutation = useMutation({
+    mutationFn: async ({ id, filename }) => {
+      await base44.entities.Import.update(id, { filename });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['imports']);
+      setEditingName(null);
+      setNewName('');
+    }
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (importId) => {
       // First, get all trades from this import
