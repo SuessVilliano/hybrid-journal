@@ -13,6 +13,8 @@ export default function Imports() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [selectedImport, setSelectedImport] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [editingName, setEditingName] = useState(null);
+  const [newName, setNewName] = useState('');
   const queryClient = useQueryClient();
 
   const { data: imports = [], isLoading } = useQuery({
