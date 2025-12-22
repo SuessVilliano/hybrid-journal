@@ -76,7 +76,7 @@ export default function TradeForm({ trade, onSubmit, onCancel }) {
     setFormData({ ...formData, ...updates });
   };
 
-  // AI Auto-populate
+  // AI Auto-populate with enhanced features
   const handleAIAutoPopulate = async () => {
     if (!formData.symbol || !formData.entry_price) {
       alert('Please enter at least Symbol and Entry Price to use AI assistance');
@@ -86,13 +86,72 @@ export default function TradeForm({ trade, onSubmit, onCancel }) {
     setAiLoading(true);
     try {
       const updates = await autoPopulateTradeFields(formData, strategies);
-      setFormData({ ...formData, ...updates });
+      
+      // Get AI suggestions for entry/exit reasons and sentiment
+      const aiAnalysis = await base44.integrations.Core.InvokeLLM({
+        prompt: `Analyze this trade and provide insights:
+Symbol: ${formData.symbol}
+Side: ${formData.side}
+Entry: ${formData.entry_price}
+Exit: ${formData.exit_price || 'Not closed yet'}
+Strategy: ${formData.strategy || updates.strategy || 'Unknown'}
+Notes: ${formData.notes || 'No notes yet'}
+
+Please provide:
+1. 3 possible entry reasons (as short phrases)
+2. 3 possible exit reasons if trade is closed (as short phrases)
+3. Sentiment analysis of any notes (Positive, Neutral, Negative, or None if no notes)
+4. Trade category (Breakout, Reversal, Continuation, Scalp, Swing, or Other)`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            entry_reasons: { type: "array", items: { type: "string" } },
+            exit_reasons: { type: "array", items: { type: "string" } },
+            sentiment: { type: "string" },
+            category: { type: "string" },
+            suggested_tags: { type: "array", items: { type: "string" } }
+          }
+        }
+      });
+
+      setAiSuggestions({
+        entryReasons: aiAnalysis.entry_reasons || [],
+        exitReasons: aiAnalysis.exit_reasons || [],
+        sentiment: aiAnalysis.sentiment || null,
+        category: aiAnalysis.category || null
+      });
+
+      // Auto-add suggested tags
+      const suggestedTags = aiAnalysis.suggested_tags || [];
+      const existingTags = formData.tags || [];
+      const newTags = [...new Set([...existingTags, ...suggestedTags])];
+
+      setFormData({ 
+        ...formData, 
+        ...updates,
+        tags: newTags,
+        setup: aiAnalysis.category || formData.setup
+      });
     } catch (error) {
       console.error('AI auto-populate error:', error);
       alert('AI assistance failed. Please try again.');
     } finally {
       setAiLoading(false);
     }
+  };
+
+  const addTag = () => {
+    if (newTag && !formData.tags?.includes(newTag)) {
+      setFormData({ ...formData, tags: [...(formData.tags || []), newTag] });
+      setNewTag('');
+    }
+  };
+
+  const removeTag = (tagToRemove) => {
+    setFormData({ 
+      ...formData, 
+      tags: (formData.tags || []).filter(tag => tag !== tagToRemove) 
+    });
   };
 
   const handleSubmit = (e) => {
