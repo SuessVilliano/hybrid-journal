@@ -361,26 +361,24 @@ export default function Dashboard() {
             <PerformanceMetrics trades={trades} detailed />
           </TabsContent>
 
-          <TabsContent value="calendar">
-            {enabledWidgets.includes('calendar') && (
-              <Card className={`backdrop-blur-xl ${darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white/80 border-cyan-500/30'}`}>
-                <CardHeader>
-                  <CardTitle className={`flex items-center gap-2 ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
-                    <Calendar className="h-5 w-5" />
-                    Trading Calendar
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <TradeCalendar trades={trades} />
-                </CardContent>
-              </Card>
-            )}
+          <TabsContent value="calendar" className="space-y-6">
+            <Card className={`backdrop-blur-xl ${darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white/80 border-cyan-500/30'}`}>
+              <CardHeader>
+                <CardTitle className={`flex items-center gap-2 ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
+                  <Calendar className="h-5 w-5" />
+                  Trading Calendar
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TradeCalendar trades={trades} />
+              </CardContent>
+            </Card>
           </TabsContent>
 
-          <TabsContent value="psychology">
+          <TabsContent value="psychology" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-              {enabledWidgets.includes('emotions') && <EmotionalPatternsWidget trades={trades} />}
-              {enabledWidgets.includes('strategies') && <StrategyPerformanceWidget trades={trades} />}
+              <EmotionalPatternsWidget trades={trades} />
+              <StrategyPerformanceWidget trades={trades} />
             </div>
           </TabsContent>
         </Tabs>
