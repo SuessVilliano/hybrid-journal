@@ -138,6 +138,9 @@ export default function Trades() {
     }
   };
 
+  // Get all unique tags from trades
+  const availableTags = [...new Set(trades.flatMap(t => t.tags || []))];
+
   const filteredTrades = trades.filter(trade => {
     if (searchQuery && !trade.symbol?.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false;
@@ -145,6 +148,14 @@ export default function Trades() {
     if (filters.platform && trade.platform !== filters.platform) return false;
     if (filters.instrument_type && trade.instrument_type !== filters.instrument_type) return false;
     if (filters.side && trade.side !== filters.side) return false;
+    
+    // Filter by tags - trade must have all selected tags
+    if (filters.tags && filters.tags.length > 0) {
+      const tradeTags = trade.tags || [];
+      const hasAllTags = filters.tags.every(tag => tradeTags.includes(tag));
+      if (!hasAllTags) return false;
+    }
+    
     return true;
   });
 
