@@ -18,6 +18,7 @@ import StrategyPerformanceWidget from '@/components/dashboard/StrategyPerformanc
 import InstrumentAnalysisWidget from '@/components/dashboard/InstrumentAnalysisWidget';
 import CompoundCalculatorWidget from '@/components/dashboard/CompoundCalculatorWidget';
 import HybridScoreWidget from '@/components/dashboard/HybridScoreWidget';
+import TodaysPlanWidget from '@/components/planning/TodaysPlanWidget';
 
 export default function Dashboard() {
   const [timeframe, setTimeframe] = useState('all');
@@ -325,6 +326,8 @@ export default function Dashboard() {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
+            <TodaysPlanWidget />
+            
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
               {enabledWidgets.includes('equityCurve') && (
                 <Card className={`lg:col-span-2 backdrop-blur-xl ${darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white/80 border-cyan-500/30'}`}>

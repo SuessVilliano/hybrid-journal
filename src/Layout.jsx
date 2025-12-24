@@ -119,6 +119,7 @@ export default function Layout({ children, currentPageName }) {
   const defaultNavigation = [
     { id: 'home', name: 'Home', page: 'Landing', icon: Home },
     { id: 'dashboard', name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard },
+    { id: 'dailyplan', name: 'Daily Plan', page: 'DailyPlanning', icon: Target },
     { id: 'funded', name: 'Get Funded', external: 'https://hybridfunding.co', icon: TrendingUp },
     { id: 'platforms', name: 'Platforms', page: 'TradingPlatforms', icon: Zap },
     { id: 'community', name: 'Community', page: 'SocialFeed', icon: Users },
