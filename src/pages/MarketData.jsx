@@ -34,6 +34,7 @@ export default function MarketData() {
     { id: 'matchtrader', name: 'Match Trader', url: 'https://mtr.gooeytrade.com/login', color: 'from-cyan-500 to-blue-500' },
     { id: 'ctrader', name: 'cTrader', url: 'https://app.gooeytrade.com/', color: 'from-purple-500 to-pink-500' },
     { id: 'rithmic', name: 'Rithmic', url: 'https://rtraderpro.rithmic.com/rtraderpro-web/', color: 'from-blue-500 to-indigo-500' },
+    { id: 'tradovate', name: 'Tradovate', url: 'https://trader.tradovate.com/', color: 'from-green-500 to-teal-500' },
   ];
 
   const addSymbol = () => {
