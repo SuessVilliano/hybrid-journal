@@ -6,7 +6,7 @@ import { TrendingUp, TrendingDown, Activity, Target, DollarSign } from 'lucide-r
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function PublicDashboard() {
-  const urlParams = new URLSearchParams(window.location.search);
+  const urlParams = new URLSearchParams(window.location.hash.split('?')[1] || window.location.search);
   const token = urlParams.get('token');
 
   const { data: shareSettings, isLoading: loadingSettings } = useQuery({
@@ -75,20 +75,23 @@ export default function PublicDashboard() {
 
   if (loadingSettings || loadingTrades) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-purple-50 to-pink-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-600"></div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500 mx-auto mb-4"></div>
+          <p className="text-cyan-400">Loading dashboard...</p>
+        </div>
       </div>
     );
   }
 
   if (!token) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-purple-50 to-pink-50 flex items-center justify-center p-6">
-        <Card className="max-w-md w-full">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center p-6">
+        <Card className="max-w-md w-full bg-slate-950/90 border-cyan-500/30">
           <CardContent className="p-12 text-center">
-            <Activity className="h-16 w-16 text-slate-300 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-slate-900 mb-2">No Share Token</h2>
-            <p className="text-slate-600">Please provide a valid share token in the URL.</p>
+            <Activity className="h-16 w-16 text-cyan-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-white mb-2">No Share Token</h2>
+            <p className="text-slate-400">Please provide a valid share token in the URL.</p>
           </CardContent>
         </Card>
       </div>
@@ -97,12 +100,12 @@ export default function PublicDashboard() {
 
   if (!shareSettings || !shareSettings.is_public) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-purple-50 to-pink-50 flex items-center justify-center p-6">
-        <Card className="max-w-md w-full">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center p-6">
+        <Card className="max-w-md w-full bg-slate-950/90 border-cyan-500/30">
           <CardContent className="p-12 text-center">
-            <Activity className="h-16 w-16 text-slate-300 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-slate-900 mb-2">Dashboard Not Found</h2>
-            <p className="text-slate-600">This dashboard is private or doesn't exist.</p>
+            <Activity className="h-16 w-16 text-cyan-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-white mb-2">Dashboard Not Found</h2>
+            <p className="text-slate-400">This dashboard is private or doesn't exist.</p>
           </CardContent>
         </Card>
       </div>
@@ -112,86 +115,90 @@ export default function PublicDashboard() {
   const hideDollars = shareSettings.hide_dollar_amounts;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-purple-50 to-pink-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="text-center">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-600 to-purple-600 bg-clip-text text-transparent">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent mb-2">
             {shareSettings.custom_title || 'Trading Performance'}
           </h1>
-          <p className="text-cyan-700/70 mt-2">
+          <p className="text-cyan-400 mt-2">
             Public Dashboard • Last Updated: {new Date(shareSettings.last_updated || shareSettings.created_date).toLocaleDateString()}
           </p>
+          <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-cyan-900/30 border border-cyan-500/30 rounded-full">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <span className="text-sm text-cyan-300">Live Performance Tracking</span>
+          </div>
         </div>
 
         {/* Key Metrics */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="bg-gradient-to-br from-cyan-500 to-purple-600 text-white border-0 shadow-lg shadow-cyan-500/20">
+            <Card className="bg-gradient-to-br from-cyan-500 to-purple-600 text-white border-0 shadow-lg shadow-cyan-500/50">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-white/90">
+                <CardTitle className="text-sm font-medium text-white">
                   Total P&L
                 </CardTitle>
-                <DollarSign className="h-4 w-4 text-white/90" />
+                <DollarSign className="h-4 w-4 text-white" />
               </CardHeader>
               <CardContent>
                 {hideDollars ? (
-                  <div className="text-3xl font-bold">
+                  <div className="text-3xl md:text-4xl font-bold">
                     {stats.totalPnl >= 0 ? '+' : ''}{((stats.totalPnl / 10000) * 100).toFixed(1)}%
                   </div>
                 ) : (
-                  <div className="text-3xl font-bold">
+                  <div className="text-3xl md:text-4xl font-bold">
                     ${stats.totalPnl.toFixed(2)}
                   </div>
                 )}
-                <p className="text-xs mt-1 text-white/80">
+                <p className="text-sm mt-1 text-white/90">
                   {stats.totalTrades} total trades
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="bg-white/80 backdrop-blur-xl border-cyan-500/30">
+            <Card className="bg-slate-950/90 backdrop-blur-xl border-cyan-500/30">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-cyan-700">Win Rate</CardTitle>
-                <Target className="h-4 w-4 text-cyan-600" />
+                <CardTitle className="text-sm font-medium text-cyan-400">Win Rate</CardTitle>
+                <Target className="h-4 w-4 text-cyan-400" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-slate-900">{stats.winRate.toFixed(1)}%</div>
-                <p className="text-xs text-cyan-700/70 mt-1">
+                <div className="text-3xl md:text-4xl font-bold text-white">{stats.winRate.toFixed(1)}%</div>
+                <p className="text-sm text-cyan-300 mt-1">
                   {stats.winningTrades}W / {stats.losingTrades}L
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="bg-white/80 backdrop-blur-xl border-purple-500/30">
+            <Card className="bg-slate-950/90 backdrop-blur-xl border-purple-500/30">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-purple-700">Profit Factor</CardTitle>
-                <Activity className="h-4 w-4 text-purple-600" />
+                <CardTitle className="text-sm font-medium text-purple-400">Profit Factor</CardTitle>
+                <Activity className="h-4 w-4 text-purple-400" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-slate-900">{stats.profitFactor.toFixed(2)}</div>
-                <p className="text-xs text-purple-700/70 mt-1">Risk-adjusted performance</p>
+                <div className="text-3xl md:text-4xl font-bold text-white">{stats.profitFactor.toFixed(2)}</div>
+                <p className="text-sm text-purple-300 mt-1">Risk-adjusted performance</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-white/80 backdrop-blur-xl border-green-500/30">
+            <Card className="bg-slate-950/90 backdrop-blur-xl border-green-500/30">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-green-700">Avg Win/Loss</CardTitle>
-                <TrendingUp className="h-4 w-4 text-green-600" />
+                <CardTitle className="text-sm font-medium text-green-400">Avg Win/Loss</CardTitle>
+                <TrendingUp className="h-4 w-4 text-green-400" />
               </CardHeader>
               <CardContent>
                 {hideDollars ? (
-                  <div className="text-lg font-bold text-slate-900">
+                  <div className="text-2xl md:text-3xl font-bold text-white">
                     {(stats.avgWin / Math.max(stats.avgLoss, 1)).toFixed(2)}:1
                   </div>
                 ) : (
-                  <div className="text-lg font-bold">
-                    <span className="text-green-600">${stats.avgWin.toFixed(0)}</span>
+                  <div className="text-lg md:text-xl font-bold">
+                    <span className="text-green-400">${stats.avgWin.toFixed(0)}</span>
                     {' / '}
-                    <span className="text-red-600">${stats.avgLoss.toFixed(0)}</span>
+                    <span className="text-red-400">${stats.avgLoss.toFixed(0)}</span>
                   </div>
                 )}
-                <p className="text-xs text-green-700/70 mt-1">Win to loss ratio</p>
+                <p className="text-sm text-green-300 mt-1">Win to loss ratio</p>
               </CardContent>
             </Card>
           </div>
@@ -200,28 +207,31 @@ export default function PublicDashboard() {
         {/* Charts */}
         {chartData && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="lg:col-span-2 bg-white/80 backdrop-blur-xl border-cyan-500/30">
+            <Card className="lg:col-span-2 bg-slate-950/90 backdrop-blur-xl border-cyan-500/30">
               <CardHeader>
-                <CardTitle className="text-cyan-700">Equity Curve</CardTitle>
+                <CardTitle className="text-cyan-400">Equity Curve</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={chartData.equityCurve}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="trade" stroke="#64748b" style={{ fontSize: '12px' }} />
-                    <YAxis stroke="#64748b" style={{ fontSize: '12px' }} hide={hideDollars} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                    <XAxis dataKey="trade" stroke="#94a3b8" style={{ fontSize: '12px' }} />
+                    <YAxis stroke="#94a3b8" style={{ fontSize: '12px' }} hide={hideDollars} />
                     <Tooltip 
+                      contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '8px' }}
+                      labelStyle={{ color: '#cbd5e1' }}
+                      itemStyle={{ color: '#06b6d4' }}
                       formatter={(val) => hideDollars ? [`${val.toFixed(1)}%`, 'Return'] : [`$${val.toFixed(2)}`, 'Equity']}
                     />
-                    <Line type="monotone" dataKey="equity" stroke="#06b6d4" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="equity" stroke="#06b6d4" strokeWidth={3} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
 
-            <Card className="bg-white/80 backdrop-blur-xl border-purple-500/30">
+            <Card className="bg-slate-950/90 backdrop-blur-xl border-purple-500/30">
               <CardHeader>
-                <CardTitle className="text-purple-700">Win/Loss Distribution</CardTitle>
+                <CardTitle className="text-purple-400">Win/Loss Distribution</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -234,12 +244,16 @@ export default function PublicDashboard() {
                       outerRadius={90}
                       dataKey="value"
                       label={({ value, name }) => `${name}: ${value}`}
+                      labelStyle={{ fill: '#fff', fontSize: '14px', fontWeight: 'bold' }}
                     >
                       {chartData.winLossData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.fill} />
                       ))}
                     </Pie>
-                    <Tooltip />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '8px' }}
+                      itemStyle={{ color: '#e2e8f0' }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -247,44 +261,81 @@ export default function PublicDashboard() {
           </div>
         )}
 
+        {/* Performance Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="bg-slate-950/90 backdrop-blur-xl border-cyan-500/30">
+            <CardHeader>
+              <CardTitle className="text-cyan-400 text-lg">Total Trades</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-4xl font-bold text-white mb-2">{stats.totalTrades}</div>
+              <div className="text-sm text-slate-400">Consistent trading activity</div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-slate-950/90 backdrop-blur-xl border-green-500/30">
+            <CardHeader>
+              <CardTitle className="text-green-400 text-lg">Best Trade</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-4xl font-bold text-green-400 mb-2">
+                {hideDollars ? '+' + Math.max(...trades.map(t => t.pnl)).toFixed(1) + '%' : '+$' + Math.max(...trades.map(t => t.pnl)).toFixed(2)}
+              </div>
+              <div className="text-sm text-slate-400">Largest winning trade</div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-slate-950/90 backdrop-blur-xl border-purple-500/30">
+            <CardHeader>
+              <CardTitle className="text-purple-400 text-lg">Consistency</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-4xl font-bold text-white mb-2">
+                {((stats.winningTrades / Math.max(stats.totalTrades / 10, 1)) * 100).toFixed(0)}%
+              </div>
+              <div className="text-sm text-slate-400">Win rate stability</div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Trade History */}
         {shareSettings.show_individual_trades && trades.length > 0 && (
-          <Card className="bg-white/80 backdrop-blur-xl border-cyan-500/30">
+          <Card className="bg-slate-950/90 backdrop-blur-xl border-cyan-500/30">
             <CardHeader>
-              <CardTitle className="text-cyan-700">Recent Trades</CardTitle>
+              <CardTitle className="text-cyan-400">Recent Trades</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="border-b border-cyan-500/30">
                     <tr className="text-left">
-                      <th className="pb-2 font-medium text-cyan-700">Date</th>
-                      <th className="pb-2 font-medium text-cyan-700">Symbol</th>
-                      <th className="pb-2 font-medium text-cyan-700">Side</th>
-                      <th className="pb-2 font-medium text-cyan-700">P&L</th>
-                      <th className="pb-2 font-medium text-cyan-700">Platform</th>
+                      <th className="pb-3 font-medium text-cyan-300">Date</th>
+                      <th className="pb-3 font-medium text-cyan-300">Symbol</th>
+                      <th className="pb-3 font-medium text-cyan-300">Side</th>
+                      <th className="pb-3 font-medium text-cyan-300">P&L</th>
+                      <th className="pb-3 font-medium text-cyan-300">Platform</th>
                     </tr>
                   </thead>
                   <tbody>
                     {trades.slice(0, 20).map((trade, idx) => (
-                      <tr key={idx} className="border-b border-slate-200">
-                        <td className="py-2 text-slate-700">
+                      <tr key={idx} className="border-b border-slate-800">
+                        <td className="py-3 text-slate-300">
                           {new Date(trade.entry_date).toLocaleDateString()}
                         </td>
-                        <td className="py-2 font-medium text-slate-900">{trade.symbol}</td>
-                        <td className="py-2">
-                          <span className={trade.side === 'Long' ? 'text-green-600' : 'text-red-600'}>
+                        <td className="py-3 font-medium text-white">{trade.symbol}</td>
+                        <td className="py-3">
+                          <span className={trade.side === 'Long' ? 'text-green-400' : 'text-red-400'}>
                             {trade.side}
                           </span>
                         </td>
-                        <td className={`py-2 font-bold ${trade.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        <td className={`py-3 font-bold ${trade.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                           {hideDollars ? (
                             `${trade.pnl >= 0 ? '+' : ''}${((trade.pnl / 100) * 100).toFixed(1)}%`
                           ) : (
                             `${trade.pnl >= 0 ? '+' : ''}$${Math.abs(trade.pnl).toFixed(2)}`
                           )}
                         </td>
-                        <td className="py-2 text-slate-600">{trade.platform}</td>
+                        <td className="py-3 text-slate-400">{trade.platform}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -295,8 +346,11 @@ export default function PublicDashboard() {
         )}
 
         {/* Footer */}
-        <div className="text-center text-sm text-cyan-700/70 py-6">
-          Powered by Hybrid Journal • Real-time Trading Journal
+        <div className="text-center text-sm text-cyan-400/70 py-8 border-t border-cyan-500/20">
+          <div className="mb-2">
+            <span className="font-bold text-cyan-400">Powered by Hybrid Journal</span>
+          </div>
+          <div className="text-slate-400">Professional Trading Journal & Performance Analytics</div>
         </div>
       </div>
     </div>

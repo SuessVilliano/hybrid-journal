@@ -3,6 +3,7 @@ import Analytics from './pages/Analytics';
 import Automation from './pages/Automation';
 import Backtesting from './pages/Backtesting';
 import BrokerConnections from './pages/BrokerConnections';
+import DailyPlanning from './pages/DailyPlanning';
 import Dashboard from './pages/Dashboard';
 import Goals from './pages/Goals';
 import Home from './pages/Home';
@@ -18,7 +19,6 @@ import Trades from './pages/Trades';
 import TradingCoach from './pages/TradingCoach';
 import TradingPlatforms from './pages/TradingPlatforms';
 import TradingSummaries from './pages/TradingSummaries';
-import DailyPlanning from './pages/DailyPlanning';
 import __Layout from './Layout.jsx';
 
 
@@ -28,6 +28,7 @@ export const PAGES = {
     "Automation": Automation,
     "Backtesting": Backtesting,
     "BrokerConnections": BrokerConnections,
+    "DailyPlanning": DailyPlanning,
     "Dashboard": Dashboard,
     "Goals": Goals,
     "Home": Home,
@@ -43,7 +44,6 @@ export const PAGES = {
     "TradingCoach": TradingCoach,
     "TradingPlatforms": TradingPlatforms,
     "TradingSummaries": TradingSummaries,
-    "DailyPlanning": DailyPlanning,
 }
 
 export const pagesConfig = {
