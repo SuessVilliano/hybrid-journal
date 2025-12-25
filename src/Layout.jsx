@@ -7,8 +7,8 @@ import FloatingAIAssistant from '@/components/ai/FloatingAIAssistant';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 export default function Layout({ children, currentPageName }) {
-  // Don't render layout for Landing page
-  if (currentPageName === 'Landing') {
+  // Don't render layout for Landing and PublicDashboard pages
+  if (currentPageName === 'Landing' || currentPageName === 'PublicDashboard') {
     return children;
   }
   const [sidebarOpen, setSidebarOpen] = useState(true);
