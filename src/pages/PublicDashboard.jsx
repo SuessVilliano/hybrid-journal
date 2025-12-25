@@ -6,25 +6,41 @@ import { TrendingUp, TrendingDown, Activity, Target, DollarSign } from 'lucide-r
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function PublicDashboard() {
-  const urlParams = new URLSearchParams(window.location.hash.split('?')[1] || window.location.search);
-  const token = urlParams.get('token');
+  // Parse token from URL - handle both hash and regular query strings
+  const getTokenFromUrl = () => {
+    // Try hash-based routing first (/#/PublicDashboard?token=xxx)
+    const hashParts = window.location.hash.split('?');
+    if (hashParts.length > 1) {
+      const hashParams = new URLSearchParams(hashParts[1]);
+      const hashToken = hashParams.get('token');
+      if (hashToken) return hashToken;
+    }
+    
+    // Fallback to regular query string
+    const searchParams = new URLSearchParams(window.location.search);
+    return searchParams.get('token');
+  };
+  
+  const token = getTokenFromUrl();
 
-  const { data: shareSettings, isLoading: loadingSettings } = useQuery({
+  const { data: shareSettings, isLoading: loadingSettings, error: settingsError } = useQuery({
     queryKey: ['publicShare', token],
     queryFn: async () => {
-      const settings = await base44.entities.ShareSettings.filter({ share_token: token });
-      return settings[0];
+      const settings = await base44.asServiceRole.entities.ShareSettings.filter({ share_token: token });
+      return settings[0] || null;
     },
-    enabled: !!token
+    enabled: !!token,
+    retry: 1
   });
 
   const { data: trades = [], isLoading: loadingTrades } = useQuery({
     queryKey: ['publicTrades', shareSettings?.created_by],
     queryFn: async () => {
       if (!shareSettings?.created_by) return [];
-      return await base44.entities.Trade.filter({ created_by: shareSettings.created_by }, '-entry_date', 1000);
+      return await base44.asServiceRole.entities.Trade.filter({ created_by: shareSettings.created_by }, '-entry_date', 1000);
     },
-    enabled: !!shareSettings?.created_by && shareSettings?.is_public
+    enabled: !!shareSettings?.created_by && shareSettings?.is_public,
+    retry: 1
   });
 
   const stats = useMemo(() => {
