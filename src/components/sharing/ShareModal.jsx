@@ -53,7 +53,7 @@ export default function ShareModal({ onClose }) {
 
   const handleCopyLink = () => {
     if (shareSettings?.share_token) {
-      const link = `${window.location.origin}/#/PublicDashboard?token=${shareSettings.share_token}`;
+      const link = `${window.location.origin}#/PublicDashboard?token=${shareSettings.share_token}`;
       navigator.clipboard.writeText(link);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -61,7 +61,7 @@ export default function ShareModal({ onClose }) {
   };
 
   const shareLink = shareSettings?.share_token 
-    ? `${window.location.origin}/#/PublicDashboard?token=${shareSettings.share_token}`
+    ? `${window.location.origin}#/PublicDashboard?token=${shareSettings.share_token}`
     : null;
 
   return (

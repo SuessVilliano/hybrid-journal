@@ -6,22 +6,14 @@ import { TrendingUp, TrendingDown, Activity, Target, DollarSign } from 'lucide-r
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function PublicDashboard() {
-  // Parse token from URL - handle both hash and regular query strings
-  const getTokenFromUrl = () => {
-    // Try hash-based routing first (/#/PublicDashboard?token=xxx)
-    const hashParts = window.location.hash.split('?');
-    if (hashParts.length > 1) {
-      const hashParams = new URLSearchParams(hashParts[1]);
-      const hashToken = hashParams.get('token');
-      if (hashToken) return hashToken;
+  const token = (() => {
+    const hash = window.location.hash;
+    if (hash.includes('?')) {
+      const params = new URLSearchParams(hash.split('?')[1]);
+      return params.get('token');
     }
-    
-    // Fallback to regular query string
-    const searchParams = new URLSearchParams(window.location.search);
-    return searchParams.get('token');
-  };
-  
-  const token = getTokenFromUrl();
+    return new URLSearchParams(window.location.search).get('token');
+  })();
 
   const { data: shareSettings, isLoading: loadingSettings, error: settingsError } = useQuery({
     queryKey: ['publicShare', token],
