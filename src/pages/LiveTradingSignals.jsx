@@ -242,9 +242,9 @@ export default function LiveTradingSignals() {
 
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
                         <div>
-                          <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Price</div>
+                          <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Entry Price</div>
                           <div className={`font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                            ${signal.price.toFixed(2)}
+                            ${signal.price?.toFixed(2) || 'N/A'}
                           </div>
                         </div>
                         {signal.stop_loss > 0 && (
@@ -252,14 +252,6 @@ export default function LiveTradingSignals() {
                             <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Stop Loss</div>
                             <div className={`font-bold text-red-500`}>
                               ${signal.stop_loss.toFixed(2)}
-                            </div>
-                          </div>
-                        )}
-                        {signal.take_profit > 0 && (
-                          <div>
-                            <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Take Profit</div>
-                            <div className={`font-bold text-green-500`}>
-                              ${signal.take_profit.toFixed(2)}
                             </div>
                           </div>
                         )}
@@ -272,6 +264,37 @@ export default function LiveTradingSignals() {
                           </div>
                         )}
                       </div>
+
+                      {/* Display multiple take profits if available */}
+                      {signal.take_profits && signal.take_profits.length > 0 && (
+                        <div className="mb-3">
+                          <div className={`text-xs mb-2 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Take Profits</div>
+                          <div className="flex flex-wrap gap-2">
+                            {signal.take_profits.map((tp, idx) => (
+                              <div key={idx} className={`px-3 py-1 rounded-lg ${darkMode ? 'bg-green-900/30' : 'bg-green-50'}`}>
+                                <span className={`text-xs ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
+                                  TP{idx + 1}:
+                                </span>
+                                <span className={`ml-1 font-bold text-green-500`}>
+                                  ${tp.toFixed(2)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Fallback to single take_profit if no array */}
+                      {(!signal.take_profits || signal.take_profits.length === 0) && signal.take_profit > 0 && (
+                        <div className="mb-3">
+                          <div className={`text-xs mb-2 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Take Profit</div>
+                          <div className={`px-3 py-1 rounded-lg inline-block ${darkMode ? 'bg-green-900/30' : 'bg-green-50'}`}>
+                            <span className={`font-bold text-green-500`}>
+                              ${signal.take_profit.toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      )}
 
                       <div className="flex items-center gap-2 text-xs">
                         <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>

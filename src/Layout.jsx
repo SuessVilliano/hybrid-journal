@@ -40,7 +40,7 @@ export default function Layout({ children, currentPageName }) {
   }, []);
 
   useEffect(() => {
-    base44.auth.me().then(setCurrentUser).catch(() => {});
+    base44.auth.me().then(setCurrentUser).catch(() => setCurrentUser(null));
   }, []);
 
   useEffect(() => {
@@ -409,7 +409,10 @@ export default function Layout({ children, currentPageName }) {
             <span className="text-sm font-medium">AI Assistant</span>
           </button>
           <button
-            onClick={() => base44.auth.logout(createPageUrl('Landing'))}
+            onClick={() => {
+              base44.auth.logout();
+              window.location.href = createPageUrl('Landing');
+            }}
             className={`w-full mb-3 flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-all ${
               darkMode 
                 ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' 
