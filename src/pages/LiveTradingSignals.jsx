@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Bell, TrendingUp, TrendingDown, X, Check, Eye, Copy, ExternalLink, Zap } from 'lucide-react';
+import { Bell, TrendingUp, TrendingDown, X, Check, Eye, Copy, ExternalLink, Zap, RefreshCw, FileSpreadsheet } from 'lucide-react';
 import { format } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -44,6 +44,17 @@ export default function LiveTradingSignals() {
     }
   });
 
+  const syncSheetsMutation = useMutation({
+    mutationFn: () => base44.functions.invoke('syncSignalsFromSheets'),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries(['signals']);
+      alert(response.data.message || 'Sync complete!');
+    },
+    onError: (error) => {
+      alert(`Sync failed: ${error.message}`);
+    }
+  });
+
   const webhookUrl = user ? `${window.location.origin}/api/functions/ingestSignal` : '';
 
   const handleCopyWebhook = () => {
@@ -74,13 +85,27 @@ export default function LiveTradingSignals() {
               Real-time signals from TradingView and other sources
             </p>
           </div>
-          <Button
-            onClick={() => setShowWebhookInfo(!showWebhookInfo)}
-            className="bg-gradient-to-r from-cyan-500 to-purple-600"
-          >
-            <Zap className="h-4 w-4 mr-2" />
-            Webhook Setup
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => syncSheetsMutation.mutate()}
+              disabled={syncSheetsMutation.isLoading}
+              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
+            >
+              {syncSheetsMutation.isLoading ? (
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+              )}
+              {syncSheetsMutation.isLoading ? 'Syncing...' : 'Sync from Sheets'}
+            </Button>
+            <Button
+              onClick={() => setShowWebhookInfo(!showWebhookInfo)}
+              className="bg-gradient-to-r from-cyan-500 to-purple-600"
+            >
+              <Zap className="h-4 w-4 mr-2" />
+              Webhook Setup
+            </Button>
+          </div>
         </div>
 
         {/* Webhook Info */}
