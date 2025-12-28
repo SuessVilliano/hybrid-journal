@@ -24,6 +24,7 @@ export default function Layout({ children, currentPageName }) {
   const [recentPages, setRecentPages] = useState([]);
   const [menuView, setMenuView] = useState('all');
   const [settingsId, setSettingsId] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -36,6 +37,10 @@ export default function Layout({ children, currentPageName }) {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  useEffect(() => {
+    base44.auth.me().then(setCurrentUser).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -244,13 +249,7 @@ export default function Layout({ children, currentPageName }) {
           <div className={`mt-4 px-3 py-2 rounded-lg ${darkMode ? 'bg-cyan-900/20 border border-cyan-500/20' : 'bg-cyan-50 border border-cyan-200'}`}>
             <div className={`text-xs ${darkMode ? 'text-cyan-400/70' : 'text-cyan-700/70'}`}>Logged in as</div>
             <div className={`text-sm font-medium ${darkMode ? 'text-cyan-400' : 'text-cyan-700'} truncate`}>
-              {React.useMemo(() => {
-                const [userState, setUserState] = React.useState(null);
-                React.useEffect(() => {
-                  base44.auth.me().then(setUserState).catch(() => {});
-                }, []);
-                return userState?.full_name || userState?.email || 'Loading...';
-              }, [])}
+              {currentUser?.full_name || currentUser?.email || 'Loading...'}
             </div>
           </div>
         </div>
