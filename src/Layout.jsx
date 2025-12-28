@@ -131,6 +131,7 @@ export default function Layout({ children, currentPageName }) {
     { id: 'profile', name: 'My Profile', page: 'MyProfile', icon: User },
     { id: 'accounts', name: 'Accounts', page: 'Accounts', icon: Wallet },
     { id: 'propfirm', name: 'Prop Firm Rules', page: 'PropFirmSettings', icon: Shield },
+    { id: 'signals', name: 'Trading Signals', page: 'LiveTradingSignals', icon: Zap },
     { id: 'market', name: 'Live Market', page: 'MarketData', icon: TrendingUp },
     { id: 'trades', name: 'Trades', page: 'Trades', icon: BookOpen },
     { id: 'summaries', name: 'Summaries', page: 'TradingSummaries', icon: FileText },
