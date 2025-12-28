@@ -55,7 +55,7 @@ export default function LiveTradingSignals() {
     }
   });
 
-  const webhookUrl = user ? `${window.location.origin}/api/functions/ingestSignal` : '';
+  const webhookUrl = user ? `https://hybridjournal.co/api/functions/ingestSignal` : '';
 
   const handleCopyWebhook = () => {
     navigator.clipboard.writeText(webhookUrl);
@@ -82,7 +82,7 @@ export default function LiveTradingSignals() {
               Live Trading Signals
             </h1>
             <p className={darkMode ? 'text-cyan-400/70 mt-1' : 'text-cyan-700/70 mt-1'}>
-              Real-time signals from TradingView and other sources
+              Real-time signals from multiple AI providers and Google Sheets
             </p>
           </div>
           <div className="flex gap-2">
