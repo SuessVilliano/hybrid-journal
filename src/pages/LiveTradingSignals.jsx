@@ -133,26 +133,29 @@ export default function LiveTradingSignals() {
 
               <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
                 <h4 className={`font-bold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                  TradingView Alert Setup:
+                  TradingView Webhook Setup:
                 </h4>
                 <ol className={`list-decimal list-inside space-y-2 text-sm ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                  <li>Create an alert in TradingView</li>
+                  <li>Create an alert in TradingView on your chosen symbol/chart</li>
                   <li>In the "Notifications" tab, enable "Webhook URL"</li>
-                  <li>Paste your webhook URL above</li>
-                  <li>Use this message format:</li>
+                  <li>Paste your personal webhook URL above (it's unique to your account)</li>
+                  <li>In the "Message" field, use this JSON format:</li>
                 </ol>
                 <pre className={`mt-2 p-3 rounded text-xs overflow-x-auto ${darkMode ? 'bg-slate-800 text-cyan-400' : 'bg-white text-slate-900'}`}>
-{`{
-  "provider": "TradingView",
-  "ticker": "{{ticker}}",
-  "action": "BUY",
-  "close": {{close}},
-  "interval": "{{interval}}",
-  "stop_loss": {{close}} * 0.98,
-  "take_profit": {{close}} * 1.02,
-  "strategy_name": "My Strategy"
-}`}
+              {`{
+              "provider": "TradingView",
+              "ticker": "{{ticker}}",
+              "action": "BUY",
+              "close": {{close}},
+              "interval": "{{interval}}",
+              "stop_loss": {{close}} * 0.98,
+              "take_profit": {{close}} * 1.02,
+              "strategy_name": "My Strategy"
+              }`}
                 </pre>
+                <p className={`mt-2 text-xs ${darkMode ? 'text-cyan-400/70' : 'text-cyan-700/70'}`}>
+                  💡 Your signals will automatically appear here when TradingView sends the webhook. You can set up multiple alerts for different strategies or symbols.
+                </p>
               </div>
 
               <div className="flex items-center gap-2">
