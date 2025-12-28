@@ -125,6 +125,7 @@ export default function Layout({ children, currentPageName }) {
     { id: 'community', name: 'Community', page: 'SocialFeed', icon: Users },
     { id: 'profile', name: 'My Profile', page: 'MyProfile', icon: User },
     { id: 'accounts', name: 'Accounts', page: 'Accounts', icon: Wallet },
+    { id: 'propfirm', name: 'Prop Firm Rules', page: 'PropFirmSettings', icon: Shield },
     { id: 'market', name: 'Live Market', page: 'MarketData', icon: TrendingUp },
     { id: 'trades', name: 'Trades', page: 'Trades', icon: BookOpen },
     { id: 'summaries', name: 'Summaries', page: 'TradingSummaries', icon: FileText },
@@ -236,6 +237,20 @@ export default function Layout({ children, currentPageName }) {
                 Hybrid Journal
               </h1>
               <p className={`text-xs ${darkMode ? 'text-cyan-400/70' : 'text-cyan-600/70'}`}>Trading Platform</p>
+            </div>
+          </div>
+
+          {/* User Info */}
+          <div className={`mt-4 px-3 py-2 rounded-lg ${darkMode ? 'bg-cyan-900/20 border border-cyan-500/20' : 'bg-cyan-50 border border-cyan-200'}`}>
+            <div className={`text-xs ${darkMode ? 'text-cyan-400/70' : 'text-cyan-700/70'}`}>Logged in as</div>
+            <div className={`text-sm font-medium ${darkMode ? 'text-cyan-400' : 'text-cyan-700'} truncate`}>
+              {React.useMemo(() => {
+                const [userState, setUserState] = React.useState(null);
+                React.useEffect(() => {
+                  base44.auth.me().then(setUserState).catch(() => {});
+                }, []);
+                return userState?.full_name || userState?.email || 'Loading...';
+              }, [])}
             </div>
           </div>
         </div>

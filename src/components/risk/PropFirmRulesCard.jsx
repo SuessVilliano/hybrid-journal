@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,9 +12,26 @@ export default function PropFirmRulesCard({
   onRulesChange,
   initialRules = {}
 }) {
-  const [maxDailyLoss, setMaxDailyLoss] = useState(initialRules.max_daily_loss || 0);
-  const [maxDailyLossPercent, setMaxDailyLossPercent] = useState(initialRules.max_daily_loss_percent || 5);
-  const [trailingDrawdown, setTrailingDrawdown] = useState(initialRules.trailing_drawdown_percent || 10);
+  const { data: propFirmSettings = [] } = useQuery({
+    queryKey: ['propFirmSettings'],
+    queryFn: () => base44.entities.PropFirmSettings.filter({ is_active: true })
+  });
+
+  const activeSetting = propFirmSettings[0];
+
+  const [maxDailyLoss, setMaxDailyLoss] = useState(initialRules.max_daily_loss || activeSetting?.max_daily_loss_dollars || 0);
+  const [maxDailyLossPercent, setMaxDailyLossPercent] = useState(initialRules.max_daily_loss_percent || activeSetting?.max_daily_loss_percent || 5);
+  const [trailingDrawdown, setTrailingDrawdown] = useState(initialRules.trailing_drawdown_percent || activeSetting?.trailing_drawdown_percent || 10);
+
+  useEffect(() => {
+    if (activeSetting) {
+      setMaxDailyLossPercent(activeSetting.max_daily_loss_percent || 5);
+      setTrailingDrawdown(activeSetting.trailing_drawdown_percent || 10);
+      if (activeSetting.max_daily_loss_dollars) {
+        setMaxDailyLoss(activeSetting.max_daily_loss_dollars);
+      }
+    }
+  }, [activeSetting]);
 
   const calculateLimits = () => {
     const maxLossDollars = maxDailyLoss || (accountBalance * (maxDailyLossPercent / 100));
@@ -48,6 +67,11 @@ export default function PropFirmRulesCard({
         <CardTitle className={`flex items-center gap-2 ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
           <Shield className="h-5 w-5" />
           Prop Firm Rules
+          {activeSetting && (
+            <span className="text-xs font-normal px-2 py-1 bg-cyan-500/20 text-cyan-400 rounded-full">
+              {activeSetting.firm_name}
+            </span>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
