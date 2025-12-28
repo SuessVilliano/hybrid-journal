@@ -36,6 +36,14 @@ export default function LiveTradingSignals() {
     onSuccess: () => queryClient.invalidateQueries(['signals'])
   });
 
+  const routeTradeMutation = useMutation({
+    mutationFn: ({ signal_id, override_approval }) =>
+      base44.functions.invoke('routeTrade', { signal_id, override_approval }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['signals']);
+    }
+  });
+
   const webhookUrl = user ? `${window.location.origin}/api/functions/ingestSignal` : '';
 
   const handleCopyWebhook = () => {
@@ -290,12 +298,30 @@ export default function LiveTradingSignals() {
                       {signal.status === 'new' && (
                         <>
                           <Button
-                            onClick={() => updateStatusMutation.mutate({ id: signal.id, status: 'executed' })}
+                            onClick={() => routeTradeMutation.mutate({ 
+                              signal_id: signal.id, 
+                              override_approval: false 
+                            })}
+                            className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700"
+                            size="sm"
+                            disabled={routeTradeMutation.isLoading}
+                          >
+                            <Zap className="h-4 w-4 md:mr-2" />
+                            <span className="hidden md:inline">
+                              {routeTradeMutation.isLoading ? 'Processing...' : 'AI Route'}
+                            </span>
+                          </Button>
+                          <Button
+                            onClick={() => routeTradeMutation.mutate({ 
+                              signal_id: signal.id, 
+                              override_approval: true 
+                            })}
                             className="bg-green-600 hover:bg-green-700"
                             size="sm"
+                            disabled={routeTradeMutation.isLoading}
                           >
                             <Check className="h-4 w-4 md:mr-2" />
-                            <span className="hidden md:inline">Execute</span>
+                            <span className="hidden md:inline">Force Execute</span>
                           </Button>
                           <Button
                             onClick={() => updateStatusMutation.mutate({ id: signal.id, status: 'viewed' })}
@@ -316,14 +342,31 @@ export default function LiveTradingSignals() {
                         </>
                       )}
                       {signal.status === 'viewed' && (
-                        <Button
-                          onClick={() => updateStatusMutation.mutate({ id: signal.id, status: 'executed' })}
-                          className="bg-green-600 hover:bg-green-700"
-                          size="sm"
-                        >
-                          <Check className="h-4 w-4 mr-2" />
-                          Execute
-                        </Button>
+                        <>
+                          <Button
+                            onClick={() => routeTradeMutation.mutate({ 
+                              signal_id: signal.id, 
+                              override_approval: false 
+                            })}
+                            className="bg-gradient-to-r from-cyan-500 to-purple-600"
+                            size="sm"
+                            disabled={routeTradeMutation.isLoading}
+                          >
+                            <Zap className="h-4 w-4 md:mr-2" />
+                            AI Route
+                          </Button>
+                          <Button
+                            onClick={() => routeTradeMutation.mutate({ 
+                              signal_id: signal.id, 
+                              override_approval: true 
+                            })}
+                            className="bg-green-600 hover:bg-green-700"
+                            size="sm"
+                          >
+                            <Check className="h-4 w-4 mr-2" />
+                            Force Execute
+                          </Button>
+                        </>
                       )}
                       {signal.status === 'executed' && (
                         <Badge className="bg-green-500">Executed</Badge>
