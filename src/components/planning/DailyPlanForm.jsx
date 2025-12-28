@@ -7,6 +7,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mic, MicOff, Sparkles, Loader2, Plus, X, Target, Layers, CheckCircle2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import RiskCalculator from '@/components/risk/RiskCalculator';
+import PropFirmRulesCard from '@/components/risk/PropFirmRulesCard';
 
 export default function DailyPlanForm({ existingPlan, onClose, onSuccess }) {
   const [isRecording, setIsRecording] = useState(false);
@@ -18,6 +21,7 @@ export default function DailyPlanForm({ existingPlan, onClose, onSuccess }) {
 
   const [formData, setFormData] = useState(existingPlan || {
     date: new Date().toISOString().split('T')[0],
+    account_id: '',
     plan_text: '',
     voice_transcript: '',
     checklist_items: [
@@ -29,6 +33,17 @@ export default function DailyPlanForm({ existingPlan, onClose, onSuccess }) {
     markets_to_watch: [],
     max_trades: null,
     max_risk: null,
+    max_risk_percent_per_trade: 1,
+    instrument_type_planned: 'Futures',
+    timeframes_planned: [],
+    max_daily_loss: null,
+    max_daily_loss_percent: 5,
+    trailing_drawdown_percent: 10,
+    target_entry_price: null,
+    target_stop_loss: null,
+    target_take_profit: null,
+    position_size_calculated: null,
+    monetary_risk_calculated: null,
     linked_strategy_ids: [],
     linked_goal_ids: [],
     status: 'planned'
@@ -46,6 +61,14 @@ export default function DailyPlanForm({ existingPlan, onClose, onSuccess }) {
     queryKey: ['goals'],
     queryFn: () => base44.entities.Goal.filter({ status: 'In Progress' }, '-created_date', 50)
   });
+
+  const { data: accounts = [] } = useQuery({
+    queryKey: ['accounts'],
+    queryFn: () => base44.entities.Account.list('-created_date', 50)
+  });
+
+  const selectedAccount = accounts.find(acc => acc.id === formData.account_id);
+  const accountBalance = selectedAccount?.initial_balance || 0;
 
   const startRecording = async () => {
     try {
@@ -393,6 +416,54 @@ Max risk: ${formData.max_risk ? '$' + formData.max_risk : 'Not set'}`,
         </div>
       </div>
 
+      {/* Account Selection */}
+      <div>
+        <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+          Trading Account
+        </label>
+        <Select value={formData.account_id} onValueChange={(val) => setFormData({ ...formData, account_id: val })}>
+          <SelectTrigger className={darkMode ? 'bg-slate-900 border-cyan-500/30 text-white' : ''}>
+            <SelectValue placeholder="Select account" />
+          </SelectTrigger>
+          <SelectContent>
+            {accounts.map(acc => (
+              <SelectItem key={acc.id} value={acc.id}>
+                {acc.name} - ${acc.initial_balance?.toFixed(2)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Risk Management Section */}
+      {formData.account_id && (
+        <div className="space-y-4">
+          <RiskCalculator
+            accountBalance={accountBalance}
+            onCalculationComplete={(result) => {
+              setFormData({
+                ...formData,
+                position_size_calculated: result.positionSize,
+                monetary_risk_calculated: result.monetaryRisk
+              });
+            }}
+            initialValues={formData}
+          />
+
+          <PropFirmRulesCard
+            accountBalance={accountBalance}
+            todaysPnl={0}
+            onRulesChange={(rules) => {
+              setFormData({
+                ...formData,
+                ...rules
+              });
+            }}
+            initialRules={formData}
+          />
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
@@ -408,13 +479,15 @@ Max risk: ${formData.max_risk ? '$' + formData.max_risk : 'Not set'}`,
         </div>
         <div>
           <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-            Max Risk/Loss ($)
+            Timeframes
           </label>
           <Input
-            type="number"
-            value={formData.max_risk || ''}
-            onChange={(e) => setFormData({ ...formData, max_risk: parseFloat(e.target.value) || null })}
-            placeholder="e.g., 500"
+            value={formData.timeframes_planned?.join(', ') || ''}
+            onChange={(e) => setFormData({ 
+              ...formData, 
+              timeframes_planned: e.target.value.split(',').map(t => t.trim()).filter(Boolean)
+            })}
+            placeholder="e.g., 5m, 15m, 1h"
             className={darkMode ? 'bg-slate-900 border-cyan-500/30 text-white' : ''}
           />
         </div>

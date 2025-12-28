@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, TrendingDown, Activity, DollarSign, Target, Calendar, Share2, Brain, Settings } from 'lucide-react';
+import { MultiSelect } from '@/components/ui/multi-select';
 import EquityCurve from '@/components/trading/EquityCurve';
 import TradeCalendar from '@/components/trading/TradeCalendar';
 import PerformanceMetrics from '@/components/trading/PerformanceMetrics';
@@ -205,40 +206,18 @@ export default function Dashboard() {
 
         {/* Account Filter */}
         {accounts.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setSelectedAccounts([])}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                selectedAccounts.length === 0
-                  ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white shadow-lg shadow-cyan-500/20'
-                  : darkMode 
-                    ? 'bg-slate-900/50 text-slate-400 hover:text-white border border-cyan-500/20'
-                    : 'bg-white text-slate-600 hover:text-slate-900 border border-cyan-300/50'
-              }`}
-            >
-              All Accounts
-            </button>
-            {accounts.map(acc => (
-              <button
-                key={acc.id}
-                onClick={() => {
-                  setSelectedAccounts(prev => 
-                    prev.includes(acc.id) 
-                      ? prev.filter(id => id !== acc.id)
-                      : [...prev, acc.id]
-                  );
-                }}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                  selectedAccounts.includes(acc.id)
-                    ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white shadow-lg shadow-cyan-500/20'
-                    : darkMode 
-                      ? 'bg-slate-900/50 text-slate-400 hover:text-white border border-cyan-500/20'
-                      : 'bg-white text-slate-600 hover:text-slate-900 border border-cyan-300/50'
-                }`}
-              >
-                {acc.name}
-              </button>
-            ))}
+          <div className="w-full max-w-md">
+            <MultiSelect
+              options={accounts.map(acc => ({ 
+                value: acc.id, 
+                label: `${acc.name} - $${acc.initial_balance?.toFixed(0) || 0}` 
+              }))}
+              selected={selectedAccounts}
+              onChange={setSelectedAccounts}
+              placeholder={selectedAccounts.length === 0 ? "All Accounts" : `${selectedAccounts.length} selected`}
+              searchPlaceholder="Search accounts..."
+              className={darkMode ? 'bg-slate-900 border-cyan-500/30 text-white' : ''}
+            />
           </div>
         )}
 

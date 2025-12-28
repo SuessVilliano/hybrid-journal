@@ -1,12 +1,27 @@
 import React, { useMemo, useState } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, startOfWeek, endOfWeek, addWeeks, subWeeks, addMonths, subMonths } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Target, FileText } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 export default function TradeCalendar({ trades }) {
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [showPlanModal, setShowPlanModal] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState('month'); // 'day', 'week', 'month'
   const darkMode = document.documentElement.classList.contains('dark');
+
+  const { data: tradePlans = [] } = useQuery({
+    queryKey: ['tradePlans'],
+    queryFn: () => base44.entities.DailyTradePlan.list('-date', 365)
+  });
 
   const calendarData = useMemo(() => {
     let days;
@@ -28,15 +43,18 @@ export default function TradeCalendar({ trades }) {
         isSameDay(new Date(t.entry_date), day)
       );
       const dayPnl = dayTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+      const dayPlan = tradePlans.find(p => isSameDay(new Date(p.date), day));
       
       return {
         date: day,
         trades: dayTrades,
         tradeCount: dayTrades.length,
-        pnl: dayPnl
+        pnl: dayPnl,
+        hasPlan: !!dayPlan,
+        plan: dayPlan
       };
     });
-  }, [trades, currentDate, view]);
+  }, [trades, tradePlans, currentDate, view]);
 
   const navigate = (direction) => {
     if (view === 'day') {
@@ -211,7 +229,11 @@ export default function TradeCalendar({ trades }) {
             {calendarData.map((day, idx) => (
               <div
                 key={idx}
-                className={`aspect-square p-2 rounded-lg border transition-all cursor-pointer ${
+                onClick={() => {
+                  setSelectedDate(day);
+                  if (day.hasPlan) setShowPlanModal(true);
+                }}
+                className={`aspect-square p-2 rounded-lg border transition-all cursor-pointer relative ${
                   day.tradeCount === 0
                     ? darkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-200'
                     : day.pnl >= 0
@@ -219,8 +241,13 @@ export default function TradeCalendar({ trades }) {
                       : darkMode ? 'bg-red-900/30 border-red-700/30 hover:bg-red-900/50' : 'bg-red-50 border-red-200 hover:bg-red-100'
                 }`}
               >
-                <div className={`text-xs font-medium ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                  {format(day.date, 'd')}
+                <div className="flex items-center justify-between">
+                  <div className={`text-xs font-medium ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                    {format(day.date, 'd')}
+                  </div>
+                  {day.hasPlan && (
+                    <Target className={`h-3 w-3 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`} />
+                  )}
                 </div>
                 {day.tradeCount > 0 && (
                   <div className="mt-1 space-y-0.5">
@@ -235,6 +262,70 @@ export default function TradeCalendar({ trades }) {
               </div>
             ))}
           </div>
+
+          {/* Plan Modal */}
+          {selectedDate && showPlanModal && selectedDate.plan && (
+            <Dialog open={showPlanModal} onOpenChange={setShowPlanModal}>
+              <DialogContent className={`max-w-2xl ${darkMode ? 'bg-slate-950 border-cyan-500/30' : ''}`}>
+                <DialogHeader>
+                  <DialogTitle className={`flex items-center gap-2 ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
+                    <Target className="h-5 w-5" />
+                    Plan for {format(selectedDate.date, 'MMMM d, yyyy')}
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className={`text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>Plan</h4>
+                    <p className={`text-sm ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                      {selectedDate.plan.plan_text}
+                    </p>
+                  </div>
+
+                  {selectedDate.plan.markets_to_watch?.length > 0 && (
+                    <div>
+                      <h4 className={`text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>Markets</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedDate.plan.markets_to_watch.map((market, i) => (
+                          <span key={i} className={`px-2 py-1 rounded text-xs ${darkMode ? 'bg-cyan-900/30 text-cyan-400' : 'bg-cyan-100 text-cyan-700'}`}>
+                            {market}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedDate.plan.trading_rules?.length > 0 && (
+                    <div>
+                      <h4 className={`text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>Rules</h4>
+                      <ul className="list-disc list-inside space-y-1">
+                        {selectedDate.plan.trading_rules.map((rule, i) => (
+                          <li key={i} className={`text-sm ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>{rule}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
+                    <h4 className={`text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>Execution vs Plan</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Trades Taken</div>
+                        <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                          {selectedDate.tradeCount}
+                        </div>
+                      </div>
+                      <div>
+                        <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>P&L</div>
+                        <div className={`text-lg font-bold ${selectedDate.pnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                          ${selectedDate.pnl.toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
         </>
       )}
     </div>

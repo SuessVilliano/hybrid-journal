@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Brain, X, Minimize2, Maximize2, Send, Loader2, Sparkles } from 'lucide-react';
+import { Brain, X, Minimize2, Maximize2, Send, Loader2, Sparkles, Mic, MicOff } from 'lucide-react';
 import MessageBubble from '../coach/MessageBubble';
 
 export default function FloatingAIAssistant({ isOpen, onClose }) {
@@ -12,6 +12,8 @@ export default function FloatingAIAssistant({ isOpen, onClose }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isMinimized, setIsMinimized] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const recognitionRef = useRef(null);
   const [position, setPosition] = useState({ x: window.innerWidth - 420, y: 100 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -24,6 +26,40 @@ export default function FloatingAIAssistant({ isOpen, onClose }) {
       initConversation();
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    // Initialize Web Speech API
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+
+      recognitionRef.current.onresult = (event) => {
+        const transcript = Array.from(event.results)
+          .map(result => result[0])
+          .map(result => result.transcript)
+          .join('');
+        
+        setInput(transcript);
+      };
+
+      recognitionRef.current.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        setIsRecording(false);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsRecording(false);
+      };
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -61,6 +97,11 @@ export default function FloatingAIAssistant({ isOpen, onClose }) {
     const userMessage = input;
     setInput('');
 
+    if (isRecording && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsRecording(false);
+    }
+
     try {
       await base44.agents.addMessage(conversation, {
         role: 'user',
@@ -68,6 +109,21 @@ export default function FloatingAIAssistant({ isOpen, onClose }) {
       });
     } catch (error) {
       console.error('Failed to send message:', error);
+    }
+  };
+
+  const toggleVoiceRecording = () => {
+    if (!recognitionRef.current) {
+      alert('Voice input is not supported in your browser. Please try Chrome or Edge.');
+      return;
+    }
+
+    if (isRecording) {
+      recognitionRef.current.stop();
+      setIsRecording(false);
+    } else {
+      recognitionRef.current.start();
+      setIsRecording(true);
     }
   };
 
@@ -199,24 +255,34 @@ export default function FloatingAIAssistant({ isOpen, onClose }) {
                       sendMessage();
                     }
                   }}
-                  placeholder="Ask me anything about trading..."
+                  placeholder={isRecording ? "Listening..." : "Ask me anything about trading..."}
                   className="flex-1 min-h-[60px] max-h-[120px]"
                   rows={2}
                 />
-                <Button
-                  onClick={sendMessage}
-                  disabled={!input.trim() || !conversation}
-                  className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700"
-                >
-                  {conversation && messages[messages.length - 1]?.role === 'user' && !messages[messages.length - 1]?.tool_calls ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                </Button>
+                <div className="flex flex-col gap-2">
+                  <Button
+                    onClick={toggleVoiceRecording}
+                    variant={isRecording ? "destructive" : "outline"}
+                    size="icon"
+                    className="h-[30px] w-[50px]"
+                  >
+                    {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                  </Button>
+                  <Button
+                    onClick={sendMessage}
+                    disabled={!input.trim() || !conversation}
+                    className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 h-[30px] w-[50px]"
+                  >
+                    {conversation && messages[messages.length - 1]?.role === 'user' && !messages[messages.length - 1]?.tool_calls ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               </div>
               <p className={`text-xs mt-2 ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
-                Press Enter to send, Shift+Enter for new line
+                {isRecording ? '🎤 Voice recording active' : 'Press Enter to send, Shift+Enter for new line, or use voice'}
               </p>
             </div>
           </>
