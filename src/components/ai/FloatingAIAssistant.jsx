@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Brain, X, Minimize2, Maximize2, Send, Loader2, Sparkles, Mic, MicOff } from 'lucide-react';
+import { Brain, X, Minimize2, Maximize2, Send, Loader2, Sparkles, Mic, MicOff, Paperclip, Image as ImageIcon, Expand } from 'lucide-react';
 import MessageBubble from '../coach/MessageBubble';
 
 export default function FloatingAIAssistant({ isOpen, onClose }) {
@@ -12,8 +12,12 @@ export default function FloatingAIAssistant({ isOpen, onClose }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isMinimized, setIsMinimized] = useState(false);
+  const [isFullPage, setIsFullPage] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [uploading, setUploading] = useState(false);
   const recognitionRef = useRef(null);
+  const fileInputRef = useRef(null);
   const [position, setPosition] = useState({ x: window.innerWidth - 420, y: 100 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -91,11 +95,34 @@ export default function FloatingAIAssistant({ isOpen, onClose }) {
     }
   };
 
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    setUploading(true);
+    try {
+      const uploadPromises = files.map(async (file) => {
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        return file_url;
+      });
+
+      const urls = await Promise.all(uploadPromises);
+      setUploadedFiles([...uploadedFiles, ...urls]);
+    } catch (error) {
+      console.error('File upload failed:', error);
+      alert('Failed to upload files');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const sendMessage = async () => {
-    if (!input.trim() || !conversation) return;
+    if ((!input.trim() && uploadedFiles.length === 0) || !conversation) return;
 
     const userMessage = input;
+    const filesToSend = [...uploadedFiles];
     setInput('');
+    setUploadedFiles([]);
 
     if (isRecording && recognitionRef.current) {
       recognitionRef.current.stop();
@@ -105,7 +132,8 @@ export default function FloatingAIAssistant({ isOpen, onClose }) {
     try {
       await base44.agents.addMessage(conversation, {
         role: 'user',
-        content: userMessage
+        content: userMessage || 'Please analyze these images',
+        file_urls: filesToSend.length > 0 ? filesToSend : undefined
       });
     } catch (error) {
       console.error('Failed to send message:', error);
@@ -165,6 +193,158 @@ export default function FloatingAIAssistant({ isOpen, onClose }) {
 
   const darkMode = document.documentElement.classList.contains('dark');
 
+  // Full page mode
+  if (isFullPage) {
+    return (
+      <div className={`fixed inset-0 z-[9999] ${
+        darkMode 
+          ? 'bg-slate-950' 
+          : 'bg-white'
+      }`}>
+        <div className={`h-full flex flex-col border-b ${darkMode ? 'border-cyan-500/20' : 'border-cyan-500/30'}`}>
+          <div className={`p-4 border-b ${darkMode ? 'border-cyan-500/20 bg-slate-950' : 'border-cyan-500/30 bg-white'}`}>
+            <div className="flex items-center justify-between max-w-5xl mx-auto">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-purple-600 rounded-lg flex items-center justify-center">
+                  <Brain className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                    AI Trading Coach
+                  </h1>
+                  <p className={`text-sm ${darkMode ? 'text-cyan-400/70' : 'text-cyan-700/70'}`}>
+                    Full conversation history
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsFullPage(false)}
+                  className="h-9 w-9"
+                >
+                  <Minimize2 className="h-5 w-5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onClose}
+                  className="h-9 w-9"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4">
+            <div className="max-w-5xl mx-auto space-y-4">
+              {messages.length === 0 ? (
+                <div className="text-center py-12">
+                  <Sparkles className={`h-16 w-16 mx-auto mb-4 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`} />
+                  <h3 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                    Hey! I'm your AI Trading Coach
+                  </h3>
+                  <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'} mb-6`}>
+                    I can help with trade analysis, coaching, strategy coding, chart reading, and more!
+                  </p>
+                  <div className={`mt-6 text-left max-w-md mx-auto space-y-2 text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                    <p>💡 Ask me to analyze your recent trades</p>
+                    <p>📊 Get chart analysis and trade ideas</p>
+                    <p>🎯 Create custom indicators or strategies</p>
+                    <p>📚 Learn trading techniques</p>
+                    <p>🧠 Get psychology coaching</p>
+                    <p>📸 Upload chart screenshots for analysis</p>
+                  </div>
+                </div>
+              ) : (
+                messages.map((msg, idx) => (
+                  <MessageBubble key={idx} message={msg} />
+                ))
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          </div>
+
+          <div className={`p-4 border-t ${darkMode ? 'border-cyan-500/20 bg-slate-950' : 'border-cyan-500/30 bg-white'}`}>
+            <div className="max-w-5xl mx-auto">
+              {uploadedFiles.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {uploadedFiles.map((url, idx) => (
+                    <div key={idx} className="relative">
+                      <img src={url} alt="Uploaded" className="h-16 w-16 rounded-lg object-cover" />
+                      <button
+                        onClick={() => setUploadedFiles(uploadedFiles.filter((_, i) => i !== idx))}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                />
+                <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  variant="outline"
+                  size="icon"
+                  className="h-12 w-12"
+                >
+                  {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Paperclip className="h-5 w-5" />}
+                </Button>
+                <Textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      sendMessage();
+                    }
+                  }}
+                  placeholder={isRecording ? "Listening..." : "Ask me anything about trading..."}
+                  className="flex-1 min-h-[48px] max-h-[120px]"
+                  rows={1}
+                />
+                <div className="flex gap-2">
+                  <Button
+                    onClick={toggleVoiceRecording}
+                    variant={isRecording ? "destructive" : "outline"}
+                    size="icon"
+                    className="h-12 w-12"
+                  >
+                    {isRecording ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+                  </Button>
+                  <Button
+                    onClick={sendMessage}
+                    disabled={(!input.trim() && uploadedFiles.length === 0) || !conversation}
+                    className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 h-12 w-12"
+                  >
+                    {conversation && messages[messages.length - 1]?.role === 'user' && !messages[messages.length - 1]?.tool_calls ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <Send className="h-5 w-5" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Floating mode
   return (
     <div
       ref={cardRef}
@@ -196,6 +376,15 @@ export default function FloatingAIAssistant({ isOpen, onClose }) {
               </div>
             </div>
             <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsFullPage(true)}
+                className="h-7 w-7"
+                title="Expand to full page"
+              >
+                <Expand className="h-4 w-4" />
+              </Button>
               <Button
                 variant="ghost"
                 size="icon"
@@ -234,6 +423,7 @@ export default function FloatingAIAssistant({ isOpen, onClose }) {
                     <p>🎯 Create custom indicators or strategies</p>
                     <p>📚 Learn trading techniques</p>
                     <p>🧠 Get psychology coaching</p>
+                    <p>📸 Upload chart screenshots for analysis</p>
                   </div>
                 </div>
               ) : (
@@ -245,7 +435,39 @@ export default function FloatingAIAssistant({ isOpen, onClose }) {
             </CardContent>
 
             <div className={`p-4 border-t ${darkMode ? 'border-cyan-500/20' : 'border-cyan-500/30'}`}>
+              {uploadedFiles.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {uploadedFiles.map((url, idx) => (
+                    <div key={idx} className="relative">
+                      <img src={url} alt="Uploaded" className="h-12 w-12 rounded-lg object-cover" />
+                      <button
+                        onClick={() => setUploadedFiles(uploadedFiles.filter((_, i) => i !== idx))}
+                        className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="flex gap-2">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                />
+                <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  variant="outline"
+                  size="icon"
+                  className="h-[60px] w-[40px] flex-shrink-0"
+                >
+                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
+                </Button>
                 <Textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -255,7 +477,7 @@ export default function FloatingAIAssistant({ isOpen, onClose }) {
                       sendMessage();
                     }
                   }}
-                  placeholder={isRecording ? "Listening..." : "Ask me anything about trading..."}
+                  placeholder={isRecording ? "Listening..." : "Ask me anything..."}
                   className="flex-1 min-h-[60px] max-h-[120px]"
                   rows={2}
                 />
@@ -264,14 +486,14 @@ export default function FloatingAIAssistant({ isOpen, onClose }) {
                     onClick={toggleVoiceRecording}
                     variant={isRecording ? "destructive" : "outline"}
                     size="icon"
-                    className="h-[30px] w-[50px]"
+                    className="h-[28px] w-[50px]"
                   >
                     {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                   </Button>
                   <Button
                     onClick={sendMessage}
-                    disabled={!input.trim() || !conversation}
-                    className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 h-[30px] w-[50px]"
+                    disabled={(!input.trim() && uploadedFiles.length === 0) || !conversation}
+                    className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 h-[28px] w-[50px]"
                   >
                     {conversation && messages[messages.length - 1]?.role === 'user' && !messages[messages.length - 1]?.tool_calls ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -282,7 +504,7 @@ export default function FloatingAIAssistant({ isOpen, onClose }) {
                 </div>
               </div>
               <p className={`text-xs mt-2 ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
-                {isRecording ? '🎤 Voice recording active' : 'Press Enter to send, Shift+Enter for new line, or use voice'}
+                {isRecording ? '🎤 Recording' : 'Enter to send, Shift+Enter for new line'}
               </p>
             </div>
           </>

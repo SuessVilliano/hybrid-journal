@@ -214,12 +214,39 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Mobile Menu Button */}
       {isMobile && (
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="fixed top-4 left-4 z-50 bg-gradient-to-r from-cyan-500 to-purple-600 text-white p-3 rounded-xl shadow-2xl hover:scale-110 transition-transform"
-        >
-          {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </button>
+        <div className="fixed top-4 left-0 right-0 z-50 flex items-center justify-between px-4">
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white p-3 rounded-xl shadow-2xl hover:scale-110 transition-transform"
+          >
+            {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
+          <button
+            onClick={() => setDarkMode(!darkMode)}
+            className={`p-3 rounded-xl shadow-2xl hover:scale-110 transition-transform ${
+              darkMode 
+                ? 'bg-slate-800 text-cyan-400' 
+                : 'bg-white text-cyan-700'
+            }`}
+          >
+            {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </button>
+        </div>
+      )}
+
+      {!isMobile && (
+        <div className="fixed top-4 right-4 z-50">
+          <button
+            onClick={() => setDarkMode(!darkMode)}
+            className={`p-3 rounded-xl shadow-2xl hover:scale-110 transition-transform ${
+              darkMode 
+                ? 'bg-slate-800 text-cyan-400' 
+                : 'bg-white text-cyan-700'
+            }`}
+          >
+            {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </button>
+        </div>
       )}
 
       {/* Sidebar */}
@@ -404,30 +431,6 @@ export default function Layout({ children, currentPageName }) {
         </DragDropContext>
 
         <div className={`absolute bottom-0 left-0 right-0 p-4 border-t ${darkMode ? 'border-cyan-500/20 bg-slate-950/50' : 'border-cyan-500/30 bg-white/50'} ${!sidebarOpen && 'hidden'}`}>
-          <button
-            onClick={() => setShowAI(!showAI)}
-            className={`w-full mb-3 flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-all shadow-lg ${
-              showAI
-                ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white'
-                : darkMode 
-                  ? 'bg-gradient-to-r from-cyan-500/20 to-purple-600/20 text-cyan-400 hover:from-cyan-500/30 hover:to-purple-600/30' 
-                  : 'bg-gradient-to-r from-cyan-100 to-purple-100 text-cyan-700 hover:from-cyan-200 hover:to-purple-200'
-            }`}
-          >
-            <Brain className="h-4 w-4" />
-            <span className="text-sm font-medium">AI Assistant</span>
-          </button>
-          <button
-            onClick={() => setDarkMode(!darkMode)}
-            className={`w-full mb-3 flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-all ${
-              darkMode 
-                ? 'bg-gradient-to-r from-cyan-500/20 to-purple-600/20 text-cyan-400 hover:from-cyan-500/30 hover:to-purple-600/30' 
-                : 'bg-gradient-to-r from-cyan-100 to-purple-100 text-cyan-700 hover:from-cyan-200 hover:to-purple-200'
-            }`}
-          >
-            {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            <span className="text-sm font-medium">{darkMode ? 'Light' : 'Dark'} Mode</span>
-          </button>
           <div className={`text-xs ${darkMode ? 'text-cyan-400/60' : 'text-cyan-600/60'} space-y-1`}>
             <div className="flex items-center gap-1">
               <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse" />
