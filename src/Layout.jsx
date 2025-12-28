@@ -252,6 +252,15 @@ export default function Layout({ children, currentPageName }) {
             <div className={`text-sm font-medium ${darkMode ? 'text-cyan-400' : 'text-cyan-700'} truncate`}>
               {currentUser?.full_name || currentUser?.email || 'Loading...'}
             </div>
+            <button
+              onClick={() => {
+                base44.auth.logout();
+                window.location.href = createPageUrl('Landing');
+              }}
+              className={`text-xs mt-1 underline ${darkMode ? 'text-cyan-400/70 hover:text-cyan-400' : 'text-cyan-700/70 hover:text-cyan-700'} transition-colors`}
+            >
+              Sign out
+            </button>
           </div>
         </div>
 
@@ -407,19 +416,6 @@ export default function Layout({ children, currentPageName }) {
           >
             <Brain className="h-4 w-4" />
             <span className="text-sm font-medium">AI Assistant</span>
-          </button>
-          <button
-            onClick={() => {
-              base44.auth.logout();
-              window.location.href = createPageUrl('Landing');
-            }}
-            className={`w-full mb-3 flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-all ${
-              darkMode 
-                ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' 
-                : 'bg-red-100 text-red-700 hover:bg-red-200'
-            }`}
-          >
-            <span className="text-sm font-medium">Sign Out</span>
           </button>
           <button
             onClick={() => setDarkMode(!darkMode)}
