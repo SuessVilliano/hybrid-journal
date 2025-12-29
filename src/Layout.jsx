@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { base44 } from '@/api/base44Client';
-import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText, Menu, X, Wallet, Sun, Moon, Home, Users, User, Brain, GripVertical, Star, Clock, List } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText, Menu, X, Wallet, Sun, Moon, Home, Users, User, Brain, GripVertical, Star, Clock, List, Bell, HelpCircle, UserCheck } from 'lucide-react';
 import FloatingAIAssistant from '@/components/ai/FloatingAIAssistant';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import QuickAccessPanel from '@/components/layout/QuickAccessPanel';
@@ -302,7 +302,7 @@ export default function Layout({ children, currentPageName }) {
             : 'bg-white/95 border-cyan-500/30 text-slate-900'
         } backdrop-blur-xl border-r ${
           sidebarOpen ? 'w-64' : isMobile ? 'w-0' : 'w-16'
-        } overflow-y-auto overflow-x-hidden`}
+        } overflow-y-auto overflow-x-hidden flex flex-col`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className={`p-6 border-b ${darkMode ? 'border-cyan-500/20' : 'border-cyan-500/30'} ${!sidebarOpen && 'hidden'}`}>
@@ -364,7 +364,8 @@ export default function Layout({ children, currentPageName }) {
           <Droppable droppableId="navigation">
             {(provided) => (
               <nav 
-                className="p-4 space-y-2 overflow-y-auto flex-1" 
+                className="p-4 space-y-2 overflow-y-auto" 
+                style={{ maxHeight: 'calc(100vh - 400px)' }}
                 {...provided.droppableProps}
                 ref={provided.innerRef}
               >
