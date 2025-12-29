@@ -26,6 +26,7 @@ import TradePlans from './pages/TradePlans';
 import Trades from './pages/Trades';
 import TradingCoach from './pages/TradingCoach';
 import TradingSummaries from './pages/TradingSummaries';
+import Calculators from './pages/Calculators';
 import __Layout from './Layout.jsx';
 
 
@@ -58,6 +59,7 @@ export const PAGES = {
     "Trades": Trades,
     "TradingCoach": TradingCoach,
     "TradingSummaries": TradingSummaries,
+    "Calculators": Calculators,
 }
 
 export const pagesConfig = {

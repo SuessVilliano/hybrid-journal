@@ -150,11 +150,10 @@ export default function Layout({ children, currentPageName }) {
     { id: 'analytics', name: 'Analytics', page: 'Analytics', icon: BarChart3 },
     { id: 'summaries', name: 'Summaries', page: 'TradingSummaries', icon: FileText },
     { id: 'coach', name: 'AI Coach', page: 'TradingCoach', icon: MessageSquare },
-    { id: 'risk', name: 'Risk Manager', page: 'RiskManagement', icon: Shield },
-    { id: 'strategies', name: 'Strategies', page: 'Strategies', icon: Layers },
-    { id: 'broker', name: 'Broker Sync', page: 'BrokerConnections', icon: LinkIcon },
-    { id: 'automation', name: 'Automation', page: 'Automation', icon: Bot },
-    { id: 'backtesting', name: 'Backtesting', page: 'Backtesting', icon: Play },
+    { id: 'calculators', name: 'Calculators', page: 'Calculators', icon: Shield },
+    { id: 'strategies', name: 'Strategies & Automation', page: 'Strategies', icon: Layers },
+    { id: 'broker', name: 'Broker Sync', page: 'BrokerConnections', icon: LinkIcon, adminOnly: true },
+    { id: 'backtesting', name: 'Backtesting', page: 'Backtesting', icon: Play, adminOnly: true },
     { id: 'imports', name: 'Imports', page: 'Imports', icon: Upload },
     { id: 'community', name: 'Community', page: 'SocialFeed', icon: Users },
     { id: 'media', name: 'Media Library', page: 'MediaLibrary', icon: ImageIcon },
@@ -168,11 +167,19 @@ export default function Layout({ children, currentPageName }) {
     ? menuOrder.map(id => defaultNavigation.find(item => item.id === id)).filter(Boolean)
     : defaultNavigation;
 
+  // Filter admin-only items
+  const filteredNavigation = allNavigation.filter(item => {
+    if (item.adminOnly && currentUser?.email !== 'liv8ent@gmail.com') {
+      return false;
+    }
+    return true;
+  });
+
   const navigation = menuView === 'favorites' 
-    ? allNavigation.filter(item => favorites.includes(item.id))
+    ? filteredNavigation.filter(item => favorites.includes(item.id))
     : menuView === 'recent'
-    ? recentPages.map(r => allNavigation.find(item => item.id === r.id)).filter(Boolean)
-    : allNavigation;
+    ? recentPages.map(r => filteredNavigation.find(item => item.id === r.id)).filter(Boolean)
+    : filteredNavigation;
 
   const toggleFavorite = async (itemId) => {
     const newFavorites = favorites.includes(itemId)
