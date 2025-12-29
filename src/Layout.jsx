@@ -5,7 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText, Menu, X, Wallet, Sun, Moon, Home, Users, User, Brain, GripVertical, Star, Clock, List, Bell, HelpCircle, UserCheck } from 'lucide-react';
 import FloatingAIAssistant from '@/components/ai/FloatingAIAssistant';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import QuickAccessPanel from '@/components/layout/QuickAccessPanel';
+
 import NotificationBell from '@/components/notifications/NotificationBell';
 
 export default function Layout({ children, currentPageName }) {
@@ -27,7 +27,7 @@ export default function Layout({ children, currentPageName }) {
   const [menuView, setMenuView] = useState('all');
   const [settingsId, setSettingsId] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
-  const [quickAccess, setQuickAccess] = useState([]);
+
 
   useEffect(() => {
     const checkMobile = () => {
@@ -69,7 +69,7 @@ export default function Layout({ children, currentPageName }) {
           setFavorites(s.favorites || []);
           setRecentPages(s.recent_pages || []);
           setMenuView(s.menu_view || 'all');
-          setQuickAccess(s.quick_access || ['dashboard', 'planning', 'trades', 'journal']);
+
           
           // Update saved settings with merged order if new items were added
           if (newItems.length > 0) {
@@ -77,11 +77,9 @@ export default function Layout({ children, currentPageName }) {
           }
         } else {
           setMenuOrder(defaultNavigation.map(item => item.id));
-          setQuickAccess(['dashboard', 'planning', 'trades', 'journal']);
         }
         } catch (error) {
         setMenuOrder(defaultNavigation.map(item => item.id));
-        setQuickAccess(['dashboard', 'planning', 'trades', 'journal']);
         } finally {
         setLoadingMenu(false);
         }
@@ -89,33 +87,7 @@ export default function Layout({ children, currentPageName }) {
         loadMenuOrder();
         }, []);
 
-        const handleQuickAccessDragEnd = async (result) => {
-        if (!result.destination) return;
 
-        const items = Array.from(quickAccess);
-        const [reorderedItem] = items.splice(result.source.index, 1);
-        items.splice(result.destination.index, 0, reorderedItem);
-
-        setQuickAccess(items);
-
-        try {
-        if (settingsId) {
-        await base44.entities.DashboardSettings.update(settingsId, { quick_access: items });
-        }
-        } catch (error) {
-        console.error('Failed to save quick access:', error);
-        }
-        };
-
-        const replaceQuickAccessItem = (index, newItemId) => {
-        const newQuickAccess = [...quickAccess];
-        newQuickAccess[index] = newItemId;
-        setQuickAccess(newQuickAccess);
-
-        if (settingsId) {
-        base44.entities.DashboardSettings.update(settingsId, { quick_access: newQuickAccess });
-        }
-        };
 
   useEffect(() => {
     if (currentPageName && currentPageName !== 'Landing' && settingsId) {
@@ -360,24 +332,7 @@ export default function Layout({ children, currentPageName }) {
           </div>
         )}
 
-        {sidebarOpen && (
-          <div className="flex-shrink-0">
-            <QuickAccessPanel
-              quickAccess={quickAccess}
-              allNavigation={defaultNavigation}
-              onReorder={handleQuickAccessDragEnd}
-              onReplace={(index, newItemId) => {
-                const newQuickAccess = [...quickAccess];
-                newQuickAccess[index] = newItemId;
-                setQuickAccess(newQuickAccess);
-                if (settingsId) {
-                  base44.entities.DashboardSettings.update(settingsId, { quick_access: newQuickAccess });
-                }
-              }}
-              darkMode={darkMode}
-            />
-          </div>
-        )}
+
 
         <DragDropContext onDragEnd={handleDragEnd}>
           <Droppable droppableId="navigation">
