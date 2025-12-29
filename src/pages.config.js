@@ -19,7 +19,6 @@ import SocialFeed from './pages/SocialFeed';
 import Strategies from './pages/Strategies';
 import Trades from './pages/Trades';
 import TradingCoach from './pages/TradingCoach';
-import TradingPlatforms from './pages/TradingPlatforms';
 import TradingSummaries from './pages/TradingSummaries';
 import StrategicPlanning from './pages/StrategicPlanning';
 import Journal from './pages/Journal';
@@ -49,7 +48,6 @@ export const PAGES = {
     "Strategies": Strategies,
     "Trades": Trades,
     "TradingCoach": TradingCoach,
-    "TradingPlatforms": TradingPlatforms,
     "TradingSummaries": TradingSummaries,
     "StrategicPlanning": StrategicPlanning,
     "Journal": Journal,
