@@ -54,7 +54,7 @@ export default function WebhookSettings() {
     setTestResult(null);
 
     try {
-      const webhookUrl = `${window.location.origin}/api/functions/ingestSignal?token=${user.webhook_token}`;
+      const webhookUrl = `https://hybridjournal.co/api/functions/ingestSignal?token=${user.webhook_token}`;
       
       let payload;
       if (testPayload.trim()) {
@@ -102,7 +102,7 @@ export default function WebhookSettings() {
 
   const copyWebhookUrl = () => {
     if (!user?.webhook_token) return;
-    const webhookUrl = `${window.location.origin}/api/functions/ingestSignal?token=${user.webhook_token}`;
+    const webhookUrl = `https://hybridjournal.co/api/functions/ingestSignal?token=${user.webhook_token}`;
     navigator.clipboard.writeText(webhookUrl);
     toast.success('Webhook URL copied!');
   };
@@ -120,7 +120,7 @@ export default function WebhookSettings() {
   }
 
   const webhookUrl = user?.webhook_token 
-    ? `${window.location.origin}/api/functions/ingestSignal?token=${user.webhook_token}`
+    ? `https://hybridjournal.co/api/functions/ingestSignal?token=${user.webhook_token}`
     : null;
 
   return (
