@@ -360,12 +360,30 @@ export default function Layout({ children, currentPageName }) {
           </div>
         )}
 
+        {sidebarOpen && (
+          <div className="flex-shrink-0">
+            <QuickAccessPanel
+              quickAccess={quickAccess}
+              allNavigation={defaultNavigation}
+              onReorder={handleQuickAccessDragEnd}
+              onReplace={(index, newItemId) => {
+                const newQuickAccess = [...quickAccess];
+                newQuickAccess[index] = newItemId;
+                setQuickAccess(newQuickAccess);
+                if (settingsId) {
+                  base44.entities.DashboardSettings.update(settingsId, { quick_access: newQuickAccess });
+                }
+              }}
+              darkMode={darkMode}
+            />
+          </div>
+        )}
+
         <DragDropContext onDragEnd={handleDragEnd}>
           <Droppable droppableId="navigation">
             {(provided) => (
               <nav 
-                className="p-4 space-y-2 overflow-y-auto" 
-                style={{ maxHeight: 'calc(100vh - 400px)' }}
+                className="p-4 space-y-2 overflow-y-auto flex-1" 
                 {...provided.droppableProps}
                 ref={provided.innerRef}
               >
@@ -460,25 +478,6 @@ export default function Layout({ children, currentPageName }) {
             )}
           </Droppable>
         </DragDropContext>
-
-        {sidebarOpen && (
-          <div className="mt-auto">
-            <QuickAccessPanel
-              quickAccess={quickAccess}
-              allNavigation={defaultNavigation}
-              onReorder={handleQuickAccessDragEnd}
-              onReplace={(index, newItemId) => {
-                const newQuickAccess = [...quickAccess];
-                newQuickAccess[index] = newItemId;
-                setQuickAccess(newQuickAccess);
-                if (settingsId) {
-                  base44.entities.DashboardSettings.update(settingsId, { quick_access: newQuickAccess });
-                }
-              }}
-              darkMode={darkMode}
-            />
-          </div>
-        )}
 
         <div className={`p-4 border-t ${darkMode ? 'border-cyan-500/20 bg-slate-950/50' : 'border-cyan-500/30 bg-white/50'} ${!sidebarOpen && 'hidden'}`}>
           <div className="flex items-start justify-between gap-3">
