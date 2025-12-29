@@ -3,15 +3,18 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, BookOpen, TrendingUp, Target } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Plus, BookOpen, TrendingUp, Target, Bot } from 'lucide-react';
 import StrategyForm from '@/components/strategies/StrategyForm';
 import StrategyCard from '@/components/strategies/StrategyCard.jsx';
 
 export default function Strategies() {
   const [showForm, setShowForm] = useState(false);
   const [editingStrategy, setEditingStrategy] = useState(null);
+  const [activeTab, setActiveTab] = useState('manual');
 
   const queryClient = useQueryClient();
+  const darkMode = document.documentElement.classList.contains('dark');
 
   const { data: strategies = [], isLoading } = useQuery({
     queryKey: ['strategies'],
@@ -87,13 +90,23 @@ export default function Strategies() {
   }, [strategies, trades]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+    <div className={`min-h-screen p-4 md:p-6 transition-colors ${
+      darkMode 
+        ? 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900' 
+        : 'bg-gradient-to-br from-cyan-50 via-purple-50 to-pink-50'
+    }`}>
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-4xl font-bold text-slate-900">Trading Strategies</h1>
-            <p className="text-slate-600 mt-1">Manage your trading playbook</p>
+            <h1 className={`text-3xl md:text-4xl font-bold bg-gradient-to-r ${
+              darkMode ? 'from-cyan-400 to-purple-500' : 'from-cyan-600 to-purple-600'
+            } bg-clip-text text-transparent`}>
+              Strategies & Automation
+            </h1>
+            <p className={darkMode ? 'text-cyan-400/70 mt-1' : 'text-cyan-700/70 mt-1'}>
+              Define your strategies and automate execution
+            </p>
           </div>
           <Button
             onClick={() => {
@@ -142,58 +155,89 @@ export default function Strategies() {
           </Card>
         </div>
 
-        {/* Active Strategies */}
-        {activeStrategies.length > 0 && (
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-4">Active Strategies</h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {activeStrategies.map((strategy) => (
-                <StrategyCard
-                  key={strategy.id}
-                  strategy={strategy}
-                  trades={trades}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                />
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Tabs for Manual vs Automated */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="manual" className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4" />
+              Manual Strategies
+            </TabsTrigger>
+            <TabsTrigger value="automated" className="flex items-center gap-2">
+              <Bot className="h-4 w-4" />
+              Automated Execution
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Inactive Strategies */}
-        {inactiveStrategies.length > 0 && (
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-4">Inactive Strategies</h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {inactiveStrategies.map((strategy) => (
-                <StrategyCard
-                  key={strategy.id}
-                  strategy={strategy}
-                  trades={trades}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                />
-              ))}
-            </div>
-          </div>
-        )}
+          <TabsContent value="manual" className="space-y-6">
+            {/* Active Strategies */}
+            {activeStrategies.length > 0 && (
+              <div>
+                <h2 className={`text-2xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-slate-900'}`}>Active Strategies</h2>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {activeStrategies.map((strategy) => (
+                    <StrategyCard
+                      key={strategy.id}
+                      strategy={strategy}
+                      trades={trades}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
 
-        {/* Empty State */}
-        {strategies.length === 0 && (
-          <Card className="p-12 text-center">
-            <BookOpen className="h-16 w-16 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-slate-900 mb-2">No strategies yet</h3>
-            <p className="text-slate-600 mb-6">
-              Create your first trading strategy to organize your approach
-            </p>
-            <Button
-              onClick={() => setShowForm(true)}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              Create Your First Strategy
-            </Button>
-          </Card>
-        )}
+            {/* Inactive Strategies */}
+            {inactiveStrategies.length > 0 && (
+              <div>
+                <h2 className={`text-2xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-slate-900'}`}>Inactive Strategies</h2>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {inactiveStrategies.map((strategy) => (
+                    <StrategyCard
+                      key={strategy.id}
+                      strategy={strategy}
+                      trades={trades}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Empty State */}
+            {strategies.length === 0 && (
+              <Card className={`p-12 text-center ${darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white'}`}>
+                <BookOpen className={`h-16 w-16 mx-auto mb-4 ${darkMode ? 'text-slate-700' : 'text-slate-300'}`} />
+                <h3 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>No strategies yet</h3>
+                <p className={`mb-6 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                  Create your first trading strategy to organize your approach
+                </p>
+                <Button
+                  onClick={() => setShowForm(true)}
+                  className="bg-gradient-to-r from-cyan-500 to-purple-600"
+                >
+                  Create Your First Strategy
+                </Button>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="automated">
+            <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white'}>
+              <CardContent className={`p-12 text-center ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                <Bot className={`h-16 w-16 mx-auto mb-4 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`} />
+                <h3 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  Automated Strategy Execution
+                </h3>
+                <p className="mb-4">Coming soon - automatically execute trades based on your strategies!</p>
+                <p className="text-sm">
+                  This feature will allow you to connect your strategies to live market data and execute trades automatically based on your defined rules and conditions.
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         {/* Strategy Form Modal */}
         {showForm && (
