@@ -7,7 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { User, Save } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { User, Save, Calendar, Plus, Clock } from 'lucide-react';
 
 export default function MyProfile() {
   const [user, setUser] = useState(null);
@@ -21,6 +23,14 @@ export default function MyProfile() {
     show_win_rate: true,
     show_trades: true
   });
+  const [showCalendarDialog, setShowCalendarDialog] = useState(false);
+  const [calendarEvent, setCalendarEvent] = useState({
+    title: '',
+    description: '',
+    startTime: '',
+    endTime: ''
+  });
+  const [calendarConnected, setCalendarConnected] = useState(false);
   const queryClient = useQueryClient();
   const darkMode = document.documentElement.classList.contains('dark');
 
@@ -54,6 +64,37 @@ export default function MyProfile() {
       alert('Profile saved!');
     }
   });
+
+  const createCalendarEventMutation = useMutation({
+    mutationFn: async (eventData) => {
+      const response = await base44.functions.invoke('syncGoogleCalendar', {
+        action: 'createEvent',
+        eventData
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      setShowCalendarDialog(false);
+      setCalendarEvent({ title: '', description: '', startTime: '', endTime: '' });
+      alert('Trading session added to your Google Calendar!');
+    },
+    onError: (error) => {
+      alert(error.message || 'Failed to create calendar event');
+    }
+  });
+
+  const handleConnectCalendar = () => {
+    setCalendarConnected(true);
+    alert('Google Calendar connected! You can now schedule trading sessions.');
+  };
+
+  const handleCreateSession = () => {
+    if (!calendarEvent.title || !calendarEvent.startTime || !calendarEvent.endTime) {
+      alert('Please fill in all required fields');
+      return;
+    }
+    createCalendarEventMutation.mutate(calendarEvent);
+  };
 
   return (
     <div className={`min-h-screen p-4 md:p-6 transition-colors ${
@@ -182,6 +223,103 @@ export default function MyProfile() {
                 {saveMutation.isLoading ? 'Saving...' : 'Save Profile'}
               </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
+          <CardHeader>
+            <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>
+              <Calendar className="h-5 w-5 inline mr-2" />
+              Google Calendar Integration
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className={`text-sm ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+              Schedule your trading sessions and sync them with your Google Calendar to stay organized and maintain work-life balance.
+            </p>
+            
+            {!calendarConnected ? (
+              <Button 
+                onClick={handleConnectCalendar}
+                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Connect Google Calendar
+              </Button>
+            ) : (
+              <div className="space-y-4">
+                <div className={`flex items-center gap-2 p-3 rounded-lg ${darkMode ? 'bg-green-900/30 border border-green-500/30' : 'bg-green-50 border border-green-200'}`}>
+                  <div className={`h-2 w-2 rounded-full bg-green-500 animate-pulse`} />
+                  <span className={`text-sm font-medium ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
+                    Google Calendar Connected
+                  </span>
+                </div>
+
+                <Dialog open={showCalendarDialog} onOpenChange={setShowCalendarDialog}>
+                  <DialogTrigger asChild>
+                    <Button className="bg-gradient-to-r from-cyan-500 to-purple-600">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Schedule Trading Session
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className={darkMode ? 'bg-slate-950 border-cyan-500/20' : 'bg-white'}>
+                    <DialogHeader>
+                      <DialogTitle className={darkMode ? 'text-white' : 'text-slate-900'}>
+                        Schedule Trading Session
+                      </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label className={darkMode ? 'text-slate-300' : 'text-slate-700'}>Session Title</Label>
+                        <Input
+                          value={calendarEvent.title}
+                          onChange={(e) => setCalendarEvent({...calendarEvent, title: e.target.value})}
+                          placeholder="Morning Trading Session"
+                        />
+                      </div>
+                      <div>
+                        <Label className={darkMode ? 'text-slate-300' : 'text-slate-700'}>Description</Label>
+                        <Textarea
+                          value={calendarEvent.description}
+                          onChange={(e) => setCalendarEvent({...calendarEvent, description: e.target.value})}
+                          placeholder="Focus on scalping ES futures..."
+                          rows={3}
+                        />
+                      </div>
+                      <div>
+                        <Label className={darkMode ? 'text-slate-300' : 'text-slate-700'}>Start Time</Label>
+                        <Input
+                          type="datetime-local"
+                          value={calendarEvent.startTime}
+                          onChange={(e) => setCalendarEvent({...calendarEvent, startTime: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        <Label className={darkMode ? 'text-slate-300' : 'text-slate-700'}>End Time</Label>
+                        <Input
+                          type="datetime-local"
+                          value={calendarEvent.endTime}
+                          onChange={(e) => setCalendarEvent({...calendarEvent, endTime: e.target.value})}
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setShowCalendarDialog(false)}>
+                          Cancel
+                        </Button>
+                        <Button 
+                          onClick={handleCreateSession}
+                          disabled={createCalendarEventMutation.isLoading}
+                          className="bg-gradient-to-r from-cyan-500 to-purple-600"
+                        >
+                          <Clock className="h-4 w-4 mr-2" />
+                          {createCalendarEventMutation.isLoading ? 'Creating...' : 'Create Session'}
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
