@@ -134,6 +134,7 @@ export default function Layout({ children, currentPageName }) {
     { id: 'signals', name: 'Trading Signals', page: 'LiveTradingSignals', icon: Zap },
     { id: 'market', name: 'Live Market', page: 'MarketData', icon: TrendingUp },
     { id: 'trades', name: 'Trades', page: 'Trades', icon: BookOpen },
+    { id: 'journal', name: 'Journal', page: 'Journal', icon: BookOpen },
     { id: 'summaries', name: 'Summaries', page: 'TradingSummaries', icon: FileText },
     { id: 'coach', name: 'AI Coach', page: 'TradingCoach', icon: MessageSquare },
     { id: 'risk', name: 'Risk Manager', page: 'RiskManagement', icon: Shield },
