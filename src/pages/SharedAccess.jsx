@@ -62,6 +62,11 @@ export default function SharedAccess() {
       queryClient.invalidateQueries(['grantedAccess']);
       setShowGrantForm(false);
       setGrantForm({ shared_with_email: '', permission_level: 'view', access_type: 'observer', note: '' });
+      alert('Access granted successfully!');
+    },
+    onError: (error) => {
+      console.error('Grant access error:', error);
+      alert(`Failed to grant access: ${error.message}`);
     }
   });
 
@@ -218,11 +223,17 @@ export default function SharedAccess() {
                   Cancel
                 </Button>
                 <Button
-                  onClick={() => grantAccessMutation.mutate(grantForm)}
-                  disabled={!grantForm.shared_with_email || grantAccessMutation.isLoading}
+                  onClick={() => {
+                    if (!grantForm.shared_with_email?.trim()) {
+                      alert('Please enter an email address');
+                      return;
+                    }
+                    grantAccessMutation.mutate(grantForm);
+                  }}
+                  disabled={!grantForm.shared_with_email || grantAccessMutation.isPending}
                   className="bg-gradient-to-r from-cyan-500 to-purple-600"
                 >
-                  {grantAccessMutation.isLoading ? 'Granting...' : 'Grant Access'}
+                  {grantAccessMutation.isPending ? 'Granting...' : 'Grant Access'}
                 </Button>
               </div>
             </CardContent>
