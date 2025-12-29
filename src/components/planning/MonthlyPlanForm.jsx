@@ -5,11 +5,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Save, Sparkles, Loader2 } from 'lucide-react';
+import { Save, Sparkles, Loader2, Mic, MicOff, Upload, X, Image as ImageIcon } from 'lucide-react';
 
 export default function MonthlyPlanForm({ existingPlan }) {
   const queryClient = useQueryClient();
   const darkMode = document.documentElement.classList.contains('dark');
+  const [isRecording, setIsRecording] = useState(false);
+  const [aiProcessing, setAiProcessing] = useState(false);
+  const [chartScreenshots, setChartScreenshots] = useState(existingPlan?.chart_screenshots || []);
+  const [uploadingScreenshot, setUploadingScreenshot] = useState(false);
+  const mediaRecorderRef = React.useRef(null);
+  const audioChunksRef = React.useRef([]);
+  const fileInputRef = React.useRef(null);
 
   const currentDate = new Date();
   const currentMonth = currentDate.toISOString().slice(0, 7);
@@ -21,6 +28,8 @@ export default function MonthlyPlanForm({ existingPlan }) {
     month_start_date: monthStart,
     month_end_date: monthEnd,
     plan_text: '',
+    voice_transcript: '',
+    chart_screenshots: [],
     big_picture_thesis: '',
     monthly_goals: {
       profit_target: 0,
@@ -50,12 +59,86 @@ export default function MonthlyPlanForm({ existingPlan }) {
     }
   }, [existingPlan]);
 
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorderRef.current.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        await transcribeAudio(audioBlob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorderRef.current.start();
+      setIsRecording(true);
+    } catch (error) {
+      alert('Could not access microphone. Please check permissions.');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const transcribeAudio = async (audioBlob) => {
+    setAiProcessing(true);
+    try {
+      const audioFile = new File([audioBlob], 'voice-note.webm', { type: 'audio/webm' });
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: audioFile });
+
+      const transcription = await base44.integrations.Core.InvokeLLM({
+        prompt: `Transcribe this voice recording of a trader's monthly plan. Return only the transcribed text.`,
+        file_urls: [file_url]
+      });
+
+      setFormData({ ...formData, plan_text: transcription, voice_transcript: transcription });
+    } catch (error) {
+      alert('Failed to transcribe audio.');
+    } finally {
+      setAiProcessing(false);
+    }
+  };
+
+  const handleScreenshotUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    setUploadingScreenshot(true);
+    try {
+      const uploadPromises = files.map(async (file) => {
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        return file_url;
+      });
+
+      const urls = await Promise.all(uploadPromises);
+      setChartScreenshots([...chartScreenshots, ...urls]);
+    } catch (error) {
+      alert('Failed to upload screenshots');
+    } finally {
+      setUploadingScreenshot(false);
+    }
+  };
+
+  const removeScreenshot = (url) => {
+    setChartScreenshots(chartScreenshots.filter(s => s !== url));
+  };
+
   const saveMutation = useMutation({
     mutationFn: async (data) => {
+      const saveData = { ...data, chart_screenshots: chartScreenshots };
       if (existingPlan) {
-        return base44.entities.MonthlyTradePlan.update(existingPlan.id, data);
+        return base44.entities.MonthlyTradePlan.update(existingPlan.id, saveData);
       } else {
-        return base44.entities.MonthlyTradePlan.create(data);
+        return base44.entities.MonthlyTradePlan.create(saveData);
       }
     },
     onSuccess: () => {
@@ -115,6 +198,7 @@ Make it encouraging and strategic.`
             onChange={(e) => setFormData({ ...formData, big_picture_thesis: e.target.value })}
             placeholder="What's your macro market outlook for this month? Key themes, trends, and expectations..."
             rows={4}
+            className={darkMode ? 'bg-slate-900 border-cyan-500/30 text-white' : ''}
           />
         </div>
 
@@ -127,7 +211,81 @@ Make it encouraging and strategic.`
             onChange={(e) => setFormData({ ...formData, plan_text: e.target.value })}
             placeholder="Your detailed monthly trading plan..."
             rows={6}
+            className={darkMode ? 'bg-slate-900 border-cyan-500/30 text-white' : ''}
           />
+          <div className="flex gap-2 mt-2">
+            <Button
+              type="button"
+              onClick={isRecording ? stopRecording : startRecording}
+              variant={isRecording ? "destructive" : "outline"}
+              size="sm"
+              disabled={aiProcessing}
+            >
+              {isRecording ? (
+                <>
+                  <MicOff className="h-4 w-4 mr-2" />
+                  Stop Recording
+                </>
+              ) : (
+                <>
+                  <Mic className="h-4 w-4 mr-2" />
+                  Record Voice Plan
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+
+        {/* Chart Screenshots */}
+        <div>
+          <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+            <ImageIcon className="h-4 w-4 inline mr-1" />
+            Chart Screenshots
+          </label>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleScreenshotUpload}
+            className="hidden"
+          />
+          <Button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingScreenshot}
+            variant="outline"
+            size="sm"
+            className="mb-3"
+          >
+            {uploadingScreenshot ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Uploading...
+              </>
+            ) : (
+              <>
+                <Upload className="h-4 w-4 mr-2" />
+                Upload Charts
+              </>
+            )}
+          </Button>
+          {chartScreenshots.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {chartScreenshots.map((url, idx) => (
+                <div key={idx} className="relative group">
+                  <img src={url} alt="Chart" className="w-full h-32 object-cover rounded-lg border-2 border-cyan-500/30" />
+                  <button
+                    type="button"
+                    onClick={() => removeScreenshot(url)}
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
