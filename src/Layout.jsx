@@ -55,10 +55,22 @@ export default function Layout({ children, currentPageName }) {
         if (settings.length > 0) {
           const s = settings[0];
           setSettingsId(s.id);
-          setMenuOrder(s.menu_order || defaultNavigation.map(item => item.id));
+          
+          // Merge saved order with new items that might not be in saved settings
+          const savedOrder = s.menu_order || [];
+          const allItemIds = defaultNavigation.map(item => item.id);
+          const newItems = allItemIds.filter(id => !savedOrder.includes(id));
+          const mergedOrder = [...savedOrder, ...newItems];
+          
+          setMenuOrder(mergedOrder);
           setFavorites(s.favorites || []);
           setRecentPages(s.recent_pages || []);
           setMenuView(s.menu_view || 'all');
+          
+          // Update saved settings with merged order if new items were added
+          if (newItems.length > 0) {
+            await base44.entities.DashboardSettings.update(s.id, { menu_order: mergedOrder });
+          }
         } else {
           setMenuOrder(defaultNavigation.map(item => item.id));
         }
