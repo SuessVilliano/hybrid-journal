@@ -37,30 +37,8 @@ Deno.serve(async (req) => {
       }, { status: 400 });
     }
 
-    // Create signal record
-    const signal = await base44.entities.Signal.create(signalData);
-
-    // Check if signal violates prop firm rules
-    const propFirmSettings = await base44.entities.PropFirmSettings.filter({ is_active: true });
-    let riskWarning = null;
-    
-    if (propFirmSettings.length > 0) {
-      const settings = propFirmSettings[0];
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-      
-      const todayTrades = await base44.entities.Trade.filter({
-        created_by: user.email,
-        entry_date: { $gte: todayStart.toISOString() }
-      });
-      
-      const todayPnl = todayTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
-      const maxDailyLossDollars = settings.account_size * (settings.max_daily_loss_percent / 100);
-      
-      if (todayPnl < 0 && Math.abs(todayPnl) >= maxDailyLossDollars * 0.8) {
-        riskWarning = `⚠️ WARNING: You're at ${Math.abs(todayPnl).toFixed(2)}/${maxDailyLossDollars.toFixed(2)} of your daily loss limit (${settings.max_daily_loss_percent}%)`;
-      }
-    }
+    // Create signal record using service role (no user auth required for webhooks)
+    const signal = await base44.asServiceRole.entities.Signal.create(signalData);
 
     return Response.json({ 
       success: true,
