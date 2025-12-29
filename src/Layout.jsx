@@ -6,6 +6,7 @@ import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload
 import FloatingAIAssistant from '@/components/ai/FloatingAIAssistant';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import QuickAccessPanel from '@/components/layout/QuickAccessPanel';
+import NotificationBell from '@/components/notifications/NotificationBell';
 
 export default function Layout({ children, currentPageName }) {
   // Don't render layout for Landing and PublicDashboard pages
@@ -184,7 +185,9 @@ export default function Layout({ children, currentPageName }) {
     { id: 'backtesting', name: 'Backtesting', page: 'Backtesting', icon: Play },
     { id: 'imports', name: 'Imports', page: 'Imports', icon: Upload },
     { id: 'community', name: 'Community', page: 'SocialFeed', icon: Users },
+    { id: 'shared', name: 'Shared Access', page: 'SharedAccess', icon: UserCheck },
     { id: 'profile', name: 'My Profile', page: 'MyProfile', icon: User },
+    { id: 'help', name: 'Help & Docs', page: 'Help', icon: HelpCircle },
     { id: 'funded', name: 'Get Funded', external: 'https://hybridfunding.co', icon: TrendingUp },
   ];
 
@@ -303,33 +306,19 @@ export default function Layout({ children, currentPageName }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className={`p-6 border-b ${darkMode ? 'border-cyan-500/20' : 'border-cyan-500/30'} ${!sidebarOpen && 'hidden'}`}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-cyan-500/50">
-              <Zap className="h-6 w-6 text-white" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-cyan-500/50">
+                <Zap className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
+                  Hybrid Journal
+                </h1>
+                <p className={`text-xs ${darkMode ? 'text-cyan-400/70' : 'text-cyan-600/70'}`}>Trading Platform</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
-                Hybrid Journal
-              </h1>
-              <p className={`text-xs ${darkMode ? 'text-cyan-400/70' : 'text-cyan-600/70'}`}>Trading Platform</p>
-            </div>
-          </div>
-
-          {/* User Info */}
-          <div className={`mt-4 px-3 py-2 rounded-lg ${darkMode ? 'bg-cyan-900/20 border border-cyan-500/20' : 'bg-cyan-50 border border-cyan-200'}`}>
-            <div className={`text-xs ${darkMode ? 'text-cyan-400/70' : 'text-cyan-700/70'}`}>Logged in as</div>
-            <div className={`text-sm font-medium ${darkMode ? 'text-cyan-400' : 'text-cyan-700'} truncate`}>
-              {currentUser?.full_name || currentUser?.email || 'Loading...'}
-            </div>
-            <button
-              onClick={() => {
-                base44.auth.logout();
-                window.location.href = createPageUrl('Landing');
-              }}
-              className={`text-xs mt-1 underline ${darkMode ? 'text-cyan-400/70 hover:text-cyan-400' : 'text-cyan-700/70 hover:text-cyan-700'} transition-colors`}
-            >
-              Sign out
-            </button>
+            <NotificationBell />
           </div>
         </div>
 
@@ -491,18 +480,35 @@ export default function Layout({ children, currentPageName }) {
         )}
 
         <div className={`p-4 border-t ${darkMode ? 'border-cyan-500/20 bg-slate-950/50' : 'border-cyan-500/30 bg-white/50'} ${!sidebarOpen && 'hidden'}`}>
-          <div className={`text-xs ${darkMode ? 'text-cyan-400/60' : 'text-cyan-600/60'} space-y-1`}>
-            <div className="flex items-center gap-1">
-              <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse" />
-              <span>AI Powered</span>
+          <div className="flex items-start justify-between gap-3">
+            <div className={`text-xs ${darkMode ? 'text-cyan-400/60' : 'text-cyan-600/60'} space-y-1 flex-1`}>
+              <div className="flex items-center gap-1">
+                <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse" />
+                <span>AI Powered</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-pulse" />
+                <span>Multi-Account</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-1.5 h-1.5 bg-pink-500 rounded-full animate-pulse" />
+                <span>Real-Time Sync</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <div className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-pulse" />
-              <span>Multi-Account</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-1.5 h-1.5 bg-pink-500 rounded-full animate-pulse" />
-              <span>Real-Time Sync</span>
+            <div className={`text-xs ${darkMode ? 'text-cyan-400/70' : 'text-cyan-600/70'} text-right`}>
+              <div className="mb-1">Logged in as</div>
+              <div className={`font-medium ${darkMode ? 'text-cyan-400' : 'text-cyan-700'} truncate max-w-[100px]`}>
+                {currentUser?.full_name || currentUser?.email || '...'}
+              </div>
+              <button
+                onClick={() => {
+                  base44.auth.logout();
+                  window.location.href = createPageUrl('Landing');
+                }}
+                className={`text-xs underline mt-1 ${darkMode ? 'text-cyan-400/70 hover:text-cyan-400' : 'text-cyan-700/70 hover:text-cyan-700'} transition-colors`}
+              >
+                Sign out
+              </button>
             </div>
           </div>
         </div>
