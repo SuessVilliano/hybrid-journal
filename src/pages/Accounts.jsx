@@ -46,13 +46,14 @@ export default function Accounts() {
     onSuccess: () => queryClient.invalidateQueries(['accounts'])
   });
 
-  const getAccountStats = (accountId) => {
+  const getAccountStats = (accountId, initialBalance) => {
     const accountTrades = trades.filter(t => t.account_id === accountId);
     const totalPnl = accountTrades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+    const currentBalance = (initialBalance || 0) + totalPnl;
     const winRate = accountTrades.length > 0 
       ? (accountTrades.filter(t => t.pnl > 0).length / accountTrades.length) * 100 
       : 0;
-    return { trades: accountTrades.length, pnl: totalPnl, winRate };
+    return { trades: accountTrades.length, pnl: totalPnl, winRate, currentBalance };
   };
 
   return (
@@ -79,7 +80,7 @@ export default function Accounts() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {accounts.map((account) => {
-            const stats = getAccountStats(account.id);
+            const stats = getAccountStats(account.id, account.initial_balance);
             return (
               <Card key={account.id} className="bg-slate-950/80 backdrop-blur-xl border-cyan-500/20 hover:border-cyan-500/40 transition-all shadow-lg hover:shadow-cyan-500/20">
                 <CardHeader className="border-b border-cyan-500/20">
@@ -139,6 +140,12 @@ export default function Accounts() {
                   <div className="h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
 
                   <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-400">Current Balance</span>
+                      <span className={`text-2xl font-bold ${stats.pnl >= 0 ? 'text-cyan-400' : 'text-orange-400'}`}>
+                        ${stats.currentBalance.toFixed(2)}
+                      </span>
+                    </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-slate-400">Total Trades</span>
                       <span className="text-2xl font-bold text-white">{stats.trades}</span>
