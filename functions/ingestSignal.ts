@@ -34,6 +34,15 @@ Deno.serve(async (req) => {
       }, { status: 403 });
     }
 
+    // Create user-scoped client to properly set created_by
+    const userReq = new Request(req.url, {
+      headers: new Headers({
+        ...Object.fromEntries(req.headers),
+        'x-base44-user-id': user.id
+      })
+    });
+    const userClient = createClientFromRequest(userReq);
+
     // Parse webhook payload
     let payload = await req.json();
     
@@ -56,8 +65,7 @@ Deno.serve(async (req) => {
       strategy: payload.strategy?.order_comment || payload.strategy_name || '',
       notes: payload.message || payload.notes || '',
       status: 'new',
-      raw_data: payload,
-      created_by: user.email
+      raw_data: payload
     };
 
     // Validate required fields
@@ -68,16 +76,25 @@ Deno.serve(async (req) => {
       }, { status: 400 });
     }
 
-    // Create signal record for this specific user
-    const signal = await base44.asServiceRole.entities.Signal.create(signalData);
+    // Create signal record as the user
+    const signal = await userClient.entities.Signal.create(signalData);
+
+    // Create notification for the user
+    await userClient.entities.Notification.create({
+      recipient_email: user.email,
+      type: 'trade_alert',
+      title: `New Trading Signal: ${signalData.symbol}`,
+      message: `${signalData.action} signal received for ${signalData.symbol} at ${signalData.price}`,
+      link: '/LiveTradingSignals',
+      priority: 'high'
+    });
 
     // Log the webhook request
-    await base44.asServiceRole.entities.SyncLog.create({
+    await userClient.entities.SyncLog.create({
       sync_type: 'webhook_signal',
       status: 'success',
       records_synced: 1,
-      details: `Signal received: ${signalData.symbol} ${signalData.action} @ ${signalData.price}`,
-      created_by: user.email
+      details: `Signal received: ${signalData.symbol} ${signalData.action} @ ${signalData.price}`
     });
 
     return Response.json({ 
@@ -98,13 +115,20 @@ Deno.serve(async (req) => {
         const base44 = createClientFromRequest(req);
         const users = await base44.asServiceRole.entities.User.filter({ webhook_token: token });
         if (users && users.length > 0) {
-          await base44.asServiceRole.entities.SyncLog.create({
+          const user = users[0];
+          const userReq = new Request(req.url, {
+            headers: new Headers({
+              ...Object.fromEntries(req.headers),
+              'x-base44-user-id': user.id
+            })
+          });
+          const userClient = createClientFromRequest(userReq);
+          await userClient.entities.SyncLog.create({
             sync_type: 'webhook_signal',
             status: 'failed',
             records_synced: 0,
             error_message: error.message,
-            details: error.stack,
-            created_by: users[0].email
+            details: error.stack
           });
         }
       }
