@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { User, Save, Calendar, Plus, Clock } from 'lucide-react';
+import WebhookSettings from '@/components/profile/WebhookSettings';
 
 export default function MyProfile() {
   const [user, setUser] = useState(null);
