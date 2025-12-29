@@ -4,7 +4,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, TrendingDown, Activity, DollarSign, Target, Calendar, Share2, Brain, Settings, X } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity, DollarSign, Target, Calendar, Share2, Brain, Settings, X, Upload } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '../utils';
 import { MultiSelect } from '@/components/ui/multi-select';
 import EquityCurve from '@/components/trading/EquityCurve';
 import TradeCalendar from '@/components/trading/TradeCalendar';
@@ -181,6 +183,12 @@ export default function Dashboard() {
               </Button>
             )}
             {stats && <ExportMenu trades={trades} stats={stats} />}
+            <Link to={createPageUrl('Imports')}>
+              <Button variant="outline" className={`border-cyan-500/30 ${darkMode ? 'text-cyan-400 hover:bg-cyan-500/10' : 'text-cyan-700 hover:bg-cyan-100'}`}>
+                <Upload className="h-4 w-4 mr-2" />
+                Import
+              </Button>
+            </Link>
             <Button onClick={() => setShowShareModal(true)} variant="outline" className={`border-cyan-500/30 ${darkMode ? 'text-cyan-400 hover:bg-cyan-500/10' : 'text-cyan-700 hover:bg-cyan-100'}`}>
               <Share2 className="h-4 w-4 mr-2" />
               Share
