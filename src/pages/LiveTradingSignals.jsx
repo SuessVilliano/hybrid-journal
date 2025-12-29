@@ -4,10 +4,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Bell, TrendingUp, TrendingDown, X, Check, Eye, Copy, ExternalLink, Zap, RefreshCw, FileSpreadsheet } from 'lucide-react';
+import { Bell, TrendingUp, TrendingDown, X, Check, Eye, Zap } from 'lucide-react';
 import { format } from 'date-fns';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import WebhookSettings from '@/components/profile/WebhookSettings';
 
 export default function LiveTradingSignals() {
   const [showWebhookInfo, setShowWebhookInfo] = useState(false);
@@ -44,25 +43,6 @@ export default function LiveTradingSignals() {
     }
   });
 
-  const syncSheetsMutation = useMutation({
-    mutationFn: () => base44.functions.invoke('syncSignalsFromSheets'),
-    onSuccess: (response) => {
-      queryClient.invalidateQueries(['signals']);
-      alert(response.data.message || 'Sync complete!');
-    },
-    onError: (error) => {
-      alert(`Sync failed: ${error.message}`);
-    }
-  });
-
-  const webhookUrl = user ? `https://hybridjournal.co/api/functions/ingestSignal` : '';
-
-  const handleCopyWebhook = () => {
-    navigator.clipboard.writeText(webhookUrl);
-    setCopiedWebhook(true);
-    setTimeout(() => setCopiedWebhook(false), 2000);
-  };
-
   const newSignals = signals.filter(s => s.status === 'new');
   const viewedSignals = signals.filter(s => s.status === 'viewed');
   const executedSignals = signals.filter(s => s.status === 'executed');
@@ -82,95 +62,20 @@ export default function LiveTradingSignals() {
               Live Trading Signals
             </h1>
             <p className={darkMode ? 'text-cyan-400/70 mt-1' : 'text-cyan-700/70 mt-1'}>
-              Real-time signals from multiple AI providers and Google Sheets
+              Real-time signals from TradingView and external sources
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={() => syncSheetsMutation.mutate()}
-              disabled={syncSheetsMutation.isLoading}
-              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
-            >
-              {syncSheetsMutation.isLoading ? (
-                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
-              )}
-              {syncSheetsMutation.isLoading ? 'Syncing...' : 'Sync from Sheets'}
-            </Button>
-            <Button
-              onClick={() => setShowWebhookInfo(!showWebhookInfo)}
-              className="bg-gradient-to-r from-cyan-500 to-purple-600"
-            >
-              <Zap className="h-4 w-4 mr-2" />
-              Webhook Setup
-            </Button>
-          </div>
+          <Button
+            onClick={() => setShowWebhookInfo(!showWebhookInfo)}
+            className="bg-gradient-to-r from-cyan-500 to-purple-600"
+          >
+            <Zap className="h-4 w-4 mr-2" />
+            Webhook Setup
+          </Button>
         </div>
 
         {/* Webhook Info */}
-        {showWebhookInfo && (
-          <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
-            <CardHeader>
-              <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>
-                Webhook Configuration
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label>Your Webhook URL</Label>
-                <div className="flex gap-2 mt-2">
-                  <Input
-                    value={webhookUrl}
-                    readOnly
-                    className="font-mono text-sm"
-                  />
-                  <Button onClick={handleCopyWebhook} variant="outline">
-                    {copiedWebhook ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </div>
-
-              <div className={`p-4 rounded-lg ${darkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
-                <h4 className={`font-bold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                  TradingView Webhook Setup:
-                </h4>
-                <ol className={`list-decimal list-inside space-y-2 text-sm ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                  <li>Create an alert in TradingView on your chosen symbol/chart</li>
-                  <li>In the "Notifications" tab, enable "Webhook URL"</li>
-                  <li>Paste your personal webhook URL above (it's unique to your account)</li>
-                  <li>In the "Message" field, use this JSON format:</li>
-                </ol>
-                <pre className={`mt-2 p-3 rounded text-xs overflow-x-auto ${darkMode ? 'bg-slate-800 text-cyan-400' : 'bg-white text-slate-900'}`}>
-              {`{
-              "provider": "TradingView",
-              "ticker": "{{ticker}}",
-              "action": "BUY",
-              "close": {{close}},
-              "interval": "{{interval}}",
-              "stop_loss": {{close}} * 0.98,
-              "take_profit": {{close}} * 1.02,
-              "strategy_name": "My Strategy"
-              }`}
-                </pre>
-                <p className={`mt-2 text-xs ${darkMode ? 'text-cyan-400/70' : 'text-cyan-700/70'}`}>
-                  💡 Your signals will automatically appear here when TradingView sends the webhook. You can set up multiple alerts for different strategies or symbols.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button
-                  onClick={() => window.open('https://www.tradingview.com/support/solutions/43000529348-i-want-to-know-more-about-webhooks/', '_blank')}
-                  variant="outline"
-                  size="sm"
-                >
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  TradingView Webhook Docs
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {showWebhookInfo && <WebhookSettings />}
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
