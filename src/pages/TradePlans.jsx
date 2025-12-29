@@ -13,7 +13,7 @@ import GoalForm from '@/components/goals/GoalForm';
 import GoalCard from '@/components/goals/GoalCard';
 
 export default function TradePlans() {
-  const [activeTab, setActiveTab] = useState('daily');
+  const [activeTab, setActiveTab] = useState('goals');
   const [showGoalForm, setShowGoalForm] = useState(false);
   const [editingGoal, setEditingGoal] = useState(null);
   const darkMode = document.documentElement.classList.contains('dark');
@@ -105,25 +105,26 @@ export default function TradePlans() {
           monthlyPlan={currentMonthPlan}
           weeklyPlan={currentWeekPlan}
           dailyPlan={currentDailyPlan}
+          trades={trades}
         />
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className={`grid w-full grid-cols-4 ${darkMode ? 'bg-slate-950/80' : 'bg-white'}`}>
-            <TabsTrigger value="monthly" className={darkMode ? 'data-[state=active]:bg-cyan-500/20' : ''}>
+            <TabsTrigger value="goals" className={darkMode ? 'data-[state=active]:bg-cyan-500/20' : ''}>
               <Target className="h-4 w-4 mr-2" />
-              Monthly
-            </TabsTrigger>
-            <TabsTrigger value="weekly" className={darkMode ? 'data-[state=active]:bg-cyan-500/20' : ''}>
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Weekly
+              Goals
             </TabsTrigger>
             <TabsTrigger value="daily" className={darkMode ? 'data-[state=active]:bg-cyan-500/20' : ''}>
               <Calendar className="h-4 w-4 mr-2" />
               Daily
             </TabsTrigger>
-            <TabsTrigger value="goals" className={darkMode ? 'data-[state=active]:bg-cyan-500/20' : ''}>
+            <TabsTrigger value="weekly" className={darkMode ? 'data-[state=active]:bg-cyan-500/20' : ''}>
+              <TrendingUp className="h-4 w-4 mr-2" />
+              Weekly
+            </TabsTrigger>
+            <TabsTrigger value="monthly" className={darkMode ? 'data-[state=active]:bg-cyan-500/20' : ''}>
               <Target className="h-4 w-4 mr-2" />
-              Goals
+              Monthly
             </TabsTrigger>
           </TabsList>
 

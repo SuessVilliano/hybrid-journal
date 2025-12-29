@@ -229,7 +229,7 @@ export default function MyProfile() {
         <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
           <CardHeader>
             <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>
-              <Calendar className="h-5 w-5 inline mr-2" />
+              <Calendar className={`h-5 w-5 inline mr-2 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`} />
               Google Calendar Integration
             </CardTitle>
           </CardHeader>
@@ -292,6 +292,7 @@ export default function MyProfile() {
                           type="datetime-local"
                           value={calendarEvent.startTime}
                           onChange={(e) => setCalendarEvent({...calendarEvent, startTime: e.target.value})}
+                          className={darkMode ? 'bg-slate-900 border-cyan-500/30 text-white [color-scheme:dark]' : '[color-scheme:light]'}
                         />
                       </div>
                       <div>
@@ -300,6 +301,7 @@ export default function MyProfile() {
                           type="datetime-local"
                           value={calendarEvent.endTime}
                           onChange={(e) => setCalendarEvent({...calendarEvent, endTime: e.target.value})}
+                          className={darkMode ? 'bg-slate-900 border-cyan-500/30 text-white [color-scheme:dark]' : '[color-scheme:light]'}
                         />
                       </div>
                       <div className="flex justify-end gap-2">

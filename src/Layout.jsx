@@ -5,6 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText, Menu, X, Wallet, Sun, Moon, Home, Users, User, Brain, GripVertical, Star, Clock, List } from 'lucide-react';
 import FloatingAIAssistant from '@/components/ai/FloatingAIAssistant';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import QuickAccessPanel from '@/components/layout/QuickAccessPanel';
 
 export default function Layout({ children, currentPageName }) {
   // Don't render layout for Landing and PublicDashboard pages
@@ -25,6 +26,7 @@ export default function Layout({ children, currentPageName }) {
   const [menuView, setMenuView] = useState('all');
   const [settingsId, setSettingsId] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [quickAccess, setQuickAccess] = useState([]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -66,6 +68,7 @@ export default function Layout({ children, currentPageName }) {
           setFavorites(s.favorites || []);
           setRecentPages(s.recent_pages || []);
           setMenuView(s.menu_view || 'all');
+          setQuickAccess(s.quick_access || ['dashboard', 'planning', 'trades', 'journal']);
           
           // Update saved settings with merged order if new items were added
           if (newItems.length > 0) {
@@ -73,15 +76,45 @@ export default function Layout({ children, currentPageName }) {
           }
         } else {
           setMenuOrder(defaultNavigation.map(item => item.id));
+          setQuickAccess(['dashboard', 'planning', 'trades', 'journal']);
         }
-      } catch (error) {
+        } catch (error) {
         setMenuOrder(defaultNavigation.map(item => item.id));
-      } finally {
+        setQuickAccess(['dashboard', 'planning', 'trades', 'journal']);
+        } finally {
         setLoadingMenu(false);
-      }
-    };
-    loadMenuOrder();
-  }, []);
+        }
+        };
+        loadMenuOrder();
+        }, []);
+
+        const handleQuickAccessDragEnd = async (result) => {
+        if (!result.destination) return;
+
+        const items = Array.from(quickAccess);
+        const [reorderedItem] = items.splice(result.source.index, 1);
+        items.splice(result.destination.index, 0, reorderedItem);
+
+        setQuickAccess(items);
+
+        try {
+        if (settingsId) {
+        await base44.entities.DashboardSettings.update(settingsId, { quick_access: items });
+        }
+        } catch (error) {
+        console.error('Failed to save quick access:', error);
+        }
+        };
+
+        const replaceQuickAccessItem = (index, newItemId) => {
+        const newQuickAccess = [...quickAccess];
+        newQuickAccess[index] = newItemId;
+        setQuickAccess(newQuickAccess);
+
+        if (settingsId) {
+        base44.entities.DashboardSettings.update(settingsId, { quick_access: newQuickAccess });
+        }
+        };
 
   useEffect(() => {
     if (currentPageName && currentPageName !== 'Landing' && settingsId) {
@@ -134,26 +167,25 @@ export default function Layout({ children, currentPageName }) {
   };
 
   const defaultNavigation = [
-    { id: 'home', name: 'Home', page: 'Landing', icon: Home },
     { id: 'dashboard', name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard },
     { id: 'planning', name: 'Trade Plans', page: 'TradePlans', icon: Target },
-    { id: 'funded', name: 'Get Funded', external: 'https://hybridfunding.co', icon: TrendingUp },
-    { id: 'community', name: 'Community', page: 'SocialFeed', icon: Users },
-    { id: 'profile', name: 'My Profile', page: 'MyProfile', icon: User },
-    { id: 'accounts', name: 'Accounts', page: 'Accounts', icon: Wallet },
-    { id: 'signals', name: 'Trading Signals', page: 'LiveTradingSignals', icon: Zap },
-    { id: 'market', name: 'Live Market', page: 'MarketData', icon: TrendingUp },
     { id: 'trades', name: 'Trades', page: 'Trades', icon: BookOpen },
     { id: 'journal', name: 'Journal', page: 'Journal', icon: BookOpen },
+    { id: 'accounts', name: 'Accounts', page: 'Accounts', icon: Wallet },
+    { id: 'market', name: 'Live Market', page: 'MarketData', icon: TrendingUp },
+    { id: 'signals', name: 'Trading Signals', page: 'LiveTradingSignals', icon: Zap },
+    { id: 'analytics', name: 'Analytics', page: 'Analytics', icon: BarChart3 },
     { id: 'summaries', name: 'Summaries', page: 'TradingSummaries', icon: FileText },
     { id: 'coach', name: 'AI Coach', page: 'TradingCoach', icon: MessageSquare },
     { id: 'risk', name: 'Risk Manager', page: 'RiskManagement', icon: Shield },
+    { id: 'strategies', name: 'Strategies', page: 'Strategies', icon: Layers },
     { id: 'broker', name: 'Broker Sync', page: 'BrokerConnections', icon: LinkIcon },
     { id: 'automation', name: 'Automation', page: 'Automation', icon: Bot },
-    { id: 'strategies', name: 'Strategies', page: 'Strategies', icon: Layers },
-    { id: 'analytics', name: 'Analytics', page: 'Analytics', icon: BarChart3 },
     { id: 'backtesting', name: 'Backtesting', page: 'Backtesting', icon: Play },
     { id: 'imports', name: 'Imports', page: 'Imports', icon: Upload },
+    { id: 'community', name: 'Community', page: 'SocialFeed', icon: Users },
+    { id: 'profile', name: 'My Profile', page: 'MyProfile', icon: User },
+    { id: 'funded', name: 'Get Funded', external: 'https://hybridfunding.co', icon: TrendingUp },
   ];
 
   const allNavigation = menuOrder.length > 0 
@@ -343,8 +375,7 @@ export default function Layout({ children, currentPageName }) {
           <Droppable droppableId="navigation">
             {(provided) => (
               <nav 
-                className="p-4 space-y-2 overflow-y-auto" 
-                style={{ maxHeight: 'calc(100vh - 400px)' }}
+                className="p-4 space-y-2 overflow-y-auto flex-1" 
                 {...provided.droppableProps}
                 ref={provided.innerRef}
               >
@@ -440,7 +471,26 @@ export default function Layout({ children, currentPageName }) {
           </Droppable>
         </DragDropContext>
 
-        <div className={`absolute bottom-0 left-0 right-0 p-4 border-t ${darkMode ? 'border-cyan-500/20 bg-slate-950/50' : 'border-cyan-500/30 bg-white/50'} ${!sidebarOpen && 'hidden'}`}>
+        {sidebarOpen && (
+          <div className="mt-auto">
+            <QuickAccessPanel
+              quickAccess={quickAccess}
+              allNavigation={defaultNavigation}
+              onReorder={handleQuickAccessDragEnd}
+              onReplace={(index, newItemId) => {
+                const newQuickAccess = [...quickAccess];
+                newQuickAccess[index] = newItemId;
+                setQuickAccess(newQuickAccess);
+                if (settingsId) {
+                  base44.entities.DashboardSettings.update(settingsId, { quick_access: newQuickAccess });
+                }
+              }}
+              darkMode={darkMode}
+            />
+          </div>
+        )}
+
+        <div className={`p-4 border-t ${darkMode ? 'border-cyan-500/20 bg-slate-950/50' : 'border-cyan-500/30 bg-white/50'} ${!sidebarOpen && 'hidden'}`}>
           <div className={`text-xs ${darkMode ? 'text-cyan-400/60' : 'text-cyan-600/60'} space-y-1`}>
             <div className="flex items-center gap-1">
               <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse" />

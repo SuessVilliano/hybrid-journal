@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import Goals from './pages/Goals';
 import Home from './pages/Home';
 import Imports from './pages/Imports';
+import Journal from './pages/Journal';
 import Landing from './pages/Landing';
 import LiveTradingSignals from './pages/LiveTradingSignals';
 import MarketData from './pages/MarketData';
@@ -16,13 +17,12 @@ import PropFirmSettings from './pages/PropFirmSettings';
 import PublicDashboard from './pages/PublicDashboard';
 import RiskManagement from './pages/RiskManagement';
 import SocialFeed from './pages/SocialFeed';
+import StrategicPlanning from './pages/StrategicPlanning';
 import Strategies from './pages/Strategies';
+import TradePlans from './pages/TradePlans';
 import Trades from './pages/Trades';
 import TradingCoach from './pages/TradingCoach';
 import TradingSummaries from './pages/TradingSummaries';
-import StrategicPlanning from './pages/StrategicPlanning';
-import Journal from './pages/Journal';
-import TradePlans from './pages/TradePlans';
 import __Layout from './Layout.jsx';
 
 
@@ -37,6 +37,7 @@ export const PAGES = {
     "Goals": Goals,
     "Home": Home,
     "Imports": Imports,
+    "Journal": Journal,
     "Landing": Landing,
     "LiveTradingSignals": LiveTradingSignals,
     "MarketData": MarketData,
@@ -45,13 +46,12 @@ export const PAGES = {
     "PublicDashboard": PublicDashboard,
     "RiskManagement": RiskManagement,
     "SocialFeed": SocialFeed,
+    "StrategicPlanning": StrategicPlanning,
     "Strategies": Strategies,
+    "TradePlans": TradePlans,
     "Trades": Trades,
     "TradingCoach": TradingCoach,
     "TradingSummaries": TradingSummaries,
-    "StrategicPlanning": StrategicPlanning,
-    "Journal": Journal,
-    "TradePlans": TradePlans,
 }
 
 export const pagesConfig = {

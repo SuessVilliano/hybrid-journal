@@ -30,6 +30,7 @@ export default function Dashboard() {
   const [enabledWidgets, setEnabledWidgets] = useState([
     'pnl', 'winRate', 'profitFactor', 'avgWin', 'hybridScore', 'equityCurve', 'recentTrades', 'performance'
   ]);
+  const [hideFundingBanner, setHideFundingBanner] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -92,6 +93,9 @@ export default function Dashboard() {
   useEffect(() => {
     if (dashboardSettings?.widgets) {
       setEnabledWidgets(dashboardSettings.widgets);
+    }
+    if (dashboardSettings?.hide_funding_banner !== undefined) {
+      setHideFundingBanner(dashboardSettings.hide_funding_banner);
     }
   }, [dashboardSettings]);
 
@@ -185,24 +189,45 @@ export default function Dashboard() {
         </div>
 
         {/* Funding Banner */}
-        <Card className="bg-gradient-to-r from-green-500 to-emerald-600 border-0 shadow-lg shadow-green-500/20">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-bold text-white mb-2">🚀 Ready to Trade with Capital?</h3>
-                <p className="text-green-50 text-sm">Get funded up to $200,000 and keep 80% of profits</p>
-              </div>
-              <a
-                href="https://hybridfunding.co"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-6 py-3 bg-white text-green-600 font-bold rounded-lg hover:bg-green-50 transition shadow-lg"
+        {!hideFundingBanner && (
+          <Card className="bg-gradient-to-r from-green-500 to-emerald-600 border-0 shadow-lg shadow-green-500/20 relative">
+            <CardContent className="p-6">
+              <button
+                onClick={async () => {
+                  setHideFundingBanner(true);
+                  try {
+                    const existing = await base44.entities.DashboardSettings.list();
+                    const userSettings = existing.find(s => s.created_by === user.email);
+                    if (userSettings) {
+                      await base44.entities.DashboardSettings.update(userSettings.id, { hide_funding_banner: true });
+                    } else {
+                      await base44.entities.DashboardSettings.create({ hide_funding_banner: true });
+                    }
+                  } catch (error) {
+                    console.error('Failed to save banner preference:', error);
+                  }
+                }}
+                className="absolute top-3 right-3 text-white hover:bg-white/20 rounded-full p-1.5 transition"
               >
-                Get Funded Now
-              </a>
-            </div>
-          </CardContent>
-        </Card>
+                <X className="h-4 w-4" />
+              </button>
+              <div className="flex items-center justify-between pr-8">
+                <div>
+                  <h3 className="text-xl font-bold text-white mb-2">🚀 Ready to Trade with Capital?</h3>
+                  <p className="text-green-50 text-sm">Get funded up to $400,000 and keep up to 90% of profits</p>
+                </div>
+                <a
+                  href="https://hybridfunding.co"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-6 py-3 bg-white text-green-600 font-bold rounded-lg hover:bg-green-50 transition shadow-lg"
+                >
+                  Get Funded Now
+                </a>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Account Filter */}
         {accounts.length > 0 && (

@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import RiskCalculator from '@/components/risk/RiskCalculator';
 import PropFirmRulesCard from '@/components/risk/PropFirmRulesCard';
+import LinkTradesToPlan from '@/components/planning/LinkTradesToPlan';
 
 export default function DailyPlanForm({ existingPlan, onClose, onSuccess }) {
   const [isRecording, setIsRecording] = useState(false);
@@ -21,7 +22,7 @@ export default function DailyPlanForm({ existingPlan, onClose, onSuccess }) {
 
   const [formData, setFormData] = useState(existingPlan || {
     date: new Date().toISOString().split('T')[0],
-    account_id: '',
+    account_ids: [],
     plan_text: '',
     voice_transcript: '',
     checklist_items: [
@@ -46,6 +47,7 @@ export default function DailyPlanForm({ existingPlan, onClose, onSuccess }) {
     monetary_risk_calculated: null,
     linked_strategy_ids: [],
     linked_goal_ids: [],
+    linked_trade_ids: [],
     status: 'planned'
   });
 
@@ -70,8 +72,8 @@ export default function DailyPlanForm({ existingPlan, onClose, onSuccess }) {
     queryFn: () => base44.entities.Account.list('-created_date', 50)
   });
 
-  const selectedAccount = accounts.find(acc => acc.id === formData.account_id);
-  const accountBalance = selectedAccount?.initial_balance || 0;
+  const selectedAccounts = accounts.filter(acc => formData.account_ids?.includes(acc.id));
+  const accountBalance = selectedAccounts.reduce((sum, acc) => sum + (acc.initial_balance || 0), 0);
 
   const startRecording = async () => {
     try {
@@ -499,24 +501,36 @@ Max risk: ${formData.max_risk ? '$' + formData.max_risk : 'Not set'}`,
       {/* Account Selection */}
       <div>
         <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-          Trading Account
+          Trading Accounts (Select Multiple for Copy Trading)
         </label>
-        <Select value={formData.account_id} onValueChange={(val) => setFormData({ ...formData, account_id: val })}>
-          <SelectTrigger className={darkMode ? 'bg-slate-900 border-cyan-500/30 text-white' : ''}>
-            <SelectValue placeholder="Select account" />
-          </SelectTrigger>
-          <SelectContent>
-            {accounts.map(acc => (
-              <SelectItem key={acc.id} value={acc.id}>
-                {acc.name} - ${acc.initial_balance?.toFixed(2)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex flex-wrap gap-2">
+          {accounts.map(acc => (
+            <Badge
+              key={acc.id}
+              variant={formData.account_ids?.includes(acc.id) ? 'default' : 'outline'}
+              className={`cursor-pointer transition-all ${
+                formData.account_ids?.includes(acc.id) 
+                  ? 'bg-cyan-600 text-white' 
+                  : (darkMode ? 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700' : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200')
+              }`}
+              onClick={() => {
+                const currentIds = formData.account_ids || [];
+                setFormData(prev => ({
+                  ...prev,
+                  account_ids: currentIds.includes(acc.id)
+                    ? currentIds.filter(id => id !== acc.id)
+                    : [...currentIds, acc.id]
+                }));
+              }}
+            >
+              {acc.name} - ${acc.initial_balance?.toFixed(0) || 0}
+            </Badge>
+          ))}
+        </div>
       </div>
 
       {/* Risk Management Section */}
-      {formData.account_id && (
+      {formData.account_ids && formData.account_ids.length > 0 && (
         <div className="space-y-4">
           <RiskCalculator
             accountBalance={accountBalance}
@@ -530,17 +544,17 @@ Max risk: ${formData.max_risk ? '$' + formData.max_risk : 'Not set'}`,
             initialValues={formData}
           />
 
-          <PropFirmRulesCard
-            accountBalance={accountBalance}
-            todaysPnl={0}
-            onRulesChange={(rules) => {
-              setFormData({
-                ...formData,
-                ...rules
-              });
-            }}
-            initialRules={formData}
-          />
+          {selectedAccounts.filter(acc => acc.account_type === 'Prop Firm').map(acc => (
+            <PropFirmRulesCard
+              key={acc.id}
+              accountBalance={acc.initial_balance || 0}
+              todaysPnl={0}
+              onRulesChange={(rules) => {
+                setFormData(prev => ({ ...prev, ...rules }));
+              }}
+              initialRules={formData}
+            />
+          ))}
         </div>
       )}
 
@@ -574,68 +588,75 @@ Max risk: ${formData.max_risk ? '$' + formData.max_risk : 'Not set'}`,
       </div>
 
       {/* Link Strategies & Goals */}
-      {(strategies.length > 0 || goals.length > 0) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {strategies.length > 0 && (
-            <div>
-              <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                <Layers className="h-4 w-4 inline mr-1" />
-                Strategies I'll Use
-              </label>
-              <div className="space-y-1">
-                {strategies.slice(0, 5).map((strategy) => (
-                  <label key={strategy.id} className={`flex items-center gap-2 p-2 rounded cursor-pointer ${
-                    darkMode ? 'hover:bg-slate-900' : 'hover:bg-slate-50'
-                  }`}>
-                    <input
-                      type="checkbox"
-                      checked={formData.linked_strategy_ids.includes(strategy.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setFormData({ ...formData, linked_strategy_ids: [...formData.linked_strategy_ids, strategy.id] });
-                        } else {
-                          setFormData({ ...formData, linked_strategy_ids: formData.linked_strategy_ids.filter(id => id !== strategy.id) });
-                        }
-                      }}
-                      className="rounded"
-                    />
-                    <span className={`text-sm ${darkMode ? 'text-white' : 'text-slate-900'}`}>{strategy.name}</span>
-                  </label>
-                ))}
-              </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {strategies.length > 0 && (
+          <div>
+            <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+              <Layers className="h-4 w-4 inline mr-1" />
+              Strategies I'll Use
+            </label>
+            <div className="space-y-1">
+              {strategies.slice(0, 5).map((strategy) => (
+                <label key={strategy.id} className={`flex items-center gap-2 p-2 rounded cursor-pointer ${
+                  darkMode ? 'hover:bg-slate-900' : 'hover:bg-slate-50'
+                }`}>
+                  <input
+                    type="checkbox"
+                    checked={formData.linked_strategy_ids.includes(strategy.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setFormData({ ...formData, linked_strategy_ids: [...formData.linked_strategy_ids, strategy.id] });
+                      } else {
+                        setFormData({ ...formData, linked_strategy_ids: formData.linked_strategy_ids.filter(id => id !== strategy.id) });
+                      }
+                    }}
+                    className="rounded"
+                  />
+                  <span className={`text-sm ${darkMode ? 'text-white' : 'text-slate-900'}`}>{strategy.name}</span>
+                </label>
+              ))}
             </div>
-          )}
+          </div>
+        )}
 
-          {goals.length > 0 && (
-            <div>
-              <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                <Target className="h-4 w-4 inline mr-1" />
-                Goals I'm Working On
-              </label>
-              <div className="space-y-1">
-                {goals.slice(0, 5).map((goal) => (
-                  <label key={goal.id} className={`flex items-center gap-2 p-2 rounded cursor-pointer ${
-                    darkMode ? 'hover:bg-slate-900' : 'hover:bg-slate-50'
-                  }`}>
-                    <input
-                      type="checkbox"
-                      checked={formData.linked_goal_ids.includes(goal.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setFormData({ ...formData, linked_goal_ids: [...formData.linked_goal_ids, goal.id] });
-                        } else {
-                          setFormData({ ...formData, linked_goal_ids: formData.linked_goal_ids.filter(id => id !== goal.id) });
-                        }
-                      }}
-                      className="rounded"
-                    />
-                    <span className={`text-sm ${darkMode ? 'text-white' : 'text-slate-900'}`}>{goal.title}</span>
-                  </label>
-                ))}
-              </div>
+        {goals.length > 0 && (
+          <div>
+            <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+              <Target className="h-4 w-4 inline mr-1" />
+              Goals I'm Working On
+            </label>
+            <div className="space-y-1">
+              {goals.slice(0, 5).map((goal) => (
+                <label key={goal.id} className={`flex items-center gap-2 p-2 rounded cursor-pointer ${
+                  darkMode ? 'hover:bg-slate-900' : 'hover:bg-slate-50'
+                }`}>
+                  <input
+                    type="checkbox"
+                    checked={formData.linked_goal_ids.includes(goal.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setFormData({ ...formData, linked_goal_ids: [...formData.linked_goal_ids, goal.id] });
+                      } else {
+                        setFormData({ ...formData, linked_goal_ids: formData.linked_goal_ids.filter(id => id !== goal.id) });
+                      }
+                    }}
+                    className="rounded"
+                  />
+                  <span className={`text-sm ${darkMode ? 'text-white' : 'text-slate-900'}`}>{goal.title}</span>
+                </label>
+              ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
+      </div>
+
+      {/* Link Trades to Plan */}
+      {existingPlan && (
+        <LinkTradesToPlan
+          dailyPlanId={existingPlan.id}
+          initialLinkedTradeIds={formData.linked_trade_ids}
+          onLinkedTradesChange={(newTradeIds) => setFormData(prev => ({ ...prev, linked_trade_ids: newTradeIds }))}
+        />
       )}
 
       <div className="flex justify-end gap-3 pt-4">

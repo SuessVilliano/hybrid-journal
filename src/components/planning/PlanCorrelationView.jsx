@@ -1,10 +1,26 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, Minus, AlertCircle } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, AlertCircle, CheckCircle, Link as LinkIcon, ArrowRight } from 'lucide-react';
 
-export default function PlanCorrelationView({ monthlyPlan, weeklyPlan, dailyPlan }) {
+export default function PlanCorrelationView({ monthlyPlan, weeklyPlan, dailyPlan, trades = [] }) {
   const darkMode = document.documentElement.classList.contains('dark');
+  
+  const calculatePlanAdherence = () => {
+    if (!dailyPlan?.linked_trade_ids || dailyPlan.linked_trade_ids.length === 0) {
+      return null;
+    }
+    
+    const linkedTrades = trades.filter(t => dailyPlan.linked_trade_ids.includes(t.id));
+    const followedRules = linkedTrades.filter(t => t.followed_rules === true).length;
+    const totalLinked = linkedTrades.length;
+    
+    if (totalLinked === 0) return null;
+    
+    return Math.round((followedRules / totalLinked) * 100);
+  };
+  
+  const adherenceScore = calculatePlanAdherence();
 
   if (!monthlyPlan && !weeklyPlan && !dailyPlan) {
     return null;
@@ -28,6 +44,11 @@ export default function PlanCorrelationView({ monthlyPlan, weeklyPlan, dailyPlan
       total++;
       if (monthlyPlan.execution_tracking.on_track) score++;
     }
+    
+    if (adherenceScore !== null) {
+      total++;
+      if (adherenceScore >= 70) score++;
+    }
 
     return total > 0 ? Math.round((score / total) * 100) : null;
   };
@@ -42,6 +63,35 @@ export default function PlanCorrelationView({ monthlyPlan, weeklyPlan, dailyPlan
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Visual Connection Flow */}
+        <div className={`flex items-center justify-between p-4 rounded-lg ${darkMode ? 'bg-gradient-to-r from-purple-900/30 to-cyan-900/30 border border-purple-500/30' : 'bg-gradient-to-r from-purple-50 to-cyan-50 border border-purple-200'}`}>
+          <div className="flex items-center gap-3">
+            <div className={`px-3 py-1 rounded ${darkMode ? 'bg-purple-500/20 text-purple-300' : 'bg-purple-100 text-purple-700'} text-xs font-medium`}>
+              Monthly
+            </div>
+            <ArrowRight className={`h-4 w-4 ${darkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+            <div className={`px-3 py-1 rounded ${darkMode ? 'bg-cyan-500/20 text-cyan-300' : 'bg-cyan-100 text-cyan-700'} text-xs font-medium`}>
+              Weekly
+            </div>
+            <ArrowRight className={`h-4 w-4 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`} />
+            <div className={`px-3 py-1 rounded ${darkMode ? 'bg-green-500/20 text-green-300' : 'bg-green-100 text-green-700'} text-xs font-medium`}>
+              Daily
+            </div>
+            <ArrowRight className={`h-4 w-4 ${darkMode ? 'text-green-400' : 'text-green-600'}`} />
+            <div className={`px-3 py-1 rounded ${darkMode ? 'bg-yellow-500/20 text-yellow-300' : 'bg-yellow-100 text-yellow-700'} text-xs font-medium`}>
+              Trades
+            </div>
+          </div>
+          {weeklyPlan?.linked_monthly_plan_id === monthlyPlan?.id && (
+            <div className="flex items-center gap-2">
+              <LinkIcon className={`h-4 w-4 ${darkMode ? 'text-green-400' : 'text-green-600'}`} />
+              <span className={`text-xs font-medium ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
+                Plans Linked
+              </span>
+            </div>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Monthly Status */}
           {monthlyPlan && (
@@ -138,7 +188,7 @@ export default function PlanCorrelationView({ monthlyPlan, weeklyPlan, dailyPlan
             }`}>
               <div className="flex items-center justify-between mb-2">
                 <h4 className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                  Today's Plan
+                  Daily Plan
                 </h4>
                 <Badge className={
                   dailyPlan.status === 'completed' 
@@ -153,19 +203,42 @@ export default function PlanCorrelationView({ monthlyPlan, weeklyPlan, dailyPlan
               <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
                 Max Trades: {dailyPlan.max_trades || 'Not set'}
               </p>
-              {dailyPlan.execution_analysis?.alignment_score !== undefined && (
+              {dailyPlan.linked_trade_ids && dailyPlan.linked_trade_ids.length > 0 && (
+                <div className="mt-2">
+                  <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Linked Trades</div>
+                  <div className="flex items-center gap-1">
+                    <CheckCircle className="h-3 w-3 text-cyan-500" />
+                    <span className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                      {dailyPlan.linked_trade_ids.length}
+                    </span>
+                  </div>
+                </div>
+              )}
+              {adherenceScore !== null && (
                 <div className="mt-2">
                   <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
                     Plan Adherence
                   </div>
                   <div className={`text-lg font-bold ${
-                    dailyPlan.execution_analysis.alignment_score >= 70 
+                    adherenceScore >= 70 
                       ? 'text-green-400' 
-                      : dailyPlan.execution_analysis.alignment_score >= 40
+                      : adherenceScore >= 40
                       ? 'text-yellow-400'
                       : 'text-red-400'
                   }`}>
-                    {dailyPlan.execution_analysis.alignment_score}/100
+                    {adherenceScore}%
+                  </div>
+                </div>
+              )}
+              {dailyPlan.clarity_score && (
+                <div className="mt-2">
+                  <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Plan Clarity</div>
+                  <div className={`text-sm font-bold ${
+                    dailyPlan.clarity_score >= 80 ? 'text-green-400' :
+                    dailyPlan.clarity_score >= 60 ? 'text-yellow-400' :
+                    'text-orange-400'
+                  }`}>
+                    {dailyPlan.clarity_score}%
                   </div>
                 </div>
               )}

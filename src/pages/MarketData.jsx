@@ -169,7 +169,7 @@ export default function MarketData() {
             >
               <TradingViewWidget 
                 type="chart" 
-                symbol={`OANDA:${selectedSymbol}`}
+                symbol={selectedSymbol === 'NAS100' ? 'OANDA:NAS100USD' : `OANDA:${selectedSymbol}`}
                 height="100%"
               />
             </ResizableWidget>
