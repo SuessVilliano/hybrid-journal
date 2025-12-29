@@ -22,16 +22,24 @@ Deno.serve(async (req) => {
 
     if (action === 'createEvent') {
       // Create a new calendar event for trading session
+      // Ensure ISO 8601 format for datetime
+      const startTime = eventData.startTime.includes('T') 
+        ? eventData.startTime 
+        : new Date(eventData.startTime).toISOString();
+      const endTime = eventData.endTime.includes('T') 
+        ? eventData.endTime 
+        : new Date(eventData.endTime).toISOString();
+
       const event = {
         summary: eventData.title || 'Trading Session',
         description: eventData.description || 'Scheduled trading time',
         start: {
-          dateTime: eventData.startTime,
-          timeZone: 'America/New_York'
+          dateTime: startTime,
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
         },
         end: {
-          dateTime: eventData.endTime,
-          timeZone: 'America/New_York'
+          dateTime: endTime,
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
         },
         reminders: {
           useDefault: false,
