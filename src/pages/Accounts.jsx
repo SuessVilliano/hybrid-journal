@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Wallet, TrendingUp, Edit2, Trash2, X, CheckCircle, DollarSign } from 'lucide-react';
+import { Plus, Wallet, TrendingUp, Edit2, Trash2, X, CheckCircle, DollarSign, Shield } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 
 export default function Accounts() {
   const [showForm, setShowForm] = useState(false);
@@ -189,6 +190,27 @@ function AccountForm({ account, onClose, onSubmit }) {
     is_active: true
   });
 
+  const [propFirmSettings, setPropFirmSettings] = useState({
+    firm_name: '',
+    account_size: 0,
+    max_daily_loss_percent: 5,
+    max_total_loss_percent: 10,
+    trailing_drawdown_percent: 10,
+    profit_target_percent: 10,
+    phase: 'Challenge',
+    weekend_holding: false,
+    news_trading_allowed: true
+  });
+
+  const queryClient = useQueryClient();
+
+  const createPropFirmMutation = useMutation({
+    mutationFn: (data) => base44.entities.PropFirmSettings.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['propFirmSettings']);
+    }
+  });
+
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <Card className="max-w-2xl w-full bg-slate-950 border-cyan-500/30 shadow-2xl shadow-cyan-500/20">
@@ -284,11 +306,133 @@ function AccountForm({ account, onClose, onSubmit }) {
               <span className="text-sm text-white">Active Account</span>
             </label>
 
+            {formData.account_type === 'Prop Firm' && (
+              <div className="border-t border-cyan-500/20 pt-4 space-y-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <Shield className="h-5 w-5 text-cyan-400" />
+                  <h3 className="text-lg font-bold text-cyan-400">Prop Firm Settings</h3>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-cyan-400 mb-2">Firm Name *</label>
+                    <Input
+                      value={propFirmSettings.firm_name}
+                      onChange={(e) => setPropFirmSettings({...propFirmSettings, firm_name: e.target.value})}
+                      placeholder="FTMO, MyForexFunds, etc."
+                      className="bg-slate-900 border-cyan-500/30 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-cyan-400 mb-2">Account Size ($)</label>
+                    <Input
+                      type="number"
+                      value={propFirmSettings.account_size}
+                      onChange={(e) => setPropFirmSettings({...propFirmSettings, account_size: parseFloat(e.target.value)})}
+                      placeholder="100000"
+                      className="bg-slate-900 border-cyan-500/30 text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-cyan-400 mb-2">Max Daily Loss (%)</label>
+                    <Input
+                      type="number"
+                      value={propFirmSettings.max_daily_loss_percent}
+                      onChange={(e) => setPropFirmSettings({...propFirmSettings, max_daily_loss_percent: parseFloat(e.target.value)})}
+                      placeholder="5"
+                      className="bg-slate-900 border-cyan-500/30 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-cyan-400 mb-2">Max Total Loss (%)</label>
+                    <Input
+                      type="number"
+                      value={propFirmSettings.max_total_loss_percent}
+                      onChange={(e) => setPropFirmSettings({...propFirmSettings, max_total_loss_percent: parseFloat(e.target.value)})}
+                      placeholder="10"
+                      className="bg-slate-900 border-cyan-500/30 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-cyan-400 mb-2">Trailing Drawdown (%)</label>
+                    <Input
+                      type="number"
+                      value={propFirmSettings.trailing_drawdown_percent}
+                      onChange={(e) => setPropFirmSettings({...propFirmSettings, trailing_drawdown_percent: parseFloat(e.target.value)})}
+                      placeholder="10"
+                      className="bg-slate-900 border-cyan-500/30 text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-cyan-400 mb-2">Profit Target (%)</label>
+                    <Input
+                      type="number"
+                      value={propFirmSettings.profit_target_percent}
+                      onChange={(e) => setPropFirmSettings({...propFirmSettings, profit_target_percent: parseFloat(e.target.value)})}
+                      placeholder="10"
+                      className="bg-slate-900 border-cyan-500/30 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-cyan-400 mb-2">Phase</label>
+                    <Select value={propFirmSettings.phase} onValueChange={(value) => setPropFirmSettings({...propFirmSettings, phase: value})}>
+                      <SelectTrigger className="bg-slate-900 border-cyan-500/30 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Challenge">Challenge</SelectItem>
+                        <SelectItem value="Verification">Verification</SelectItem>
+                        <SelectItem value="Funded">Funded</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="flex gap-6">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <Switch
+                      checked={propFirmSettings.weekend_holding}
+                      onCheckedChange={(checked) => setPropFirmSettings({...propFirmSettings, weekend_holding: checked})}
+                    />
+                    <span className="text-sm text-white">Weekend Holding Allowed</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <Switch
+                      checked={propFirmSettings.news_trading_allowed}
+                      onCheckedChange={(checked) => setPropFirmSettings({...propFirmSettings, news_trading_allowed: checked})}
+                    />
+                    <span className="text-sm text-white">News Trading Allowed</span>
+                  </label>
+                </div>
+              </div>
+            )}
+
             <div className="flex justify-end gap-3 pt-4">
               <Button type="button" variant="outline" onClick={onClose} className="border-slate-700 text-white hover:bg-slate-800">
                 Cancel
               </Button>
-              <Button type="submit" className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white">
+              <Button 
+                type="submit" 
+                onClick={async (e) => {
+                  e.preventDefault();
+                  onSubmit(formData);
+                  
+                  // If prop firm account, create prop firm settings too
+                  if (formData.account_type === 'Prop Firm' && propFirmSettings.firm_name) {
+                    await createPropFirmMutation.mutateAsync({
+                      ...propFirmSettings,
+                      is_active: true
+                    });
+                  }
+                }}
+                className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white"
+              >
                 {account ? 'Update' : 'Create'} Account
               </Button>
             </div>
