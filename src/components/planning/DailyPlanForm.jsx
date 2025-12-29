@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mic, MicOff, Sparkles, Loader2, Plus, X, Target, Layers, CheckCircle2 } from 'lucide-react';
+import { Mic, MicOff, Sparkles, Loader2, Plus, X, Target, Layers, CheckCircle2, Upload, Image as ImageIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import RiskCalculator from '@/components/risk/RiskCalculator';
@@ -51,6 +51,9 @@ export default function DailyPlanForm({ existingPlan, onClose, onSuccess }) {
 
   const [newRule, setNewRule] = useState('');
   const [newMarket, setNewMarket] = useState('');
+  const [chartScreenshots, setChartScreenshots] = useState(existingPlan?.chart_screenshots || []);
+  const [uploadingScreenshot, setUploadingScreenshot] = useState(false);
+  const fileInputRef = useRef(null);
 
   const { data: strategies = [] } = useQuery({
     queryKey: ['strategies'],
@@ -183,7 +186,32 @@ Max risk: ${formData.max_risk ? '$' + formData.max_risk : 'Not set'}`,
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    saveMutation.mutate(formData);
+    saveMutation.mutate({ ...formData, chart_screenshots: chartScreenshots });
+  };
+
+  const handleScreenshotUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    setUploadingScreenshot(true);
+    try {
+      const uploadPromises = files.map(async (file) => {
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        return file_url;
+      });
+
+      const urls = await Promise.all(uploadPromises);
+      setChartScreenshots([...chartScreenshots, ...urls]);
+    } catch (error) {
+      console.error('Upload failed:', error);
+      alert('Failed to upload screenshots');
+    } finally {
+      setUploadingScreenshot(false);
+    }
+  };
+
+  const removeScreenshot = (url) => {
+    setChartScreenshots(chartScreenshots.filter(s => s !== url));
   };
 
   const addRule = () => {
@@ -284,6 +312,58 @@ Max risk: ${formData.max_risk ? '$' + formData.max_risk : 'Not set'}`,
             )}
           </Button>
         </div>
+      </div>
+
+      {/* Chart Screenshots */}
+      <div>
+        <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+          <ImageIcon className="h-4 w-4 inline mr-1" />
+          Chart Screenshots
+        </label>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleScreenshotUpload}
+          className="hidden"
+        />
+        <Button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploadingScreenshot}
+          variant="outline"
+          size="sm"
+          className="mb-3"
+        >
+          {uploadingScreenshot ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Uploading...
+            </>
+          ) : (
+            <>
+              <Upload className="h-4 w-4 mr-2" />
+              Upload TradingView Charts
+            </>
+          )}
+        </Button>
+        {chartScreenshots.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {chartScreenshots.map((url, idx) => (
+              <div key={idx} className="relative group">
+                <img src={url} alt="Chart" className="w-full h-32 object-cover rounded-lg border-2 border-cyan-500/30" />
+                <button
+                  type="button"
+                  onClick={() => removeScreenshot(url)}
+                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* AI Analysis Results */}
