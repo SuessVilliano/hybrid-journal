@@ -227,7 +227,7 @@ export default function MyProfile() {
           </CardContent>
         </Card>
 
-
+        <WebhookSettings />
       </div>
     </div>
   );
