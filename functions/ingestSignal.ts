@@ -3,6 +3,36 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+    
+    // Extract webhook token from query params
+    const url = new URL(req.url);
+    const token = url.searchParams.get('token');
+    
+    if (!token) {
+      return Response.json({ 
+        error: 'Missing webhook token. URL format: /api/functions/ingestSignal?token=YOUR_TOKEN',
+        hint: 'Find your webhook token in My Profile page'
+      }, { status: 401 });
+    }
+    
+    // Find user by webhook token
+    const users = await base44.asServiceRole.entities.User.filter({ webhook_token: token });
+    
+    if (!users || users.length === 0) {
+      return Response.json({ 
+        error: 'Invalid webhook token',
+        hint: 'Generate a new token in My Profile page'
+      }, { status: 401 });
+    }
+    
+    const user = users[0];
+    
+    if (!user.webhook_enabled) {
+      return Response.json({ 
+        error: 'Webhook ingestion is disabled for this user',
+        hint: 'Enable webhooks in My Profile page'
+      }, { status: 403 });
+    }
 
     // Parse webhook payload
     let payload = await req.json();
@@ -26,7 +56,8 @@ Deno.serve(async (req) => {
       strategy: payload.strategy?.order_comment || payload.strategy_name || '',
       notes: payload.message || payload.notes || '',
       status: 'new',
-      raw_data: payload
+      raw_data: payload,
+      created_by: user.email
     };
 
     // Validate required fields
@@ -37,18 +68,50 @@ Deno.serve(async (req) => {
       }, { status: 400 });
     }
 
-    // Create signal record using service role (no user auth required for webhooks)
+    // Create signal record for this specific user
     const signal = await base44.asServiceRole.entities.Signal.create(signalData);
+
+    // Log the webhook request
+    await base44.asServiceRole.entities.SyncLog.create({
+      sync_type: 'webhook_signal',
+      status: 'success',
+      records_synced: 1,
+      details: `Signal received: ${signalData.symbol} ${signalData.action} @ ${signalData.price}`,
+      created_by: user.email
+    });
 
     return Response.json({ 
       success: true,
       signal: signal,
       message: 'Signal received successfully',
-      riskWarning: riskWarning
+      user: user.email
     });
 
   } catch (error) {
     console.error('Signal ingestion error:', error);
+    
+    // Try to log the error if we can determine the user
+    try {
+      const url = new URL(req.url);
+      const token = url.searchParams.get('token');
+      if (token) {
+        const base44 = createClientFromRequest(req);
+        const users = await base44.asServiceRole.entities.User.filter({ webhook_token: token });
+        if (users && users.length > 0) {
+          await base44.asServiceRole.entities.SyncLog.create({
+            sync_type: 'webhook_signal',
+            status: 'failed',
+            records_synced: 0,
+            error_message: error.message,
+            details: error.stack,
+            created_by: users[0].email
+          });
+        }
+      }
+    } catch (logError) {
+      console.error('Failed to log error:', logError);
+    }
+    
     return Response.json({ 
       error: error.message,
       stack: error.stack 
