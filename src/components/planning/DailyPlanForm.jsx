@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import RiskCalculator from '@/components/risk/RiskCalculator';
 import PropFirmRulesCard from '@/components/risk/PropFirmRulesCard';
 import LinkTradesToPlan from '@/components/planning/LinkTradesToPlan';
+import ImageViewer from '@/components/media/ImageViewer';
 
 export default function DailyPlanForm({ existingPlan, onClose, onSuccess }) {
   const [isRecording, setIsRecording] = useState(false);
@@ -55,6 +56,7 @@ export default function DailyPlanForm({ existingPlan, onClose, onSuccess }) {
   const [newMarket, setNewMarket] = useState('');
   const [chartScreenshots, setChartScreenshots] = useState(existingPlan?.chart_screenshots || []);
   const [uploadingScreenshot, setUploadingScreenshot] = useState(false);
+  const [viewingImage, setViewingImage] = useState(null);
   const fileInputRef = useRef(null);
 
   const { data: strategies = [] } = useQuery({
@@ -247,6 +249,7 @@ Max risk: ${formData.max_risk ? '$' + formData.max_risk : 'Not set'}`,
   const darkMode = document.documentElement.classList.contains('dark');
 
   return (
+    <>
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className={`p-4 rounded-lg border ${
         darkMode ? 'bg-gradient-to-r from-cyan-900/20 to-purple-900/20 border-cyan-500/30' : 'bg-gradient-to-r from-cyan-50 to-purple-50 border-cyan-200'
@@ -354,11 +357,19 @@ Max risk: ${formData.max_risk ? '$' + formData.max_risk : 'Not set'}`,
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {chartScreenshots.map((url, idx) => (
               <div key={idx} className="relative group">
-                <img src={url} alt="Chart" className="w-full h-32 object-cover rounded-lg border-2 border-cyan-500/30" />
+                <img
+                  src={url}
+                  alt="Chart"
+                  className="w-full h-32 object-cover rounded-lg border-2 border-cyan-500/30 cursor-pointer hover:border-cyan-500 transition-colors"
+                  onClick={() => setViewingImage(url)}
+                />
                 <button
                   type="button"
-                  onClick={() => removeScreenshot(url)}
-                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeScreenshot(url);
+                  }}
+                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -667,6 +678,10 @@ Max risk: ${formData.max_risk ? '$' + formData.max_risk : 'Not set'}`,
           {saveMutation.isPending ? 'Saving...' : existingPlan ? 'Update Plan' : 'Save Plan'}
         </Button>
       </div>
-    </form>
-  );
-}
+      </form>
+      {viewingImage && (
+      <ImageViewer imageUrl={viewingImage} onClose={() => setViewingImage(null)} />
+      )}
+      </>
+      );
+      }

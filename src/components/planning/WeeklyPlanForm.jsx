@@ -15,6 +15,7 @@ export default function WeeklyPlanForm({ existingPlan, monthlyPlan }) {
   const [aiProcessing, setAiProcessing] = useState(false);
   const [chartScreenshots, setChartScreenshots] = useState(existingPlan?.chart_screenshots || []);
   const [uploadingScreenshot, setUploadingScreenshot] = useState(false);
+  const [viewingImage, setViewingImage] = useState(null);
   const mediaRecorderRef = React.useRef(null);
   const audioChunksRef = React.useRef([]);
   const fileInputRef = React.useRef(null);
@@ -188,6 +189,7 @@ Provide 2-3 sentences focusing on key opportunities and risk management.`
   };
 
   return (
+    <>
     <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
       <CardHeader>
         <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>
@@ -295,11 +297,19 @@ Provide 2-3 sentences focusing on key opportunities and risk management.`
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {chartScreenshots.map((url, idx) => (
                 <div key={idx} className="relative group">
-                  <img src={url} alt="Chart" className="w-full h-32 object-cover rounded-lg border-2 border-cyan-500/30" />
+                  <img
+                    src={url}
+                    alt="Chart"
+                    className="w-full h-32 object-cover rounded-lg border-2 border-cyan-500/30 cursor-pointer hover:border-cyan-500 transition-colors"
+                    onClick={() => setViewingImage(url)}
+                  />
                   <button
                     type="button"
-                    onClick={() => removeScreenshot(url)}
-                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeScreenshot(url);
+                    }}
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -429,5 +439,9 @@ Provide 2-3 sentences focusing on key opportunities and risk management.`
         </div>
       </CardContent>
     </Card>
+    {viewingImage && (
+      <ImageViewer imageUrl={viewingImage} onClose={() => setViewingImage(null)} />
+    )}
+    </>
   );
 }

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { base44 } from '@/api/base44Client';
-import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText, Menu, X, Wallet, Sun, Moon, Home, Users, User, Brain, GripVertical, Star, Clock, List, Bell, HelpCircle, UserCheck } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText, Menu, X, Wallet, Sun, Moon, Home, Users, User, Brain, GripVertical, Star, Clock, List, Bell, HelpCircle, UserCheck, Image as ImageIcon } from 'lucide-react';
 import FloatingAIAssistant from '@/components/ai/FloatingAIAssistant';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
@@ -157,6 +157,7 @@ export default function Layout({ children, currentPageName }) {
     { id: 'backtesting', name: 'Backtesting', page: 'Backtesting', icon: Play },
     { id: 'imports', name: 'Imports', page: 'Imports', icon: Upload },
     { id: 'community', name: 'Community', page: 'SocialFeed', icon: Users },
+    { id: 'media', name: 'Media Library', page: 'MediaLibrary', icon: ImageIcon },
     { id: 'shared', name: 'Shared Access', page: 'SharedAccess', icon: UserCheck },
     { id: 'profile', name: 'My Profile', page: 'MyProfile', icon: User },
     { id: 'help', name: 'Help & Docs', page: 'Help', icon: HelpCircle },
