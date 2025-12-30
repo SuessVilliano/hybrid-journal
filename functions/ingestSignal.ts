@@ -70,6 +70,7 @@ Deno.serve(async (req) => {
     // Add user_email and created_by to signal data
     signalData.user_email = user.email;
     signalData.created_by = user.email;
+    signalData.created_by_id = user.id;
 
     // Create signal record using service role
     const signal = await base44.asServiceRole.entities.Signal.create(signalData);
