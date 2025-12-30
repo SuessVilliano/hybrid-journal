@@ -1,10 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookOpen, MessageCircle, Video, FileText, Mail, ExternalLink } from 'lucide-react';
+import { BookOpen, MessageCircle, Video, FileText, Mail, ExternalLink, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 export default function Help() {
   const darkMode = document.documentElement.classList.contains('dark');
+  const [showPWAInstructions, setShowPWAInstructions] = useState(false);
+
+  const handlePWAClick = () => {
+    setShowPWAInstructions(true);
+    toast.info('Check the PWA installation guide below!');
+  };
 
   const resources = [
     {
@@ -30,14 +37,22 @@ export default function Help() {
     },
     {
       icon: FileText,
-      title: 'Quick Start Guide',
-      description: 'Get up and running in 5 minutes',
-      action: 'onboarding',
+      title: 'Install as PWA',
+      description: 'Add to home screen for offline access',
+      action: 'pwa',
       color: 'from-green-500 to-emerald-500'
     }
   ];
 
   const faqs = [
+    {
+      q: 'How do I install the app on my phone/tablet?',
+      a: 'On mobile: Tap your browser menu (⋮) and select "Add to Home Screen" or "Install App". On desktop: Look for the install icon in your browser\'s address bar. The app works offline once installed!'
+    },
+    {
+      q: 'Can I embed this app in other platforms (GoHighLevel, etc.)?',
+      a: 'The app is optimized as a standalone PWA. For embedding, authentication may be restricted due to browser security policies. We recommend using it as an installed app or in a separate browser tab for the best experience.'
+    },
     {
       q: 'How do I connect my trading account?',
       a: 'Go to Accounts page, click "Add Account", and choose your broker. Follow the connection wizard to sync your trades.'
@@ -57,6 +72,10 @@ export default function Help() {
     {
       q: 'What are prop firm rules?',
       a: 'Prop firm rules help you stay compliant with funded account requirements like max daily loss and trailing drawdown.'
+    },
+    {
+      q: 'Does the app work offline?',
+      a: 'Yes! Once installed as a PWA, core features are cached and work offline. You\'ll need internet for live data updates and AI features.'
     }
   ];
 
@@ -103,12 +122,84 @@ export default function Help() {
                         Open <ExternalLink className="h-3 w-3" />
                       </a>
                     )}
+                    {resource.action === 'pwa' && (
+                      <button
+                        onClick={handlePWAClick}
+                        className="text-sm text-cyan-500 hover:text-cyan-600 flex items-center gap-1"
+                      >
+                        View Guide <ExternalLink className="h-3 w-3" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
+
+        {showPWAInstructions && (
+          <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
+            <CardHeader>
+              <CardTitle className={`flex items-center gap-2 ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
+                <Smartphone className="h-5 w-5" />
+                Install Hybrid Journal as a PWA
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <h3 className={`font-bold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  📱 On Mobile (iOS/Android)
+                </h3>
+                <ol className={`space-y-2 text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'} list-decimal list-inside`}>
+                  <li>Open hybridjournal.co in Safari (iOS) or Chrome (Android)</li>
+                  <li>Tap the Share button (iOS) or Menu (⋮) button (Android)</li>
+                  <li>Select "Add to Home Screen"</li>
+                  <li>Tap "Add" to confirm</li>
+                  <li>The app icon will appear on your home screen - launch it like any native app!</li>
+                </ol>
+              </div>
+
+              <div>
+                <h3 className={`font-bold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  💻 On Desktop (Chrome/Edge)
+                </h3>
+                <ol className={`space-y-2 text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'} list-decimal list-inside`}>
+                  <li>Look for the install icon (⊕) in the address bar</li>
+                  <li>Click it and select "Install"</li>
+                  <li>The app will open in its own window</li>
+                  <li>Access it from your taskbar or applications folder anytime</li>
+                </ol>
+              </div>
+
+              <div className={`p-4 rounded-lg ${darkMode ? 'bg-cyan-900/20 border border-cyan-500/30' : 'bg-cyan-50 border border-cyan-200'}`}>
+                <p className={`text-sm font-semibold mb-2 ${darkMode ? 'text-cyan-300' : 'text-cyan-900'}`}>
+                  ✨ Benefits of PWA Installation:
+                </p>
+                <ul className={`space-y-1 text-sm ${darkMode ? 'text-cyan-300/80' : 'text-cyan-900/80'} list-disc list-inside`}>
+                  <li>Works offline - access your data anytime</li>
+                  <li>Faster loading and better performance</li>
+                  <li>Native app-like experience</li>
+                  <li>No app store download required</li>
+                  <li>Automatic updates in the background</li>
+                </ul>
+              </div>
+
+              <div className={`p-4 rounded-lg ${darkMode ? 'bg-yellow-900/20 border border-yellow-500/30' : 'bg-yellow-50 border border-yellow-200'}`}>
+                <p className={`text-sm font-semibold mb-2 ${darkMode ? 'text-yellow-300' : 'text-yellow-900'}`}>
+                  ⚠️ About Embedding in Other Platforms:
+                </p>
+                <p className={`text-sm ${darkMode ? 'text-yellow-300/80' : 'text-yellow-900/80'}`}>
+                  For security reasons, browsers restrict authentication in iframes. If you need to use Hybrid Journal alongside GoHighLevel or similar platforms, we recommend:
+                </p>
+                <ul className={`mt-2 space-y-1 text-sm ${darkMode ? 'text-yellow-300/80' : 'text-yellow-900/80'} list-disc list-inside`}>
+                  <li>Open as a separate browser tab or window</li>
+                  <li>Install as a PWA for side-by-side usage</li>
+                  <li>Use browser split-screen features</li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
           <CardHeader>

@@ -256,6 +256,8 @@ export default function FloatingAIAssistant({ isOpen, onClose }) {
                     <p>📚 Learn trading techniques</p>
                     <p>🧠 Get psychology coaching</p>
                     <p>📸 Upload chart screenshots for analysis</p>
+                    <p>📱 Ask about installing the app as a PWA</p>
+                    <p>🔧 Get help with webhooks and integrations</p>
                   </div>
                 </div>
               ) : (
@@ -418,12 +420,13 @@ export default function FloatingAIAssistant({ isOpen, onClose }) {
                     I can help with trade analysis, coaching, strategy coding, chart reading, and more!
                   </p>
                   <div className={`mt-4 text-left space-y-2 text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                    <p>💡 Ask me to analyze your recent trades</p>
-                    <p>📊 Get chart analysis and trade ideas</p>
-                    <p>🎯 Create custom indicators or strategies</p>
+                    <p>💡 Analyze your recent trades</p>
+                    <p>📊 Chart analysis & trade ideas</p>
+                    <p>🎯 Custom indicators or strategies</p>
                     <p>📚 Learn trading techniques</p>
-                    <p>🧠 Get psychology coaching</p>
-                    <p>📸 Upload chart screenshots for analysis</p>
+                    <p>🧠 Psychology coaching</p>
+                    <p>📸 Upload chart screenshots</p>
+                    <p>📱 PWA installation help</p>
                   </div>
                 </div>
               ) : (
