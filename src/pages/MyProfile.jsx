@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { User, Save, Calendar, Plus, Clock } from 'lucide-react';
 import WebhookSettings from '@/components/profile/WebhookSettings';
+import NotificationPreferences from '@/components/profile/NotificationPreferences';
 
 export default function MyProfile() {
   const [user, setUser] = useState(null);
