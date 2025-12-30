@@ -70,8 +70,27 @@ Deno.serve(async (req) => {
     // Add user_email to signal data (RLS filters on this field)
     signalData.user_email = user.email;
 
+    // Enhanced logging for debugging
+    console.log('🔍 WEBHOOK DEBUG:', {
+      webhook_token: token,
+      user_found: user.email,
+      user_webhook_enabled: user.webhook_enabled,
+      signal_symbol: signalData.symbol,
+      signal_action: signalData.action,
+      signal_user_email: signalData.user_email,
+      timestamp: new Date().toISOString()
+    });
+
     // Create signal record using service role
     const signal = await base44.asServiceRole.entities.Signal.create(signalData);
+
+    // Verify signal was created with correct user_email
+    console.log('✅ SIGNAL CREATED:', {
+      signal_id: signal.id,
+      signal_user_email: signal.user_email,
+      created_by: signal.created_by,
+      matches_user: signal.user_email === user.email
+    });
 
     // Check notification preferences
     const prefs = user.notification_preferences || { enabled: true };

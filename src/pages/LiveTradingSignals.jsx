@@ -39,8 +39,14 @@ export default function LiveTradingSignals() {
   const { data: signals = [], isLoading: isLoadingSignals } = useQuery({
     queryKey: ['signals', user?.email],
     queryFn: async () => {
-      if (!user?.email) return [];
-      return base44.entities.Signal.filter({ user_email: user.email }, '-created_date', 100);
+      if (!user?.email) {
+        console.log('⚠️ No user email for signal query');
+        return [];
+      }
+      console.log('🔍 Fetching signals for user:', user.email);
+      const results = await base44.entities.Signal.filter({ user_email: user.email }, '-created_date', 100);
+      console.log('📊 Signals fetched:', results.length, 'signals');
+      return results;
     },
     enabled: !!user?.email,
     refetchInterval: 5000
@@ -196,6 +202,9 @@ export default function LiveTradingSignals() {
                 </h3>
                 <p className={darkMode ? 'text-slate-400' : 'text-slate-600'}>
                   Configure your webhook to start receiving trading signals
+                </p>
+                <p className={`mt-4 text-sm ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`}>
+                  💡 Need help? Ask the Webhook Debugger AI agent in the AI Coach page
                 </p>
               </CardContent>
             </Card>
