@@ -9,6 +9,114 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import NotificationBell from '@/components/notifications/NotificationBell';
 
 export default function Layout({ children, currentPageName }) {
+  // PWA Setup
+  useEffect(() => {
+    // Create and inject manifest
+    const manifestData = {
+      name: "Hybrid Journal - Trading Platform",
+      short_name: "Hybrid Journal",
+      description: "AI-powered trading journal and analytics platform",
+      start_url: "/",
+      display: "standalone",
+      background_color: "#0f172a",
+      theme_color: "#06b6d4",
+      orientation: "portrait-primary",
+      icons: [
+        {
+          src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%2306b6d4' width='100' height='100' rx='20'/%3E%3Cpath fill='white' d='M50 20L65 40H35L50 20Z M50 80L35 60H65L50 80Z M20 50L40 35V65L20 50Z M80 50L60 65V35L80 50Z'/%3E%3C/svg%3E",
+          sizes: "192x192",
+          type: "image/svg+xml",
+          purpose: "any maskable"
+        },
+        {
+          src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%2306b6d4' width='100' height='100' rx='20'/%3E%3Cpath fill='white' d='M50 20L65 40H35L50 20Z M50 80L35 60H65L50 80Z M20 50L40 35V65L20 50Z M80 50L60 65V35L80 50Z'/%3E%3C/svg%3E",
+          sizes: "512x512",
+          type: "image/svg+xml",
+          purpose: "any maskable"
+        }
+      ]
+    };
+
+    const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
+    const manifestURL = URL.createObjectURL(manifestBlob);
+    
+    let manifestLink = document.querySelector('link[rel="manifest"]');
+    if (!manifestLink) {
+      manifestLink = document.createElement('link');
+      manifestLink.rel = 'manifest';
+      document.head.appendChild(manifestLink);
+    }
+    manifestLink.href = manifestURL;
+
+    // Add PWA meta tags
+    const metaTags = [
+      { name: 'mobile-web-app-capable', content: 'yes' },
+      { name: 'apple-mobile-web-app-capable', content: 'yes' },
+      { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
+      { name: 'apple-mobile-web-app-title', content: 'Hybrid Journal' },
+      { name: 'theme-color', content: '#06b6d4' }
+    ];
+
+    metaTags.forEach(tag => {
+      let meta = document.querySelector(`meta[name="${tag.name}"]`);
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.name = tag.name;
+        document.head.appendChild(meta);
+      }
+      meta.content = tag.content;
+    });
+
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      const swCode = `
+        const CACHE_NAME = 'hybrid-journal-v1';
+        const urlsToCache = [
+          '/',
+          '/index.html'
+        ];
+
+        self.addEventListener('install', (event) => {
+          event.waitUntil(
+            caches.open(CACHE_NAME)
+              .then((cache) => cache.addAll(urlsToCache))
+          );
+        });
+
+        self.addEventListener('fetch', (event) => {
+          event.respondWith(
+            caches.match(event.request)
+              .then((response) => response || fetch(event.request))
+          );
+        });
+
+        self.addEventListener('activate', (event) => {
+          event.waitUntil(
+            caches.keys().then((cacheNames) => {
+              return Promise.all(
+                cacheNames.map((cacheName) => {
+                  if (cacheName !== CACHE_NAME) {
+                    return caches.delete(cacheName);
+                  }
+                })
+              );
+            })
+          );
+        });
+      `;
+
+      const swBlob = new Blob([swCode], { type: 'application/javascript' });
+      const swURL = URL.createObjectURL(swBlob);
+
+      navigator.serviceWorker.register(swURL)
+        .then(() => console.log('PWA Service Worker registered'))
+        .catch((err) => console.error('Service Worker registration failed:', err));
+    }
+
+    return () => {
+      URL.revokeObjectURL(manifestURL);
+    };
+  }, []);
   // Don't render layout for Landing and PublicDashboard pages
   if (currentPageName === 'Landing' || currentPageName === 'PublicDashboard') {
     return children;
