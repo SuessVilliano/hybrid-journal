@@ -1,29 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Bell, TrendingUp, TrendingDown, X, Check, Eye, Zap } from 'lucide-react';
+import { Bell, TrendingUp, TrendingDown, X, Check, Eye, Zap, Brain } from 'lucide-react';
 import { format } from 'date-fns';
 import WebhookSettings from '@/components/profile/WebhookSettings';
+import AISignalAnalysis from '@/components/signals/AISignalAnalysis';
+import SignalFilters from '@/components/signals/SignalFilters';
 
 export default function LiveTradingSignals() {
   const [showWebhookInfo, setShowWebhookInfo] = useState(false);
   const [copiedWebhook, setCopiedWebhook] = useState(false);
+  const [analyzingSignal, setAnalyzingSignal] = useState(null);
+  const [filters, setFilters] = useState(() => {
+    const saved = localStorage.getItem('signal_filters');
+    return saved ? JSON.parse(saved) : {
+      symbols: [],
+      actions: [],
+      providers: [],
+      minConfidence: 0,
+      maxConfidence: 100
+    };
+  });
   const queryClient = useQueryClient();
   const darkMode = document.documentElement.classList.contains('dark');
 
-  const { data: signals = [], isLoading } = useQuery({
-    queryKey: ['signals'],
-    queryFn: () => base44.entities.Signal.list('-created_date', 100),
-    refetchInterval: 5000 // Auto-refresh every 5 seconds
-  });
+  useEffect(() => {
+    localStorage.setItem('signal_filters', JSON.stringify(filters));
+  }, [filters]);
 
-  const { data: user } = useQuery({
+  const { data: user, isLoading: isLoadingUser } = useQuery({
     queryKey: ['user'],
     queryFn: () => base44.auth.me()
   });
+
+  const { data: signals = [], isLoading: isLoadingSignals } = useQuery({
+    queryKey: ['signals', user?.email],
+    queryFn: () => {
+      if (!user?.email) return [];
+      return base44.entities.Signal.list('-created_date', 100);
+    },
+    enabled: !!user?.email,
+    refetchInterval: 5000
+  });
+
+  const isLoading = isLoadingUser || isLoadingSignals;
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status, trade_id }) => 
@@ -43,9 +66,27 @@ export default function LiveTradingSignals() {
     }
   });
 
-  const newSignals = signals.filter(s => s.status === 'new');
-  const viewedSignals = signals.filter(s => s.status === 'viewed');
-  const executedSignals = signals.filter(s => s.status === 'executed');
+  const filteredSignals = signals.filter(signal => {
+    if (filters.symbols.length > 0 && !filters.symbols.includes(signal.symbol)) return false;
+    if (filters.actions.length > 0 && !filters.actions.includes(signal.action)) return false;
+    if (filters.providers.length > 0 && !filters.providers.includes(signal.provider)) return false;
+    if (signal.confidence < filters.minConfidence || signal.confidence > filters.maxConfidence) return false;
+    return true;
+  });
+
+  const newSignals = filteredSignals.filter(s => s.status === 'new');
+  const viewedSignals = filteredSignals.filter(s => s.status === 'viewed');
+  const executedSignals = filteredSignals.filter(s => s.status === 'executed');
+
+  const resetFilters = () => {
+    setFilters({
+      symbols: [],
+      actions: [],
+      providers: [],
+      minConfidence: 0,
+      maxConfidence: 100
+    });
+  };
 
   return (
     <div className={`min-h-screen p-4 md:p-6 transition-colors ${
@@ -76,6 +117,13 @@ export default function LiveTradingSignals() {
 
         {/* Webhook Info */}
         {showWebhookInfo && <WebhookSettings />}
+
+        {/* Filters */}
+        <SignalFilters 
+          filters={filters} 
+          onFiltersChange={setFilters}
+          onReset={resetFilters}
+        />
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -145,7 +193,7 @@ export default function LiveTradingSignals() {
               </CardContent>
             </Card>
           ) : (
-            signals.map((signal) => (
+            filteredSignals.map((signal) => (
               <Card 
                 key={signal.id} 
                 className={`${darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'} ${
@@ -254,6 +302,14 @@ export default function LiveTradingSignals() {
                       {signal.status === 'new' && (
                         <>
                           <Button
+                            onClick={() => setAnalyzingSignal(signal)}
+                            className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700"
+                            size="sm"
+                          >
+                            <Brain className="h-4 w-4 md:mr-2" />
+                            <span className="hidden md:inline">Analyze</span>
+                          </Button>
+                          <Button
                             onClick={() => routeTradeMutation.mutate({ 
                               signal_id: signal.id, 
                               override_approval: false 
@@ -337,6 +393,15 @@ export default function LiveTradingSignals() {
             ))
           )}
         </div>
+
+        {/* AI Analysis Modal */}
+        {analyzingSignal && (
+          <AISignalAnalysis
+            signal={analyzingSignal}
+            isOpen={!!analyzingSignal}
+            onClose={() => setAnalyzingSignal(null)}
+          />
+        )}
       </div>
     </div>
   );
