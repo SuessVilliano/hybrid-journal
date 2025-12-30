@@ -48,6 +48,13 @@ export default function LiveTradingSignals() {
 
   const isLoading = isLoadingUser || isLoadingSignals;
 
+  // Debug logging
+  useEffect(() => {
+    console.log('Current user email:', user?.email);
+    console.log('Signals fetched:', signals);
+    console.log('Signals count:', signals.length);
+  }, [user, signals]);
+
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status, trade_id }) => 
       base44.entities.Signal.update(id, { 
