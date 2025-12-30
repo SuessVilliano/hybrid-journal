@@ -67,22 +67,47 @@ Deno.serve(async (req) => {
       }, { status: 400 });
     }
 
-    // Use service role to create records with explicit created_by
-    const signal = await base44.asServiceRole.entities.Signal.create({
-      ...signalData,
-      created_by: user.email
-    });
+    // Add user_email to signal data
+    signalData.user_email = user.email;
 
-    // Create notification for the user
-    await base44.asServiceRole.entities.Notification.create({
-      recipient_email: user.email,
-      type: 'trade_alert',
-      title: `New Trading Signal: ${signalData.symbol}`,
-      message: `${signalData.action} signal received for ${signalData.symbol} at ${signalData.price}`,
-      link: '/LiveTradingSignals',
-      priority: 'high',
-      created_by: user.email
-    });
+    // Create signal record using service role
+    const signal = await base44.asServiceRole.entities.Signal.create(signalData);
+
+    // Check notification preferences
+    const prefs = user.notification_preferences || { enabled: true };
+    let shouldNotify = prefs.enabled !== false;
+
+    if (shouldNotify) {
+      // Filter by symbols
+      if (prefs.symbols && prefs.symbols.length > 0) {
+        shouldNotify = prefs.symbols.includes(signalData.symbol);
+      }
+      // Filter by actions
+      if (shouldNotify && prefs.actions && prefs.actions.length > 0) {
+        shouldNotify = prefs.actions.includes(signalData.action);
+      }
+      // Filter by confidence
+      if (shouldNotify && prefs.min_confidence) {
+        shouldNotify = signalData.confidence >= prefs.min_confidence;
+      }
+      // Filter by providers
+      if (shouldNotify && prefs.providers && prefs.providers.length > 0) {
+        shouldNotify = prefs.providers.includes(signalData.provider);
+      }
+    }
+
+    // Create notification if passes filters
+    if (shouldNotify) {
+      await base44.asServiceRole.entities.Notification.create({
+        recipient_email: user.email,
+        type: 'trade_alert',
+        title: `New Trading Signal: ${signalData.symbol}`,
+        message: `${signalData.action} signal received for ${signalData.symbol} at ${signalData.price}`,
+        link: '/LiveTradingSignals',
+        priority: 'high',
+        user_email: user.email
+      });
+    }
 
     // Log the webhook request
     await base44.asServiceRole.entities.SyncLog.create({
@@ -90,7 +115,7 @@ Deno.serve(async (req) => {
       status: 'success',
       records_synced: 1,
       details: `Signal received: ${signalData.symbol} ${signalData.action} @ ${signalData.price}`,
-      created_by: user.email
+      user_email: user.email
     });
 
     return Response.json({ 
@@ -118,7 +143,7 @@ Deno.serve(async (req) => {
             records_synced: 0,
             error_message: error.message,
             details: error.stack,
-            created_by: user.email
+            user_email: user.email
           });
         }
       }
