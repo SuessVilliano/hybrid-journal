@@ -11,40 +11,48 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized - admin only' }, { status: 403 });
     }
 
-    console.log('🔧 Starting signal fix for user:', user.email);
+    const { targetUserEmail } = await req.json();
+
+    if (!targetUserEmail) {
+      return Response.json({ error: 'targetUserEmail is required in the payload' }, { status: 400 });
+    }
+
+    console.log('🔧 Starting signal fix for target user:', targetUserEmail);
+    console.log('Admin running function:', user.email);
 
     // Get ALL signals using service role (bypasses RLS)
     const allSignals = await base44.asServiceRole.entities.Signal.list('-created_date', 1000);
     console.log('📊 Found', allSignals.length, 'total signals');
 
-    // Filter signals that don't have user_email set
-    const signalsToFix = allSignals.filter(s => !s.user_email);
-    console.log('🔍 Found', signalsToFix.length, 'signals missing user_email');
+    // Filter signals that don't have user_email OR have wrong user_email
+    const signalsToFix = allSignals.filter(s => !s.user_email || s.user_email !== targetUserEmail);
+    console.log('🔍 Found', signalsToFix.length, 'signals to fix for', targetUserEmail);
 
-    // Update each signal to set user_email based on created_by service role pattern
-    // Since these were all created via webhook for the admin user, set to admin email
+    // Update each signal to set user_email to the target user
     const updates = [];
     for (const signal of signalsToFix) {
       try {
         await base44.asServiceRole.entities.Signal.update(signal.id, {
-          user_email: user.email
+          user_email: targetUserEmail
         });
         updates.push(signal.id);
-        console.log('✅ Updated signal:', signal.id);
+        console.log('✅ Updated signal:', signal.id, 'to user_email:', targetUserEmail);
       } catch (error) {
         console.error('❌ Failed to update signal:', signal.id, error.message);
       }
     }
 
-    // Verify the fix by querying as user
-    const userSignals = await base44.entities.Signal.filter({ user_email: user.email });
-    console.log('✅ User can now see', userSignals.length, 'signals');
+    // Verify by re-fetching all signals and counting those with target user_email
+    const allSignalsAfter = await base44.asServiceRole.entities.Signal.list('-created_date', 1000);
+    const targetUserSignals = allSignalsAfter.filter(s => s.user_email === targetUserEmail);
+    console.log('✅ Target user should now see', targetUserSignals.length, 'signals');
 
     return Response.json({
       success: true,
       totalSignals: allSignals.length,
       signalsFixed: updates.length,
-      nowVisibleToUser: userSignals.length,
+      targetUserEmail: targetUserEmail,
+      nowVisibleToTargetUser: targetUserSignals.length,
       updatedSignalIds: updates
     });
 
