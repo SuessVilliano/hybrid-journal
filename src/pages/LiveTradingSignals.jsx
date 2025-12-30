@@ -38,9 +38,9 @@ export default function LiveTradingSignals() {
 
   const { data: signals = [], isLoading: isLoadingSignals } = useQuery({
     queryKey: ['signals', user?.email],
-    queryFn: () => {
+    queryFn: async () => {
       if (!user?.email) return [];
-      return base44.entities.Signal.list('-created_date', 100);
+      return base44.entities.Signal.filter({ user_email: user.email }, '-created_date', 100);
     },
     enabled: !!user?.email,
     refetchInterval: 5000
