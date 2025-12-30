@@ -67,14 +67,11 @@ Deno.serve(async (req) => {
       }, { status: 400 });
     }
 
-    // Add user_email to signal data
+    // Add user_email to signal data (RLS filters on this field)
     signalData.user_email = user.email;
 
-    // Create a user-scoped client to ensure created_by is set correctly
-    const userScopedBase44 = base44.asUser(user.id);
-    
-    // Create signal record using user-scoped client
-    const signal = await userScopedBase44.entities.Signal.create(signalData);
+    // Create signal record using service role
+    const signal = await base44.asServiceRole.entities.Signal.create(signalData);
 
     // Check notification preferences
     const prefs = user.notification_preferences || { enabled: true };
