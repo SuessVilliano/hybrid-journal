@@ -229,6 +229,8 @@ export default function MyProfile() {
         </Card>
 
         <WebhookSettings />
+
+        <NotificationPreferences />
       </div>
     </div>
   );
