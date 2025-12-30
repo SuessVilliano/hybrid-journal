@@ -161,7 +161,12 @@ Deno.serve(async (req) => {
             status: 'failed',
             records_synced: 0,
             error_message: error.message,
-            details: error.stack,
+            details: JSON.stringify({
+              error_stack: error.stack,
+              user_email: user.email,
+              webhook_token: token,
+              timestamp: new Date().toISOString()
+            }),
             user_email: user.email
           });
         }
