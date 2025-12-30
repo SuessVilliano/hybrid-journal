@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Bell, TrendingUp, TrendingDown, X, Check, Eye, Zap, Brain } from 'lucide-react';
+import { Bell, TrendingUp, TrendingDown, X, Check, Eye, Zap, Brain, RefreshCw, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import WebhookSettings from '@/components/profile/WebhookSettings';
 import AISignalAnalysis from '@/components/signals/AISignalAnalysis';
@@ -14,6 +14,7 @@ export default function LiveTradingSignals() {
   const [showWebhookInfo, setShowWebhookInfo] = useState(false);
   const [copiedWebhook, setCopiedWebhook] = useState(false);
   const [analyzingSignal, setAnalyzingSignal] = useState(null);
+  const [showLogs, setShowLogs] = useState(false);
   const [filters, setFilters] = useState(() => {
     const saved = localStorage.getItem('signal_filters');
     return saved ? JSON.parse(saved) : {
@@ -36,7 +37,7 @@ export default function LiveTradingSignals() {
     queryFn: () => base44.auth.me()
   });
 
-  const { data: signals = [], isLoading: isLoadingSignals } = useQuery({
+  const { data: signals = [], isLoading: isLoadingSignals, refetch: refetchSignals } = useQuery({
     queryKey: ['signals', user?.email],
     queryFn: async () => {
       if (!user?.email) {
@@ -50,6 +51,15 @@ export default function LiveTradingSignals() {
     },
     enabled: !!user?.email,
     refetchInterval: 5000
+  });
+
+  const { data: syncLogs = [] } = useQuery({
+    queryKey: ['syncLogs', user?.email],
+    queryFn: async () => {
+      if (!user?.email) return [];
+      return await base44.entities.SyncLog.filter({ user_email: user.email, sync_type: 'webhook_signal' }, '-created_date', 20);
+    },
+    enabled: !!user?.email
   });
 
   const isLoading = isLoadingUser || isLoadingSignals;
@@ -119,17 +129,86 @@ export default function LiveTradingSignals() {
               Real-time signals from TradingView and external sources
             </p>
           </div>
-          <Button
-            onClick={() => setShowWebhookInfo(!showWebhookInfo)}
-            className="bg-gradient-to-r from-cyan-500 to-purple-600"
-          >
-            <Zap className="h-4 w-4 mr-2" />
-            Webhook Setup
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => {
+                refetchSignals();
+                queryClient.invalidateQueries(['syncLogs']);
+              }}
+              variant="outline"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+            <Button
+              onClick={() => setShowLogs(!showLogs)}
+              variant="outline"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              {showLogs ? 'Hide' : 'Show'} Logs
+            </Button>
+            <Button
+              onClick={() => setShowWebhookInfo(!showWebhookInfo)}
+              className="bg-gradient-to-r from-cyan-500 to-purple-600"
+            >
+              <Zap className="h-4 w-4 mr-2" />
+              Webhook Setup
+            </Button>
+          </div>
         </div>
 
         {/* Webhook Info */}
         {showWebhookInfo && <WebhookSettings />}
+
+        {/* Sync Logs */}
+        {showLogs && (
+          <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
+            <CardHeader>
+              <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>
+                Webhook Sync Logs (Last 20)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {syncLogs.length === 0 ? (
+                <p className={darkMode ? 'text-slate-400' : 'text-slate-600'}>No logs yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {syncLogs.map((log) => (
+                    <div
+                      key={log.id}
+                      className={`p-3 rounded-lg border ${
+                        log.status === 'success'
+                          ? darkMode ? 'bg-green-900/20 border-green-500/30' : 'bg-green-50 border-green-200'
+                          : darkMode ? 'bg-red-900/20 border-red-500/30' : 'bg-red-50 border-red-200'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge className={log.status === 'success' ? 'bg-green-600' : 'bg-red-600'}>
+                              {log.status}
+                            </Badge>
+                            <span className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                              {format(new Date(log.created_date), 'MMM d, yyyy h:mm:ss a')}
+                            </span>
+                          </div>
+                          <p className={`text-sm ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                            {log.details || log.error_message || 'No details'}
+                          </p>
+                          {log.records_synced > 0 && (
+                            <p className={`text-xs mt-1 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`}>
+                              Records synced: {log.records_synced}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Filters */}
         <SignalFilters 
