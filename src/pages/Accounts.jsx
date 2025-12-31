@@ -23,6 +23,11 @@ export default function Accounts() {
     queryFn: () => base44.entities.Trade.list()
   });
 
+  const { data: brokerConnections = [] } = useQuery({
+    queryKey: ['brokerConnections'],
+    queryFn: () => base44.entities.BrokerConnection.list()
+  });
+
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Account.create(data),
     onSuccess: () => {
@@ -53,7 +58,17 @@ export default function Accounts() {
     const winRate = accountTrades.length > 0 
       ? (accountTrades.filter(t => t.pnl > 0).length / accountTrades.length) * 100 
       : 0;
-    return { trades: accountTrades.length, pnl: totalPnl, winRate, currentBalance };
+    
+    // Check if account has broker connection
+    const brokerConnection = brokerConnections.find(bc => bc.account_number === accountId);
+    
+    return { 
+      trades: accountTrades.length, 
+      pnl: totalPnl, 
+      winRate, 
+      currentBalance,
+      brokerConnection
+    };
   };
 
   return (
@@ -140,6 +155,20 @@ export default function Accounts() {
                   <div className="h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
 
                   <div className="space-y-3">
+                    {stats.brokerConnection && stats.brokerConnection.account_balance && (
+                      <div className="p-2 rounded bg-cyan-500/10 border border-cyan-500/30 mb-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-cyan-400">Broker Balance</span>
+                          <span className="text-cyan-400 font-bold">${stats.brokerConnection.account_balance.toFixed(2)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs mt-1">
+                          <span className="text-cyan-400/70">Last Synced</span>
+                          <span className="text-cyan-400/70">
+                            {new Date(stats.brokerConnection.last_sync).toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-slate-400">Current Balance</span>
                       <span className={`text-2xl font-bold ${stats.pnl >= 0 ? 'text-cyan-400' : 'text-orange-400'}`}>

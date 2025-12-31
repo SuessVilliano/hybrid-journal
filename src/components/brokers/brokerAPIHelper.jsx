@@ -238,8 +238,21 @@ export async function executeSimulatedTrade(brokerConnection, tradeParams) {
   });
 }
 
-// Sync trades from broker to database with enhanced error handling and conflict resolution
+// Sync trades from broker using backend function
 export async function syncBrokerTrades(brokerConnection, syncType = 'manual') {
+  try {
+    const response = await base44.functions.invoke('syncBroker', {
+      connection_id: brokerConnection.id
+    });
+    
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.error || error.message);
+  }
+}
+
+// Legacy sync function for reference
+async function syncBrokerTradesLegacy(brokerConnection, syncType = 'manual') {
   const startTime = Date.now();
   const errors = [];
   let status = 'success';
