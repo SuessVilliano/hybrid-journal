@@ -3,6 +3,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CompoundCalculator from '@/components/calculators/CompoundCalculator';
 import ProfitTargetCalculator from '@/components/calculators/ProfitTargetCalculator';
 import RiskCalculator from '@/components/risk/RiskCalculator';
+import EVCalculator from '@/components/calculators/EVCalculator';
+import DebtSnowballCalculator from '@/components/calculators/DebtSnowballCalculator';
+import DebtAvalancheCalculator from '@/components/calculators/DebtAvalancheCalculator';
 import { Calculator, TrendingUp, Target, Shield } from 'lucide-react';
 
 export default function Calculators() {
@@ -63,9 +66,12 @@ export default function Calculators() {
           </TabsContent>
 
           <TabsContent value="more">
-            <div className={`text-center py-12 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-              <Calculator className="h-16 w-16 mx-auto mb-4 opacity-50" />
-              <p>More calculators coming soon!</p>
+            <div className="space-y-6">
+              <EVCalculator />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <DebtSnowballCalculator />
+                <DebtAvalancheCalculator />
+              </div>
             </div>
           </TabsContent>
         </Tabs>

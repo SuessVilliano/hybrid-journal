@@ -58,8 +58,11 @@ export default function Landing() {
               </Link>
             ) : (
               <>
-                <Button variant="ghost" onClick={() => base44.auth.redirectToLogin()}>Sign In</Button>
-                <Button className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700">
+                <Button variant="ghost" onClick={() => base44.auth.redirectToLogin(createPageUrl('Dashboard'))}>Sign In</Button>
+                <Button 
+                  onClick={() => base44.auth.redirectToLogin(createPageUrl('Dashboard'))}
+                  className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700"
+                >
                   Start Free Trial
                 </Button>
               </>
@@ -90,7 +93,11 @@ export default function Landing() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Button size="lg" className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-lg px-8 py-6">
+            <Button 
+              size="lg" 
+              onClick={() => base44.auth.redirectToLogin(createPageUrl('Dashboard'))}
+              className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-lg px-8 py-6"
+            >
               Start 14-Day Free Trial
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
@@ -174,7 +181,10 @@ export default function Landing() {
                 </p>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Button className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700">
+                <Button 
+                  onClick={() => base44.auth.redirectToLogin(createPageUrl('Dashboard'))}
+                  className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700"
+                >
                   Start Free Trial
                 </Button>
                 <ul className="space-y-3">
@@ -213,7 +223,10 @@ export default function Landing() {
                 </p>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Button className="w-full bg-white text-purple-600 hover:bg-cyan-50 font-bold">
+                <Button 
+                  onClick={() => base44.auth.redirectToLogin(createPageUrl('Dashboard'))}
+                  className="w-full bg-white text-purple-600 hover:bg-cyan-50 font-bold"
+                >
                   Start Free Trial
                 </Button>
                 <ul className="space-y-3">
@@ -282,7 +295,11 @@ export default function Landing() {
           <p className={`text-xl mb-8 ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>
             Join thousands of successful traders who are already using Hybrid Journal to reach their goals faster.
           </p>
-          <Button size="lg" className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-lg px-12 py-6">
+          <Button 
+            size="lg" 
+            onClick={() => base44.auth.redirectToLogin(createPageUrl('Dashboard'))}
+            className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-lg px-12 py-6"
+          >
             Start Your Free Trial Today
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
