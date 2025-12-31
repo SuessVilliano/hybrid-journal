@@ -8,8 +8,11 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { autoPopulateTradeFields, detectInstrumentType } from './AITradeHelper';
 import TemplateSelector from './TemplateSelector';
+import { useAchievements } from '@/components/gamification/useAchievements';
+import AchievementNotification from '@/components/gamification/AchievementNotification';
 
 export default function TradeForm({ trade, onSubmit, onCancel }) {
+  const { triggerAchievement, notification, clearNotification } = useAchievements();
   const [showTemplateSelector, setShowTemplateSelector] = useState(!trade);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [formData, setFormData] = useState(trade || {
@@ -207,7 +210,7 @@ Please provide:
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Calculate P&L if not provided
@@ -220,7 +223,7 @@ Please provide:
       calculatedPnl = ((exit - entry) * direction * qty) - (parseFloat(formData.commission) || 0) - (parseFloat(formData.swap) || 0);
     }
 
-    onSubmit({
+    await onSubmit({
       ...formData,
       pnl: calculatedPnl,
       entry_price: parseFloat(formData.entry_price) || 0,
@@ -231,6 +234,11 @@ Please provide:
       commission: parseFloat(formData.commission) || 0,
       swap: parseFloat(formData.swap) || 0
     });
+
+    // Trigger achievement update
+    if (!trade) {
+      await triggerAchievement('trade');
+    }
   };
 
   const darkMode = document.documentElement.classList.contains('dark');
@@ -881,6 +889,14 @@ Please provide:
         </form>
         )}
       </div>
+
+      {notification && (
+        <AchievementNotification
+          badge={notification.badge}
+          xpGained={notification.xpGained}
+          onClose={clearNotification}
+        />
+      )}
     </div>
   );
 }

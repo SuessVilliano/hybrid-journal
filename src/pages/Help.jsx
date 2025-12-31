@@ -84,6 +84,14 @@ export default function Help() {
     {
       q: 'How do I receive signals from TradingView or Telegram?',
       a: 'Go to My Profile > Webhook Settings to get your unique webhook URL. Configure TradingView alerts or TaskMagic to send signals to this URL. All signals appear in Trading Signals page.'
+    },
+    {
+      q: 'How does the gamification system work?',
+      a: 'Earn XP and level up by logging trades (+10 XP), creating daily plans (+25 XP), writing journal entries (+15 XP), and completing goals (+50 XP). Unlock badges for milestones like first trade, 7-day streak, 100 trades, and more. Compete on leaderboards for points, streaks, and levels!'
+    },
+    {
+      q: 'How do I earn badges and level up?',
+      a: 'Badges are automatically awarded when you hit milestones. Track your progress on the Achievements page. Your level increases as you gain XP - each level requires Level × 1000 XP. Stay consistent to build streaks and climb the leaderboard!'
     }
   ];
 
