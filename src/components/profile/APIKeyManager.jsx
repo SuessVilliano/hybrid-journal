@@ -110,67 +110,133 @@ export default function APIKeyManager() {
                   
                   <div className="space-y-4">
                     <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-900' : 'bg-slate-100'}`}>
+                      <h4 className="font-bold mb-2">📊 Unified Data API</h4>
                       <div className="flex items-center gap-2 mb-2">
                         <Badge className="bg-green-600">GET</Badge>
-                        <code className="text-sm">/api/entities/Trade</code>
+                        <code className="text-sm">/api/functions/apiData</code>
                       </div>
-                      <p className="text-sm mb-2">List all your trades</p>
+                      <p className="text-sm mb-2">Access all entity data with one endpoint</p>
                       <pre className="text-xs overflow-x-auto">
-{`curl -X GET "https://hybridjournal.base44.app/api/entities/Trade" \\
+{`# List trades
+curl "https://hybridjournal.base44.app/api/functions/apiData?entity=Trade&action=list" \\
+  -H "api_key: your_api_key"
+
+# Get specific trade
+curl "https://hybridjournal.base44.app/api/functions/apiData?entity=Trade&action=get&id=123" \\
+  -H "api_key: your_api_key"
+
+# Create trade
+curl -X POST "https://hybridjournal.base44.app/api/functions/apiData?entity=Trade&action=create" \\
+  -H "api_key: your_api_key" \\
+  -H "Content-Type: application/json" \\
+  -d '{"symbol": "BTCUSD", "side": "Long", "pnl": 1000}'
+
+# Update trade
+curl -X POST "https://hybridjournal.base44.app/api/functions/apiData?entity=Trade&action=update&id=123" \\
+  -H "api_key: your_api_key" \\
+  -H "Content-Type: application/json" \\
+  -d '{"pnl": 1200}'
+
+# Delete trade
+curl -X POST "https://hybridjournal.base44.app/api/functions/apiData?entity=Trade&action=delete&id=123" \\
   -H "api_key: your_api_key"`}
                       </pre>
                     </div>
 
                     <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-900' : 'bg-slate-100'}`}>
+                      <h4 className="font-bold mb-2">⚡ Real-Time Data</h4>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge className="bg-purple-600">GET</Badge>
+                        <code className="text-sm">/api/functions/apiData?action=realtime</code>
+                      </div>
+                      <p className="text-sm mb-2">Poll for real-time updates (recommended: 5-10 second intervals)</p>
+                      <pre className="text-xs overflow-x-auto">
+{`# Get latest signals (poll every 5 seconds)
+curl "https://hybridjournal.base44.app/api/functions/apiData?entity=Signal&action=realtime&since=2025-01-01T10:00:00Z" \\
+  -H "api_key: your_api_key"
+
+# Get updated trades since timestamp
+curl "https://hybridjournal.base44.app/api/functions/apiData?entity=Trade&action=realtime&since=2025-01-01T10:00:00Z" \\
+  -H "api_key: your_api_key"`}
+                      </pre>
+                    </div>
+
+                    <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-900' : 'bg-slate-100'}`}>
+                      <h4 className="font-bold mb-2">🔔 Send In-App Notifications</h4>
                       <div className="flex items-center gap-2 mb-2">
                         <Badge className="bg-blue-600">POST</Badge>
-                        <code className="text-sm">/api/entities/Trade</code>
+                        <code className="text-sm">/api/functions/apiNotify</code>
                       </div>
-                      <p className="text-sm mb-2">Create a new trade</p>
+                      <p className="text-sm mb-2">Send notifications to yourself programmatically</p>
                       <pre className="text-xs overflow-x-auto">
-{`curl -X POST "https://hybridjournal.base44.app/api/entities/Trade" \\
+{`curl -X POST "https://hybridjournal.base44.app/api/functions/apiNotify" \\
   -H "api_key: your_api_key" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "symbol": "BTCUSD",
-    "side": "Long",
-    "entry_date": "2025-01-01T10:00:00Z",
-    "entry_price": 42000,
-    "exit_price": 43000,
-    "quantity": 1,
-    "pnl": 1000
+    "type": "trade_alert",
+    "title": "Trade Executed",
+    "message": "BTCUSD Long at $42,000",
+    "link": "/Trades",
+    "priority": "high"
   }'`}
                       </pre>
                     </div>
 
                     <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-900' : 'bg-slate-100'}`}>
+                      <h4 className="font-bold mb-2">🌐 External API Proxy</h4>
                       <div className="flex items-center gap-2 mb-2">
-                        <Badge className="bg-green-600">GET</Badge>
-                        <code className="text-sm">/api/entities/Signal</code>
+                        <Badge className="bg-orange-600">POST</Badge>
+                        <code className="text-sm">/api/functions/apiProxy</code>
                       </div>
-                      <p className="text-sm">Get your trading signals</p>
-                    </div>
-
-                    <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-900' : 'bg-slate-100'}`}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge className="bg-green-600">GET</Badge>
-                        <code className="text-sm">/api/entities/Account</code>
-                      </div>
-                      <p className="text-sm">Get your trading accounts</p>
+                      <p className="text-sm mb-2">Call external APIs (broker APIs, market data, etc.) with CORS handling</p>
+                      <pre className="text-xs overflow-x-auto">
+{`curl -X POST "https://hybridjournal.base44.app/api/functions/apiProxy" \\
+  -H "api_key: your_api_key" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "url": "https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT",
+    "method": "GET",
+    "headers": {}
+  }'`}
+                      </pre>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-bold mb-2">Use Cases</h3>
-                  <ul className="space-y-2 list-disc list-inside">
-                    <li><strong>Auto Trading:</strong> Programmatically execute trades based on your signals</li>
-                    <li><strong>Custom Analytics:</strong> Build custom dashboards with your trading data</li>
-                    <li><strong>Market Data Integration:</strong> Connect to external market data providers</li>
-                    <li><strong>Broker APIs:</strong> Sync trades from broker APIs automatically</li>
-                    <li><strong>Risk Management:</strong> Build automated risk management systems</li>
-                    <li><strong>Notifications:</strong> Create custom alert systems</li>
-                  </ul>
+                  <h3 className="text-lg font-bold mb-2">Real-World Use Cases</h3>
+                  
+                  <div className="space-y-3">
+                    <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
+                      <h4 className="font-bold mb-1">🤖 Automated Trading Bot</h4>
+                      <p className="text-sm">Poll for new signals → validate with AI → execute via broker API → log trade → send notification</p>
+                    </div>
+
+                    <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
+                      <h4 className="font-bold mb-1">📈 Real-Time Market Data</h4>
+                      <p className="text-sm">Use apiProxy to fetch live prices from exchanges → store as custom entities → trigger alerts</p>
+                    </div>
+
+                    <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
+                      <h4 className="font-bold mb-1">🔄 Broker API Sync</h4>
+                      <p className="text-sm">Fetch trades from broker API every 5 min → create Trade entities → update account balance</p>
+                    </div>
+
+                    <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
+                      <h4 className="font-bold mb-1">⚠️ Risk Management System</h4>
+                      <p className="text-sm">Monitor positions in real-time → check against risk rules → send alerts → auto-close if needed</p>
+                    </div>
+
+                    <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
+                      <h4 className="font-bold mb-1">📊 Custom Analytics Dashboard</h4>
+                      <p className="text-sm">Pull all trade data → analyze in Python/R → visualize in custom dashboard → sync insights back</p>
+                    </div>
+
+                    <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
+                      <h4 className="font-bold mb-1">💬 Multi-Platform Notifications</h4>
+                      <p className="text-sm">Signal received → send in-app notification → SMS via Twilio → Discord webhook → Telegram message</p>
+                    </div>
+                  </div>
                 </div>
 
                 <div className={`p-4 rounded-lg ${darkMode ? 'bg-cyan-900/20 border border-cyan-500/30' : 'bg-cyan-50 border border-cyan-200'}`}>
