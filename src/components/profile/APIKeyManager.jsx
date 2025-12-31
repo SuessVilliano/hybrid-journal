@@ -21,7 +21,7 @@ export default function APIKeyManager() {
   const [showDocs, setShowDocs] = useState(false);
 
   const { data: user, isLoading } = useQuery({
-    queryKey: ['currentUser'],
+    queryKey: ['user'],
     queryFn: () => base44.auth.me()
   });
 
@@ -35,7 +35,7 @@ export default function APIKeyManager() {
       return newApiKey;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['currentUser']);
+      queryClient.invalidateQueries(['user']);
       toast.success('New API key generated!');
       setShowApiKey(true);
     }
@@ -46,7 +46,7 @@ export default function APIKeyManager() {
       await base44.auth.updateMe({ api_key_enabled: enabled });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['currentUser']);
+      queryClient.invalidateQueries(['user']);
       toast.success('API key settings updated');
     }
   });
@@ -258,6 +258,9 @@ curl "https://hybridjournal.base44.app/api/functions/apiData?entity=Trade&action
         <div className={`p-4 rounded-lg ${darkMode ? 'bg-cyan-900/20 border border-cyan-500/30' : 'bg-cyan-50 border border-cyan-200'}`}>
           <p className={`text-sm ${darkMode ? 'text-cyan-300' : 'text-cyan-900'}`}>
             Use your API key to programmatically access your trading data, automate trades, integrate with broker APIs, and build custom tools.
+          </p>
+          <p className={`text-xs mt-2 ${darkMode ? 'text-cyan-400/70' : 'text-cyan-700/70'}`}>
+            💡 <strong>Note:</strong> API Key is for making API calls TO the platform. Your Webhook Token (above) is for receiving signals FROM external sources.
           </p>
         </div>
 
