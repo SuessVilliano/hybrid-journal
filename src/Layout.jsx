@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { base44 } from '@/api/base44Client';
-import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText, Menu, X, Wallet, Sun, Moon, Home, Users, User, Brain, GripVertical, Star, Clock, List, Bell, HelpCircle, UserCheck, Image as ImageIcon } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText, Menu, X, Wallet, Sun, Moon, Home, Users, User, Brain, GripVertical, Star, Clock, List, Bell, HelpCircle, UserCheck, Image as ImageIcon, Trophy } from 'lucide-react';
 import FloatingAIAssistant from '@/components/ai/FloatingAIAssistant';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
@@ -267,9 +267,10 @@ export default function Layout({ children, currentPageName }) {
     { id: 'media', name: 'Media Library', page: 'MediaLibrary', icon: ImageIcon },
     { id: 'shared', name: 'Shared Access', page: 'SharedAccess', icon: UserCheck },
     { id: 'profile', name: 'My Profile', page: 'MyProfile', icon: User },
+    { id: 'achievements', name: 'Achievements', page: 'Achievements', icon: Trophy },
     { id: 'help', name: 'Help & Docs', page: 'Help', icon: HelpCircle },
     { id: 'funded', name: 'Get Funded', external: 'https://hybridfunding.co', icon: TrendingUp },
-  ];
+    ];
 
   const allNavigation = menuOrder.length > 0 
     ? menuOrder.map(id => defaultNavigation.find(item => item.id === id)).filter(Boolean)
