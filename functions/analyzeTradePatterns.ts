@@ -172,7 +172,15 @@ Provide actionable insights.`;
         type: "array",
         items: { type: "string" }
       },
-      overall_score: { type: "number", description: "Plan effectiveness score 0-100" }
+      overall_score: { type: "number", description: "Plan effectiveness score 0-100" },
+      chart_analysis: {
+        type: "object",
+        properties: {
+          charts_reviewed: { type: "number" },
+          technical_quality: { type: "string" },
+          alignment_with_plan: { type: "string" }
+        }
+      }
     }
   };
 
