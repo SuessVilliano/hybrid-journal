@@ -34,8 +34,8 @@ export default function APIKeyManager() {
       });
       return newApiKey;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['user']);
+    onSuccess: async () => {
+      await queryClient.refetchQueries(['user']);
       toast.success('New API key generated!');
       setShowApiKey(true);
     }
@@ -45,8 +45,8 @@ export default function APIKeyManager() {
     mutationFn: async (enabled) => {
       await base44.auth.updateMe({ api_key_enabled: enabled });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['user']);
+    onSuccess: async () => {
+      await queryClient.refetchQueries(['user']);
       toast.success('API key settings updated');
     }
   });
