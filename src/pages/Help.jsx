@@ -76,6 +76,14 @@ export default function Help() {
     {
       q: 'Does the app work offline?',
       a: 'Yes! Once installed as a PWA, core features are cached and work offline. You\'ll need internet for live data updates and AI features.'
+    },
+    {
+      q: 'How do I use the API to automate my trading?',
+      a: 'Go to My Profile > API Key Management to generate your API key. Use it to access trading data, send notifications, proxy external APIs, and build custom automations. Full documentation is available in the API section.'
+    },
+    {
+      q: 'How do I receive signals from TradingView or Telegram?',
+      a: 'Go to My Profile > Webhook Settings to get your unique webhook URL. Configure TradingView alerts or TaskMagic to send signals to this URL. All signals appear in Trading Signals page.'
     }
   ];
 
@@ -200,6 +208,56 @@ export default function Help() {
             </CardContent>
           </Card>
         )}
+
+        <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
+          <CardHeader>
+            <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>
+              API & Automation
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className={`p-4 rounded-lg ${darkMode ? 'bg-cyan-900/20 border border-cyan-500/30' : 'bg-cyan-50 border border-cyan-200'}`}>
+              <h3 className={`font-bold mb-2 ${darkMode ? 'text-cyan-300' : 'text-cyan-900'}`}>🚀 Programmatic Access</h3>
+              <p className={`text-sm mb-3 ${darkMode ? 'text-cyan-300/80' : 'text-cyan-900/80'}`}>
+                Build custom trading bots, sync with external systems, and automate your workflow using our REST API.
+              </p>
+              <div className={`space-y-2 text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                <div>
+                  <strong className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>Generate API Key:</strong> Go to My Profile → API Key Management
+                </div>
+                <div>
+                  <strong className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>Available Endpoints:</strong>
+                  <ul className="ml-4 mt-1 space-y-1">
+                    <li>• <code className={`px-1 rounded ${darkMode ? 'bg-slate-900' : 'bg-slate-200'}`}>/api/functions/apiData</code> - Unified data API (CRUD + real-time)</li>
+                    <li>• <code className={`px-1 rounded ${darkMode ? 'bg-slate-900' : 'bg-slate-200'}`}>/api/functions/apiProxy</code> - External API proxy (broker APIs, market data)</li>
+                    <li>• <code className={`px-1 rounded ${darkMode ? 'bg-slate-900' : 'bg-slate-200'}`}>/api/functions/apiNotify</code> - Send in-app notifications</li>
+                  </ul>
+                </div>
+                <div>
+                  <strong className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>Use Cases:</strong> Auto-trading bots, broker sync, risk management systems, custom analytics dashboards
+                </div>
+              </div>
+            </div>
+
+            <div className={`p-4 rounded-lg ${darkMode ? 'bg-purple-900/20 border border-purple-500/30' : 'bg-purple-50 border border-purple-200'}`}>
+              <h3 className={`font-bold mb-2 ${darkMode ? 'text-purple-300' : 'text-purple-900'}`}>📡 Webhook Signal Ingestion</h3>
+              <p className={`text-sm mb-3 ${darkMode ? 'text-purple-300/80' : 'text-purple-900/80'}`}>
+                Receive trading signals from TradingView, Telegram, or any external source directly into your journal.
+              </p>
+              <div className={`space-y-2 text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                <div>
+                  <strong className={darkMode ? 'text-purple-400' : 'text-purple-700'}>Setup:</strong> Go to My Profile → Webhook Settings → Generate Token
+                </div>
+                <div>
+                  <strong className={darkMode ? 'text-purple-400' : 'text-purple-700'}>Configure:</strong> Set filters (symbols, actions, confidence, providers) and notification preferences
+                </div>
+                <div>
+                  <strong className={darkMode ? 'text-purple-400' : 'text-purple-700'}>View:</strong> All signals appear in Trading Signals page with AI analysis and routing options
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
           <CardHeader>
