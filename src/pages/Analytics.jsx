@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
+import GlobalAccountSelector, { useSelectedAccounts } from '@/components/accounts/GlobalAccountSelector';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart3, Brain, TrendingUp, Table } from 'lucide-react';
@@ -17,11 +18,16 @@ export default function Analytics() {
   const [view, setView] = useState('overview');
   const [showAIAnalysis, setShowAIAnalysis] = useState(false);
   const darkMode = document.documentElement.classList.contains('dark');
+  const { selectedAccountIds, hasSelection } = useSelectedAccounts();
 
-  const { data: trades = [], isLoading } = useQuery({
+  const { data: allTrades = [], isLoading } = useQuery({
     queryKey: ['trades'],
     queryFn: () => base44.entities.Trade.list('-entry_date', 1000)
   });
+
+  const trades = hasSelection 
+    ? allTrades.filter(t => selectedAccountIds.includes(t.account_id))
+    : allTrades;
 
   if (isLoading) {
     return (
@@ -38,6 +44,8 @@ export default function Analytics() {
         : 'bg-gradient-to-br from-cyan-50 via-purple-50 to-pink-50'
     }`}>
       <div className="max-w-7xl mx-auto space-y-6">
+        <GlobalAccountSelector />
+        
         <div className="flex justify-between items-start">
           <div>
             <h1 className={`text-4xl font-bold bg-gradient-to-r ${

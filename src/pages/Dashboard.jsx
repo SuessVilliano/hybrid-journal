@@ -23,6 +23,7 @@ import InstrumentAnalysisWidget from '@/components/dashboard/InstrumentAnalysisW
 import CompoundCalculatorWidget from '@/components/dashboard/CompoundCalculatorWidget';
 import HybridScoreWidget from '@/components/dashboard/HybridScoreWidget';
 import TodaysPlanWidget from '@/components/planning/TodaysPlanWidget';
+import GlobalAccountSelector from '@/components/accounts/GlobalAccountSelector';
 
 export default function Dashboard() {
   const [timeframe, setTimeframe] = useState('all');
@@ -238,22 +239,8 @@ export default function Dashboard() {
           </Card>
         )}
 
-        {/* Account Filter */}
-        {accounts.length > 0 && (
-          <div className="w-full max-w-md">
-            <MultiSelect
-              options={accounts.map(acc => ({ 
-                value: acc.id, 
-                label: `${acc.name} - $${acc.initial_balance?.toFixed(0) || 0}` 
-              }))}
-              selected={selectedAccounts}
-              onChange={setSelectedAccounts}
-              placeholder={selectedAccounts.length === 0 ? "All Accounts" : `${selectedAccounts.length} selected`}
-              searchPlaceholder="Search accounts..."
-              className={darkMode ? 'bg-slate-900 border-cyan-500/30 text-white' : ''}
-            />
-          </div>
-        )}
+        {/* Global Account Selector */}
+        <GlobalAccountSelector onAccountsChange={setSelectedAccounts} />
 
         {/* Key Metrics */}
         {stats && (
