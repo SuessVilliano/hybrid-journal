@@ -12,8 +12,11 @@ import RiskCalculator from '@/components/risk/RiskCalculator';
 import PropFirmRulesCard from '@/components/risk/PropFirmRulesCard';
 import LinkTradesToPlan from '@/components/planning/LinkTradesToPlan';
 import ImageViewer from '@/components/media/ImageViewer';
+import { useAchievements } from '@/components/gamification/useAchievements';
+import AchievementNotification from '@/components/gamification/AchievementNotification';
 
 export default function DailyPlanForm({ existingPlan, onClose, onSuccess }) {
+  const { triggerAchievement, notification, clearNotification } = useAchievements();
   const [isRecording, setIsRecording] = useState(false);
   const [voiceTranscript, setVoiceTranscript] = useState('');
   const [aiProcessing, setAiProcessing] = useState(false);
@@ -207,7 +210,12 @@ Provide:
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    saveMutation.mutate({ ...formData, chart_screenshots: chartScreenshots });
+    await saveMutation.mutateAsync({ ...formData, chart_screenshots: chartScreenshots });
+    
+    // Trigger achievement update for new plans
+    if (!existingPlan) {
+      await triggerAchievement('plan');
+    }
   };
 
   const handleScreenshotUpload = async (e) => {
@@ -698,6 +706,14 @@ Provide:
       </form>
       {viewingImage && (
       <ImageViewer imageUrl={viewingImage} onClose={() => setViewingImage(null)} />
+      )}
+      
+      {notification && (
+        <AchievementNotification
+          badge={notification.badge}
+          xpGained={notification.xpGained}
+          onClose={clearNotification}
+        />
       )}
       </>
       );
