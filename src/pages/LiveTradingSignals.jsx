@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import WebhookSettings from '@/components/profile/WebhookSettings';
 import AISignalAnalysis from '@/components/signals/AISignalAnalysis';
 import SignalFilters from '@/components/signals/SignalFilters';
+import RoutingRuleManager from '@/components/signals/RoutingRuleManager';
 
 export default function LiveTradingSignals() {
   const [showWebhookInfo, setShowWebhookInfo] = useState(false);
@@ -159,6 +160,9 @@ export default function LiveTradingSignals() {
 
         {/* Webhook Info */}
         {showWebhookInfo && <WebhookSettings />}
+
+        {/* Routing Rules */}
+        <RoutingRuleManager />
 
         {/* Sync Logs */}
         {showLogs && (

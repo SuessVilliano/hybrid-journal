@@ -84,6 +84,14 @@ Deno.serve(async (req) => {
     // Create signal record using service role
     const signal = await base44.asServiceRole.entities.Signal.create(signalData);
 
+    // Process routing rules asynchronously (don't wait for it)
+    try {
+      await base44.asServiceRole.functions.invoke('processSignalRouting', { signal_id: signal.id });
+    } catch (routingError) {
+      console.error('Signal routing processing error:', routingError);
+      // Don't fail the webhook if routing fails
+    }
+
     // Verify signal was created with correct user_email
     console.log('✅ SIGNAL CREATED:', {
       signal_id: signal.id,
