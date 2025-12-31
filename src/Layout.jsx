@@ -265,7 +265,7 @@ export default function Layout({ children, currentPageName }) {
     { id: 'imports', name: 'Imports', page: 'Imports', icon: Upload },
     { id: 'community', name: 'Community', page: 'SocialFeed', icon: Users },
     { id: 'media', name: 'Media Library', page: 'MediaLibrary', icon: ImageIcon },
-    { id: 'shared', name: 'Shared Access', page: 'SharedAccess', icon: UserCheck },
+    { id: 'shared', name: 'Shared Access', page: 'SharedAccess', icon: UserCheck, adminOnly: true },
     { id: 'profile', name: 'My Profile', page: 'MyProfile', icon: User },
     { id: 'achievements', name: 'Achievements', page: 'Achievements', icon: Trophy },
     { id: 'help', name: 'Help & Docs', page: 'Help', icon: HelpCircle },
