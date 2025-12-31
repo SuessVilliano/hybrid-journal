@@ -19,8 +19,9 @@ export default function APIKeyManager() {
   const queryClient = useQueryClient();
   const [showApiKey, setShowApiKey] = useState(false);
   const [showDocs, setShowDocs] = useState(false);
+  const [generatedKey, setGeneratedKey] = useState(null);
 
-  const { data: user, isLoading } = useQuery({
+  const { data: user, isLoading, refetch } = useQuery({
     queryKey: ['user'],
     queryFn: () => base44.auth.me()
   });
@@ -34,8 +35,9 @@ export default function APIKeyManager() {
       });
       return newApiKey;
     },
-    onSuccess: async () => {
-      await queryClient.refetchQueries(['user']);
+    onSuccess: async (newApiKey) => {
+      setGeneratedKey(newApiKey);
+      await refetch();
       toast.success('New API key generated!');
       setShowApiKey(true);
     }
@@ -52,8 +54,9 @@ export default function APIKeyManager() {
   });
 
   const copyApiKey = () => {
-    if (!user?.api_key) return;
-    navigator.clipboard.writeText(user.api_key);
+    const apiKey = user?.api_key || generatedKey;
+    if (!apiKey) return;
+    navigator.clipboard.writeText(apiKey);
     toast.success('API key copied!');
   };
 
@@ -295,14 +298,14 @@ curl "https://hybridjournal.base44.app/api/functions/apiData?entity=Trade&action
           </div>
         </div>
 
-        {user?.api_key && (
+        {(user?.api_key || generatedKey) && (
           <div className="space-y-2">
             <label className={`text-sm font-medium ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
               Your API Key
             </label>
             <div className="flex gap-2">
               <Input
-                value={showApiKey ? user.api_key : maskApiKey(user.api_key)}
+                value={showApiKey ? (user?.api_key || generatedKey) : maskApiKey(user?.api_key || generatedKey)}
                 readOnly
                 className={`flex-1 font-mono text-xs ${darkMode ? 'bg-slate-900 border-cyan-500/30 text-white' : ''}`}
               />
@@ -319,15 +322,15 @@ curl "https://hybridjournal.base44.app/api/functions/apiData?entity=Trade&action
           </div>
         )}
 
-        {user?.api_key && (
+        {(user?.api_key || generatedKey) && (
           <div className="space-y-2">
             <label className={`text-sm font-medium ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
               Quick Start Example
             </label>
             <pre className={`p-3 rounded-lg text-xs overflow-x-auto ${darkMode ? 'bg-slate-900 text-slate-300' : 'bg-slate-100 text-slate-700'}`}>
 {`# Fetch your trades
-curl -X GET "https://hybridjournal.base44.app/api/entities/Trade" \\
-  -H "api_key: ${user.api_key}"`}
+curl -X GET "https://hybridjournal.base44.app/api/functions/apiData?entity=Trade&action=list" \\
+  -H "api_key: ${user?.api_key || generatedKey}"`}
             </pre>
           </div>
         )}
