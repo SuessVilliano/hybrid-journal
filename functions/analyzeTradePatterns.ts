@@ -76,7 +76,13 @@ Deno.serve(async (req) => {
 });
 
 async function analyzePlanEffectiveness(trades, plans, base44) {
-  const prompt = `Analyze trade plan effectiveness:
+  // Collect all chart screenshots from plans
+  const chartScreenshots = plans
+    .filter(p => p.chart_screenshots && p.chart_screenshots.length > 0)
+    .flatMap(p => p.chart_screenshots)
+    .slice(0, 5); // Limit to 5 images for API efficiency
+
+  const prompt = `Analyze trade plan effectiveness by reviewing both written plans AND uploaded chart screenshots:
 
 DAILY PLANS (${plans.length} total):
 ${plans.slice(0, 10).map(p => `
@@ -85,7 +91,19 @@ Plan: ${p.plan_text?.substring(0, 200)}
 Markets to Watch: ${p.markets_to_watch?.join(', ')}
 Max Trades Planned: ${p.max_trades}
 Max Risk: $${p.max_risk}
+Chart Screenshots Uploaded: ${p.chart_screenshots?.length || 0}
 `).join('\n')}
+
+${chartScreenshots.length > 0 ? `
+IMPORTANT: I have attached ${chartScreenshots.length} chart screenshot(s) from these trade plans. 
+Analyze the visual charts to assess:
+- Quality of support/resistance levels marked
+- Entry/exit points identified
+- Risk management zones (stop loss, take profit)
+- Chart patterns and setups
+- Market structure analysis
+- Does the chart align with the written plan?
+` : ''}
 
 ACTUAL TRADES EXECUTED (${trades.length} total):
 ${trades.slice(0, 20).map(t => `
