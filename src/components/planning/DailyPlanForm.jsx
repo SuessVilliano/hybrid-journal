@@ -138,18 +138,34 @@ export default function DailyPlanForm({ existingPlan, onClose, onSuccess }) {
     setAiProcessing(true);
     try {
       const analysis = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyze this trading plan and provide:
-1. A friendly, encouraging summary (2-3 sentences)
-2. A clarity score from 0-100 (how clear and actionable is the plan?)
-3. 2-3 helpful suggestions to improve the plan
+        prompt: `Analyze this trading plan AND the uploaded chart screenshots to provide comprehensive feedback:
 
-Plan:
+WRITTEN PLAN:
 ${formData.plan_text}
 
-Rules: ${formData.trading_rules.join(', ') || 'None specified'}
-Markets: ${formData.markets_to_watch.join(', ') || 'None specified'}
-Max trades: ${formData.max_trades || 'Not set'}
-Max risk: ${formData.max_risk ? '$' + formData.max_risk : 'Not set'}`,
+PLAN DETAILS:
+- Rules: ${formData.trading_rules.join(', ') || 'None specified'}
+- Markets: ${formData.markets_to_watch.join(', ') || 'None specified'}
+- Max trades: ${formData.max_trades || 'Not set'}
+- Max risk: ${formData.max_risk ? '$' + formData.max_risk : 'Not set'}
+
+${chartScreenshots.length > 0 ? `
+CHART ANALYSIS (${chartScreenshots.length} screenshot(s) attached):
+Review the uploaded TradingView charts and analyze:
+1. Support/resistance levels marked
+2. Entry/exit zones identified
+3. Risk management (stop loss, take profit placement)
+4. Chart patterns and technical setups
+5. Does the chart align with the written plan?
+6. Are there any additional opportunities or risks visible on the chart?
+
+Provide feedback that incorporates BOTH the written plan AND the visual chart analysis.
+` : 'No charts uploaded. Encourage the trader to upload chart screenshots for more detailed feedback.'}
+
+Provide:
+1. A friendly, encouraging summary (2-3 sentences) that references both plan and charts
+2. A clarity score from 0-100 (how clear and actionable is the plan?)
+3. 2-3 helpful suggestions to improve the plan (include chart-specific feedback if available)`,
         response_json_schema: {
           type: "object",
           properties: {
@@ -157,7 +173,8 @@ Max risk: ${formData.max_risk ? '$' + formData.max_risk : 'Not set'}`,
             clarity_score: { type: "number" },
             suggestions: { type: "array", items: { type: "string" } }
           }
-        }
+        },
+        file_urls: chartScreenshots.length > 0 ? chartScreenshots : undefined
       });
 
       setFormData({
