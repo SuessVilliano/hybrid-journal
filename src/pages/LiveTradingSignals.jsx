@@ -46,8 +46,10 @@ export default function LiveTradingSignals() {
         return [];
       }
       console.log('🔍 Fetching signals for user:', user.email);
-      const results = await base44.entities.Signal.filter({ user_email: user.email }, '-created_date', 100);
+      // Use list() instead of filter() - let RLS handle filtering automatically
+      const results = await base44.entities.Signal.list('-created_date', 100);
       console.log('📊 Signals fetched:', results.length, 'signals');
+      console.log('📋 Sample signal user_email:', results[0]?.user_email, 'vs current user:', user.email);
       return results;
     },
     enabled: !!user?.email,
