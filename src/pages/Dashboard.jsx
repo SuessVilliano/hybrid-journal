@@ -167,6 +167,12 @@ export default function Dashboard() {
             <p className={darkMode ? 'text-cyan-400/70 mt-1' : 'text-cyan-700/70 mt-1'}>Track your performance and grow consistently</p>
           </div>
           <div className="flex flex-wrap gap-3">
+            <Link to={createPageUrl('Journal')}>
+              <Button className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700">
+                <BookOpen className="h-4 w-4 mr-2" />
+                Journal
+              </Button>
+            </Link>
             <Button 
               onClick={() => setShowWidgetSelector(true)} 
               variant="outline"
