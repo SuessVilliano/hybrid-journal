@@ -36,6 +36,11 @@ export default function DailyPlanForm({ existingPlan, onClose, onSuccess }) {
     ],
     trading_rules: [],
     markets_to_watch: [],
+    setup_grades: [
+      { grade: 'A', description: 'Perfect setup - all criteria met', criteria: '' },
+      { grade: 'B', description: 'Good setup - most criteria met', criteria: '' },
+      { grade: 'C', description: 'Acceptable setup - minimum criteria', criteria: '' }
+    ],
     max_trades: null,
     max_risk: null,
     max_risk_percent_per_trade: 1,
@@ -57,6 +62,7 @@ export default function DailyPlanForm({ existingPlan, onClose, onSuccess }) {
 
   const [newRule, setNewRule] = useState('');
   const [newMarket, setNewMarket] = useState('');
+  const [editingSetupGrade, setEditingSetupGrade] = useState(null);
   const [chartScreenshots, setChartScreenshots] = useState(existingPlan?.chart_screenshots || []);
   const [uploadingScreenshot, setUploadingScreenshot] = useState(false);
   const [viewingImage, setViewingImage] = useState(null);
@@ -467,6 +473,85 @@ Provide:
               }`}>
                 {item.item}
               </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Setup Grades */}
+      <div>
+        <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+          Setup Grades - Define Your Trade Quality Criteria
+        </label>
+        <p className={`text-xs mb-3 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+          Define what makes an A, B, or C setup so you can grade your trades
+        </p>
+        <div className="space-y-3">
+          {formData.setup_grades?.map((setup, idx) => (
+            <div key={idx} className={`p-3 rounded-lg border ${
+              darkMode ? 'bg-slate-900 border-cyan-500/20' : 'bg-slate-50 border-slate-200'
+            }`}>
+              <div className="flex items-center justify-between mb-2">
+                <Badge className={
+                  setup.grade === 'A' ? 'bg-green-600' :
+                  setup.grade === 'B' ? 'bg-yellow-600' :
+                  'bg-orange-600'
+                }>
+                  {setup.grade} Setup
+                </Badge>
+                <button
+                  type="button"
+                  onClick={() => setEditingSetupGrade(idx)}
+                  className={`text-xs ${darkMode ? 'text-cyan-400 hover:text-cyan-300' : 'text-cyan-600 hover:text-cyan-700'}`}
+                >
+                  Edit
+                </button>
+              </div>
+              {editingSetupGrade === idx ? (
+                <div className="space-y-2">
+                  <Input
+                    value={setup.description}
+                    onChange={(e) => {
+                      const updated = [...formData.setup_grades];
+                      updated[idx].description = e.target.value;
+                      setFormData({ ...formData, setup_grades: updated });
+                    }}
+                    placeholder="Short description"
+                    className={darkMode ? 'bg-slate-800 border-cyan-500/30 text-white text-xs' : 'text-xs'}
+                  />
+                  <Textarea
+                    value={setup.criteria}
+                    onChange={(e) => {
+                      const updated = [...formData.setup_grades];
+                      updated[idx].criteria = e.target.value;
+                      setFormData({ ...formData, setup_grades: updated });
+                    }}
+                    placeholder="What criteria must be met? (e.g., trend aligned, support/resistance confirmed, volume spike, etc.)"
+                    rows={2}
+                    className={darkMode ? 'bg-slate-800 border-cyan-500/30 text-white text-xs' : 'text-xs'}
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => setEditingSetupGrade(null)}
+                    size="sm"
+                    variant="outline"
+                    className="text-xs"
+                  >
+                    Done
+                  </Button>
+                </div>
+              ) : (
+                <div>
+                  <p className={`text-sm ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                    {setup.description}
+                  </p>
+                  {setup.criteria && (
+                    <p className={`text-xs mt-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                      {setup.criteria}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>

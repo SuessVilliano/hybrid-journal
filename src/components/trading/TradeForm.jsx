@@ -64,6 +64,15 @@ export default function TradeForm({ trade, onSubmit, onCancel }) {
     queryFn: () => base44.entities.TradeTemplate.filter({ is_active: true }, '-created_date', 100)
   });
 
+  const { data: todaysPlan } = useQuery({
+    queryKey: ['todaysPlan'],
+    queryFn: async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const plans = await base44.entities.DailyTradePlan.filter({ date: today }, '-created_date', 1);
+      return plans[0] || null;
+    }
+  });
+
   // Apply template when selected
   useEffect(() => {
     if (selectedTemplate && !trade) {
@@ -517,6 +526,27 @@ Please provide:
                 placeholder="Breakout, Scalping, Swing..."
               />
             </div>
+
+            {todaysPlan?.setup_grades && todaysPlan.setup_grades.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Setup Grade
+                  <span className="ml-2 text-xs text-cyan-600">📋 From today's plan</span>
+                </label>
+                <Select value={formData.setup_grade || ''} onValueChange={(val) => setFormData({...formData, setup_grade: val})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Grade this setup..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {todaysPlan.setup_grades.map((setup) => (
+                      <SelectItem key={setup.grade} value={setup.grade}>
+                        {setup.grade} - {setup.description}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
