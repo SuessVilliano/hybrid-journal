@@ -5,7 +5,7 @@ import DeepAnalysisPanel from '@/components/ai/DeepAnalysisPanel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, TrendingDown, Activity, DollarSign, Target, Calendar, Share2, Brain, Settings, X, Upload } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity, DollarSign, Target, Calendar, Share2, Brain, Settings, X, Upload, BookOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { MultiSelect } from '@/components/ui/multi-select';
