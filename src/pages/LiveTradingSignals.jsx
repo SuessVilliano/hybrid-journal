@@ -46,11 +46,27 @@ export default function LiveTradingSignals() {
         return [];
       }
       console.log('🔍 Fetching signals for user:', user.email);
-      // Use list() instead of filter() - let RLS handle filtering automatically
-      const results = await base44.entities.Signal.list('-created_date', 100);
-      console.log('📊 Signals fetched:', results.length, 'signals');
-      console.log('📋 Sample signal user_email:', results[0]?.user_email, 'vs current user:', user.email);
-      return results;
+      
+      // Try multiple query approaches to debug
+      try {
+        // Approach 1: Direct filter by user_email
+        const results = await base44.entities.Signal.filter({ user_email: user.email }, '-created_date', 100);
+        console.log('📊 Signals fetched (filter by user_email):', results.length, 'signals');
+        
+        if (results.length > 0) {
+          console.log('✅ Sample signal:', {
+            user_email: results[0].user_email,
+            created_by: results[0].created_by,
+            symbol: results[0].symbol,
+            provider: results[0].provider
+          });
+        }
+        
+        return results;
+      } catch (error) {
+        console.error('❌ Signal query error:', error);
+        return [];
+      }
     },
     enabled: !!user?.email,
     refetchInterval: 5000
