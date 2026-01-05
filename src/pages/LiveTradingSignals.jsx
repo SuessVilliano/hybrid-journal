@@ -56,7 +56,7 @@ export default function LiveTradingSignals() {
     refetchInterval: 5000
   });
 
-  const { data: syncLogs = [] } = useQuery({
+  const { data: syncLogs = [], refetch: refetchLogs } = useQuery({
     queryKey: ['syncLogs', user?.email],
     queryFn: async () => {
       if (!user?.email) return [];
@@ -134,9 +134,13 @@ export default function LiveTradingSignals() {
           </div>
           <div className="flex gap-2">
             <Button
-              onClick={() => {
-                refetchSignals();
-                queryClient.invalidateQueries(['syncLogs']);
+              onClick={async () => {
+                await Promise.all([
+                  refetchSignals(),
+                  refetchLogs(),
+                  queryClient.invalidateQueries(['signals']),
+                  queryClient.invalidateQueries(['syncLogs'])
+                ]);
               }}
               variant="outline"
             >

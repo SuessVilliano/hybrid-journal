@@ -42,9 +42,24 @@ Deno.serve(async (req) => {
       payload = parseTextSignal(payload.body || payload.rawBody, payload);
     }
     
+    // Auto-detect provider from text content if not already correctly set
+    const textContent = (payload.body || payload.rawBody || '').toLowerCase();
+    let detectedProvider = payload.provider || 'TradingView';
+    
+    if (textContent.includes('hybrid') || (textContent.includes('nq1') && textContent.includes('do not risk'))) {
+      detectedProvider = 'Hybrid AI';
+    } else if (textContent.includes('paradox') || textContent.includes('btcusdt')) {
+      detectedProvider = 'Paradox';
+    } else if (textContent.includes('solaris') || textContent.includes('nas100usd')) {
+      detectedProvider = 'Solaris';
+    } else if (textContent && (textContent.includes('alert') || textContent.includes('symbol:'))) {
+      // Generic text-based signal
+      detectedProvider = 'Telegram';
+    }
+    
     // Extract signal data (supports TradingView format and generic format)
     const signalData = {
-      provider: payload.provider || 'TradingView',
+      provider: detectedProvider,
       symbol: payload.ticker || payload.symbol || '',
       action: (payload.action || payload.strategy?.order_action || '').toUpperCase(),
       price: parseFloat(payload.close || payload.price || payload.entry || 0),
@@ -231,19 +246,6 @@ function parseTextSignal(text, originalPayload) {
   if (takeProfits.length > 0) {
     signal.take_profits = takeProfits;
     signal.tp1 = takeProfits[0];
-  }
-  
-  // Detect provider from context
-  if (!signal.provider || signal.provider === 'Unknown' || signal.provider === 'TradingView') {
-    if (text.includes('Hybrid') || (text.includes('NQ1') && text.includes('DO NOT RISK'))) {
-      signal.provider = 'Hybrid AI';
-    } else if (text.includes('Paradox') || text.includes('BTCUSDT')) {
-      signal.provider = 'Paradox';
-    } else if (text.includes('Solaris') || text.includes('NAS100USD')) {
-      signal.provider = 'Solaris';
-    } else {
-      signal.provider = 'Telegram';
-    }
   }
   
   return signal;
