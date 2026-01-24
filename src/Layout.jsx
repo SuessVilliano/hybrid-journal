@@ -487,7 +487,7 @@ export default function Layout({ children, currentPageName }) {
           <Droppable droppableId="navigation">
             {(provided) => (
               <nav 
-                className="p-4 space-y-2 overflow-y-auto flex-1" 
+                className={`space-y-2 overflow-y-auto flex-1 ${sidebarOpen ? 'p-4' : 'px-2'}`}
                 {...provided.droppableProps}
                 ref={provided.innerRef}
               >
@@ -538,12 +538,25 @@ export default function Layout({ children, currentPageName }) {
                               <Link
                                 to={createPageUrl(item.page)}
                                 className={`
-                                  flex items-center gap-3 px-4 py-3 rounded-lg transition-all group relative overflow-hidden
+                                  flex items-center justify-center gap-3 rounded-lg transition-all group relative overflow-hidden
+                                  ${sidebarOpen ? 'px-4 py-3' : 'p-3 mx-auto w-12 h-12'}
                                   ${isActive 
                                     ? 'bg-gradient-to-r from-cyan-500/20 to-purple-600/20 text-cyan-600 shadow-lg shadow-cyan-500/20 border border-cyan-500/30' 
-                                    : darkMode 
-                                      ? 'text-slate-300 hover:bg-slate-800/50 hover:text-cyan-400 border border-transparent'
-                                      : 'text-slate-600 hover:bg-cyan-50 hover:text-cyan-600 border border-transparent'
+                                    : !sidebarOpen && item.id === 'dashboard'
+                                      ? darkMode 
+                                        ? 'bg-gradient-to-br from-cyan-500/20 to-cyan-600/20 text-cyan-400 border border-cyan-500/40 shadow-lg shadow-cyan-500/20'
+                                        : 'bg-gradient-to-br from-cyan-100 to-cyan-200 text-cyan-700 border border-cyan-300 shadow-lg'
+                                      : !sidebarOpen && item.id === 'community'
+                                        ? darkMode
+                                          ? 'bg-gradient-to-br from-pink-500/20 to-rose-600/20 text-pink-400 border border-pink-500/40 shadow-lg shadow-pink-500/20'
+                                          : 'bg-gradient-to-br from-pink-100 to-rose-200 text-pink-700 border border-pink-300 shadow-lg'
+                                        : !sidebarOpen && item.id === 'funded'
+                                          ? darkMode
+                                            ? 'bg-gradient-to-br from-green-500/20 to-emerald-600/20 text-green-400 border border-green-500/40 shadow-lg shadow-green-500/20'
+                                            : 'bg-gradient-to-br from-green-100 to-emerald-200 text-green-700 border border-green-300 shadow-lg'
+                                          : darkMode 
+                                            ? 'text-slate-300 hover:bg-slate-800/50 hover:text-cyan-400 border border-transparent'
+                                            : 'text-slate-600 hover:bg-cyan-50 hover:text-cyan-600 border border-transparent'
                                   }
                                 `}
                                 title={!sidebarOpen ? item.name : ''}
@@ -556,15 +569,10 @@ export default function Layout({ children, currentPageName }) {
                                 {isActive && (
                                   <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-purple-600/10 animate-pulse" />
                                 )}
-                                <Icon className={`h-5 w-5 relative z-10 ${
+                                <Icon className={`${sidebarOpen ? 'h-5 w-5' : 'h-6 w-6'} relative z-10 ${
                                   isActive && 'drop-shadow-[0_0_8px_rgba(0,240,255,0.8)]'
-                                } ${
-                                  !sidebarOpen && item.id === 'community' ? 'text-purple-400' : ''
                                 }`} />
                                 {sidebarOpen && <span className="font-medium relative z-10 flex-1">{item.name}</span>}
-                                {!sidebarOpen && (item.id === 'dashboard' || item.id === 'community' || item.id === 'funded') && (
-                                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-purple-600/10" />
-                                )}
                                 {sidebarOpen && (
                                   <button
                                     onClick={(e) => {
@@ -627,7 +635,9 @@ export default function Layout({ children, currentPageName }) {
         {!isMobile && (
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="absolute -right-3 top-6 bg-gradient-to-r from-cyan-500 to-purple-600 text-white p-1.5 rounded-full shadow-lg hover:scale-110 transition-transform z-50"
+            className={`bg-gradient-to-r from-cyan-500 to-purple-600 text-white p-2 rounded-full shadow-lg hover:scale-110 transition-transform z-50 ${
+              sidebarOpen ? 'absolute -right-3 top-6' : 'mx-auto mt-4 mb-6'
+            }`}
           >
             {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </button>

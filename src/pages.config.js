@@ -1,5 +1,6 @@
 import Accounts from './pages/Accounts';
 import Achievements from './pages/Achievements';
+import AdminMessaging from './pages/AdminMessaging';
 import Analytics from './pages/Analytics';
 import Automation from './pages/Automation';
 import Backtesting from './pages/Backtesting';
@@ -17,8 +18,10 @@ import LiveTradingSignals from './pages/LiveTradingSignals';
 import MarketData from './pages/MarketData';
 import MediaLibrary from './pages/MediaLibrary';
 import MyProfile from './pages/MyProfile';
+import Notifications from './pages/Notifications';
 import Onboarding from './pages/Onboarding';
 import PlatformTour from './pages/PlatformTour';
+import Pricing from './pages/Pricing';
 import PropFirmSettings from './pages/PropFirmSettings';
 import PublicDashboard from './pages/PublicDashboard';
 import RiskManagement from './pages/RiskManagement';
@@ -30,15 +33,13 @@ import TradePlans from './pages/TradePlans';
 import Trades from './pages/Trades';
 import TradingCoach from './pages/TradingCoach';
 import TradingSummaries from './pages/TradingSummaries';
-import Pricing from './pages/Pricing';
-import AdminMessaging from './pages/AdminMessaging';
-import Notifications from './pages/Notifications';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "Accounts": Accounts,
     "Achievements": Achievements,
+    "AdminMessaging": AdminMessaging,
     "Analytics": Analytics,
     "Automation": Automation,
     "Backtesting": Backtesting,
@@ -56,8 +57,10 @@ export const PAGES = {
     "MarketData": MarketData,
     "MediaLibrary": MediaLibrary,
     "MyProfile": MyProfile,
+    "Notifications": Notifications,
     "Onboarding": Onboarding,
     "PlatformTour": PlatformTour,
+    "Pricing": Pricing,
     "PropFirmSettings": PropFirmSettings,
     "PublicDashboard": PublicDashboard,
     "RiskManagement": RiskManagement,
@@ -69,9 +72,6 @@ export const PAGES = {
     "Trades": Trades,
     "TradingCoach": TradingCoach,
     "TradingSummaries": TradingSummaries,
-    "Pricing": Pricing,
-    "AdminMessaging": AdminMessaging,
-    "Notifications": Notifications,
 }
 
 export const pagesConfig = {
