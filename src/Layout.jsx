@@ -156,13 +156,11 @@ export default function Layout({ children, currentPageName }) {
           const user = await base44.auth.me();
           setCurrentUser(user);
 
-          // Check if user has completed onboarding
+          // Check if user has completed onboarding (only once per user)
           const profiles = await base44.entities.TraderProfile.list();
           if (profiles.length > 0 && profiles[0].onboarding_completed) {
-            // User has completed onboarding - they're good to go
             setNeedsOnboarding(false);
-          } else if (currentPageName !== 'Landing' && currentPageName !== 'Onboarding') {
-            // User hasn't completed onboarding and isn't on those pages
+          } else if (currentPageName !== 'Landing' && currentPageName !== 'Onboarding' && currentPageName !== 'PlatformTour') {
             setNeedsOnboarding(true);
             window.location.href = createPageUrl('Onboarding');
           }
