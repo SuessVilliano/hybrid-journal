@@ -19,13 +19,18 @@ export default function MyProfile() {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [formData, setFormData] = useState({
-    display_name: '',
-    bio: '',
-    trading_style: 'Day Trading',
-    is_public: false,
-    show_pnl: false,
-    show_win_rate: true,
-    show_trades: true
+    preferred_name: '',
+    location: '',
+    trader_type: '',
+    experience_level: '',
+    primary_markets: [],
+    primary_goals: [],
+    risk_tolerance: '',
+    account_size: '',
+    strategies: [],
+    main_challenges: [],
+    prop_firm_trader: false,
+    prop_firm_name: ''
   });
   const [showCalendarDialog, setShowCalendarDialog] = useState(false);
   const [calendarEvent, setCalendarEvent] = useState({
@@ -114,7 +119,7 @@ export default function MyProfile() {
             My Trader Profile
           </h1>
           <p className={darkMode ? 'text-cyan-400/70 mt-1' : 'text-cyan-700/70 mt-1'}>
-            Manage your public trading profile
+            Update your trading preferences and profile settings
           </p>
         </div>
 
@@ -126,105 +131,115 @@ export default function MyProfile() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div>
-              <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                Display Name *
-              </label>
-              <Input
-                value={formData.display_name}
-                onChange={(e) => setFormData({...formData, display_name: e.target.value})}
-                placeholder="Your trading name"
-              />
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                  Preferred Name *
+                </label>
+                <Input
+                  value={formData.preferred_name}
+                  onChange={(e) => setFormData({...formData, preferred_name: e.target.value})}
+                  placeholder="What should we call you?"
+                />
+              </div>
 
-            <div>
-              <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                Bio
-              </label>
-              <Textarea
-                value={formData.bio}
-                onChange={(e) => setFormData({...formData, bio: e.target.value})}
-                placeholder="Tell others about your trading journey..."
-                rows={4}
-              />
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                  Location
+                </label>
+                <Input
+                  value={formData.location}
+                  onChange={(e) => setFormData({...formData, location: e.target.value})}
+                  placeholder="City, Country"
+                />
+              </div>
             </div>
 
             <div>
               <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
                 Trading Style
               </label>
-              <Select value={formData.trading_style} onValueChange={(v) => setFormData({...formData, trading_style: v})}>
+              <Select value={formData.trader_type} onValueChange={(v) => setFormData({...formData, trader_type: v})}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select your trading style" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Scalping">Scalping</SelectItem>
-                  <SelectItem value="Day Trading">Day Trading</SelectItem>
-                  <SelectItem value="Swing Trading">Swing Trading</SelectItem>
-                  <SelectItem value="Options">Options</SelectItem>
-                  <SelectItem value="Futures">Futures</SelectItem>
-                  <SelectItem value="Crypto">Crypto</SelectItem>
-                  <SelectItem value="Forex">Forex</SelectItem>
+                  <SelectItem value="Day Trader">Day Trader</SelectItem>
+                  <SelectItem value="Swing Trader">Swing Trader</SelectItem>
+                  <SelectItem value="Scalper">Scalper</SelectItem>
+                  <SelectItem value="Position Trader">Position Trader</SelectItem>
+                  <SelectItem value="Algorithmic Trader">Algorithmic Trader</SelectItem>
+                  <SelectItem value="Beginner">Beginner</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className={`space-y-4 p-4 rounded-lg ${darkMode ? 'bg-slate-900/50' : 'bg-slate-50'}`}>
-              <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`}>Privacy Settings</h3>
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`font-medium ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>Public Profile</p>
-                  <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Make your profile visible to others</p>
-                </div>
-                <Switch
-                  checked={formData.is_public}
-                  onCheckedChange={(v) => setFormData({...formData, is_public: v})}
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`font-medium ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>Show P&L</p>
-                  <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Display actual profit/loss numbers</p>
-                </div>
-                <Switch
-                  checked={formData.show_pnl}
-                  onCheckedChange={(v) => setFormData({...formData, show_pnl: v})}
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`font-medium ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>Show Win Rate</p>
-                  <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Display your win rate percentage</p>
-                </div>
-                <Switch
-                  checked={formData.show_win_rate}
-                  onCheckedChange={(v) => setFormData({...formData, show_win_rate: v})}
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`font-medium ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>Show Trade Count</p>
-                  <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Display total number of trades</p>
-                </div>
-                <Switch
-                  checked={formData.show_trades}
-                  onCheckedChange={(v) => setFormData({...formData, show_trades: v})}
-                />
-              </div>
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                Experience Level
+              </label>
+              <Select value={formData.experience_level} onValueChange={(v) => setFormData({...formData, experience_level: v})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your experience" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Beginner (0-6 months)">Beginner (0-6 months)</SelectItem>
+                  <SelectItem value="Intermediate (6 months - 2 years)">Intermediate (6 months - 2 years)</SelectItem>
+                  <SelectItem value="Advanced (2-5 years)">Advanced (2-5 years)</SelectItem>
+                  <SelectItem value="Expert (5+ years)">Expert (5+ years)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                Risk Tolerance
+              </label>
+              <Select value={formData.risk_tolerance} onValueChange={(v) => setFormData({...formData, risk_tolerance: v})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your risk tolerance" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Conservative (0.5-1% per trade)">Conservative (0.5-1% per trade)</SelectItem>
+                  <SelectItem value="Moderate (1-2% per trade)">Moderate (1-2% per trade)</SelectItem>
+                  <SelectItem value="Aggressive (2-3% per trade)">Aggressive (2-3% per trade)</SelectItem>
+                  <SelectItem value="Very Aggressive (3%+ per trade)">Very Aggressive (3%+ per trade)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center justify-between p-4 rounded-lg bg-gradient-to-r from-cyan-500/10 to-purple-600/10 border border-cyan-500/20">
+              <div>
+                <p className={`font-medium ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>Prop Firm Trader</p>
+                <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Are you trading with a prop firm?</p>
+              </div>
+              <Switch
+                checked={formData.prop_firm_trader}
+                onCheckedChange={(v) => setFormData({...formData, prop_firm_trader: v})}
+              />
+            </div>
+
+            {formData.prop_firm_trader && (
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                  Prop Firm Name
+                </label>
+                <Input
+                  value={formData.prop_firm_name}
+                  onChange={(e) => setFormData({...formData, prop_firm_name: e.target.value})}
+                  placeholder="e.g., FTMO, MyForexFunds"
+                />
+              </div>
+            )}
 
             <div className="flex justify-end gap-3">
               <Button 
                 onClick={() => saveMutation.mutate(formData)}
-                disabled={!formData.display_name.trim() || saveMutation.isLoading}
+                disabled={!formData.preferred_name?.trim() || saveMutation.isPending}
                 className="bg-gradient-to-r from-cyan-500 to-purple-600"
               >
                 <Save className="h-4 w-4 mr-2" />
-                {saveMutation.isLoading ? 'Saving...' : 'Save Profile'}
+                {saveMutation.isPending ? 'Saving...' : 'Save Profile'}
               </Button>
             </div>
           </CardContent>
