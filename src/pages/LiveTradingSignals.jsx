@@ -152,26 +152,27 @@ export default function LiveTradingSignals() {
         : 'bg-gradient-to-br from-cyan-50 via-purple-50 to-pink-50'
     }`}>
       <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+        <div className="flex flex-col gap-4">
           <div>
-            <h1 className={`text-3xl md:text-4xl font-bold bg-gradient-to-r ${
+            <h1 className={`text-2xl md:text-4xl font-bold bg-gradient-to-r ${
               darkMode ? 'from-cyan-400 to-purple-500' : 'from-cyan-600 to-purple-600'
             } bg-clip-text text-transparent`}>
               Live Trading Signals
             </h1>
-            <p className={darkMode ? 'text-cyan-400/70 mt-1' : 'text-cyan-700/70 mt-1'}>
+            <p className={`text-sm md:text-base mt-1 ${darkMode ? 'text-cyan-400/70' : 'text-cyan-700/70'}`}>
               Real-time signals from TradingView and external sources
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {isSupported && permission !== 'granted' && (
               <Button
                 onClick={requestPermission}
                 variant="outline"
+                size="sm"
                 className="border-cyan-500/30"
               >
-                <Bell className="h-4 w-4 mr-2" />
-                Enable Alerts
+                <Bell className="h-4 w-4 mr-1" />
+                <span className="text-xs md:text-sm">Enable Alerts</span>
               </Button>
             )}
             {isSupported && permission === 'granted' && (
@@ -186,10 +187,11 @@ export default function LiveTradingSignals() {
                   }, '/LiveTradingSignals');
                 }}
                 variant="outline"
+                size="sm"
                 className="border-green-500/30"
               >
-                <Bell className="h-4 w-4 mr-2" />
-                Test Alert
+                <Bell className="h-4 w-4 mr-1" />
+                <span className="text-xs md:text-sm">Test Alert</span>
               </Button>
             )}
             <Button
@@ -206,24 +208,27 @@ export default function LiveTradingSignals() {
                 }
               }}
               variant="outline"
+              size="sm"
               className={darkMode ? 'text-cyan-400 border-cyan-500/30' : 'text-cyan-700 border-cyan-500/30'}
             >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
+              <RefreshCw className="h-4 w-4 mr-1" />
+              <span className="text-xs md:text-sm">Refresh</span>
             </Button>
             <Button
               onClick={() => setShowLogs(!showLogs)}
               variant="outline"
+              size="sm"
             >
-              <FileText className="h-4 w-4 mr-2" />
-              {showLogs ? 'Hide' : 'Show'} Logs
+              <FileText className="h-4 w-4 mr-1" />
+              <span className="text-xs md:text-sm">{showLogs ? 'Hide' : 'Show'} Logs</span>
             </Button>
             <Button
               onClick={() => setShowWebhookInfo(!showWebhookInfo)}
+              size="sm"
               className="bg-gradient-to-r from-cyan-500 to-purple-600"
             >
-              <Zap className="h-4 w-4 mr-2" />
-              Webhook Setup
+              <Zap className="h-4 w-4 mr-1" />
+              <span className="text-xs md:text-sm">Webhook Setup</span>
             </Button>
           </div>
         </div>

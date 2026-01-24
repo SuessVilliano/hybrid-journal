@@ -184,7 +184,7 @@ export default function SignalCard({
             )}
           </div>
 
-          <div className="flex md:flex-col gap-2">
+          <div className="flex flex-wrap md:flex-col gap-2">
             {signal.status === 'new' && (
               <>
                 <Button
