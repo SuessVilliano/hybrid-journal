@@ -288,6 +288,8 @@ export default function Layout({ children, currentPageName }) {
     { id: 'community', name: 'Community', page: 'SocialFeed', icon: Users },
     { id: 'media', name: 'Media Library', page: 'MediaLibrary', icon: ImageIcon },
     { id: 'shared', name: 'Shared Access', page: 'SharedAccess', icon: UserCheck, adminOnly: true },
+    { id: 'admin-messaging', name: 'Send Messages', page: 'AdminMessaging', icon: MessageSquare, adminOnly: true },
+    { id: 'notifications', name: 'Notifications', page: 'Notifications', icon: Bell },
     { id: 'profile', name: 'My Profile', page: 'MyProfile', icon: User },
     { id: 'achievements', name: 'Achievements', page: 'Achievements', icon: Trophy },
     { id: 'help', name: 'Help & Docs', page: 'Help', icon: HelpCircle },
