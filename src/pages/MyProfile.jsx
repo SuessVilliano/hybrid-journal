@@ -13,6 +13,7 @@ import { User, Save, Calendar, Plus, Clock } from 'lucide-react';
 import WebhookSettings from '@/components/profile/WebhookSettings';
 import NotificationPreferences from '@/components/profile/NotificationPreferences';
 import APIKeyManager from '@/components/profile/APIKeyManager';
+import CustomAudioSettings from '@/components/profile/CustomAudioSettings';
 
 export default function MyProfile() {
   const [user, setUser] = useState(null);
@@ -232,6 +233,8 @@ export default function MyProfile() {
         <WebhookSettings />
 
         <NotificationPreferences />
+
+        <CustomAudioSettings />
 
         <APIKeyManager />
       </div>
