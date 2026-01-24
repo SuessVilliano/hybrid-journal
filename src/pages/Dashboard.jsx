@@ -42,6 +42,14 @@ export default function Dashboard() {
     queryKey: ['user'],
     queryFn: () => base44.auth.me()
   });
+
+  const { data: traderProfile } = useQuery({
+    queryKey: ['traderProfile'],
+    queryFn: async () => {
+      const profiles = await base44.entities.TraderProfile.list();
+      return profiles[0] || null;
+    }
+  });
   
   const { data: allTrades = [], isLoading } = useQuery({
     queryKey: ['trades', user?.email],
@@ -162,9 +170,13 @@ export default function Dashboard() {
             <h1 className={`text-3xl md:text-4xl font-bold bg-gradient-to-r ${
               darkMode ? 'from-cyan-400 to-purple-500' : 'from-cyan-600 to-purple-600'
             } bg-clip-text text-transparent`}>
-              Trading Dashboard
+              Welcome back, {traderProfile?.preferred_name || user?.full_name?.split(' ')[0] || 'Trader'}! 👋
             </h1>
-            <p className={darkMode ? 'text-cyan-400/70 mt-1' : 'text-cyan-700/70 mt-1'}>Track your performance and grow consistently</p>
+            <p className={darkMode ? 'text-cyan-400/70 mt-1' : 'text-cyan-700/70 mt-1'}>
+              {traderProfile?.trader_type 
+                ? `Track your ${traderProfile.trader_type.toLowerCase()} performance` 
+                : 'Track your performance and grow consistently'}
+            </p>
           </div>
           <div className="flex flex-wrap gap-3">
             <Link to={createPageUrl('Journal')}>
