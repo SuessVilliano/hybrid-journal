@@ -309,11 +309,18 @@ export default function Layout({ children, currentPageName }) {
     return true;
   });
 
-  const navigation = menuView === 'favorites' 
+  let navigation = menuView === 'favorites' 
     ? filteredNavigation.filter(item => favorites.includes(item.id))
     : menuView === 'recent'
     ? recentPages.map(r => filteredNavigation.find(item => item.id === r.id)).filter(Boolean)
     : filteredNavigation;
+
+  // When sidebar is minimized, only show Dashboard, Community, and Get Funded
+  if (!sidebarOpen) {
+    navigation = filteredNavigation.filter(item => 
+      item.id === 'dashboard' || item.id === 'community' || item.id === 'funded'
+    );
+  }
 
   const toggleFavorite = async (itemId) => {
     const newFavorites = favorites.includes(itemId)
@@ -549,8 +556,15 @@ export default function Layout({ children, currentPageName }) {
                                 {isActive && (
                                   <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-purple-600/10 animate-pulse" />
                                 )}
-                                <Icon className={`h-5 w-5 relative z-10 ${isActive && 'drop-shadow-[0_0_8px_rgba(0,240,255,0.8)]'}`} />
+                                <Icon className={`h-5 w-5 relative z-10 ${
+                                  isActive && 'drop-shadow-[0_0_8px_rgba(0,240,255,0.8)]'
+                                } ${
+                                  !sidebarOpen && item.id === 'community' ? 'text-purple-400' : ''
+                                }`} />
                                 {sidebarOpen && <span className="font-medium relative z-10 flex-1">{item.name}</span>}
+                                {!sidebarOpen && (item.id === 'dashboard' || item.id === 'community' || item.id === 'funded') && (
+                                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-purple-600/10" />
+                                )}
                                 {sidebarOpen && (
                                   <button
                                     onClick={(e) => {
@@ -613,7 +627,7 @@ export default function Layout({ children, currentPageName }) {
         {!isMobile && (
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="absolute -right-3 top-20 bg-gradient-to-r from-cyan-500 to-purple-600 text-white p-1.5 rounded-full shadow-lg hover:scale-110 transition-transform"
+            className="absolute -right-3 top-6 bg-gradient-to-r from-cyan-500 to-purple-600 text-white p-1.5 rounded-full shadow-lg hover:scale-110 transition-transform z-50"
           >
             {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </button>
