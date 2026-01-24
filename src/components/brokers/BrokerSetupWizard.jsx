@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { ExternalLink, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
+import ProviderDocs from './ProviderDocs';
 
 export default function BrokerSetupWizard({ isOpen, onClose, onComplete }) {
   const [step, setStep] = useState(1);
@@ -348,6 +349,8 @@ export default function BrokerSetupWizard({ isOpen, onClose, onComplete }) {
 
           {step === 3 && (
             <div className="space-y-4">
+              <ProviderDocs provider={provider} mode={mode} />
+
               <Card className="bg-cyan-50 border-cyan-200">
                 <CardContent className="p-4">
                   <h3 className="font-bold text-cyan-900 mb-2">Setup Instructions</h3>

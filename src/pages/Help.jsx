@@ -297,7 +297,28 @@ export default function Help() {
               Frequently Asked Questions
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
+            <div className={`p-4 rounded-lg ${darkMode ? 'bg-cyan-900/20 border border-cyan-500/30' : 'bg-cyan-50 border border-cyan-200'}`}>
+              <h3 className={`font-bold mb-3 ${darkMode ? 'text-cyan-300' : 'text-cyan-900'}`}>🔗 Hybrid Journal ↔️ iCopyTrade Integration</h3>
+              <div className={`space-y-3 text-sm ${darkMode ? 'text-cyan-300/80' : 'text-cyan-900/80'}`}>
+                <div>
+                  <strong className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>Purpose:</strong> Securely link your iCopyTrade execution platform to automatically journal all copied trades
+                </div>
+                <div>
+                  <strong className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>How it works:</strong>
+                  <ol className="ml-4 mt-1 space-y-1 list-decimal">
+                    <li>Generate a link token in Accounts → App Linking (expires in 15 min)</li>
+                    <li>Enter token in iCopyTrade → Settings → Connect Journal</li>
+                    <li>iCopyTrade receives a signing secret for authenticated event pushing</li>
+                    <li>All trades are auto-synced to Hybrid Journal with full metadata</li>
+                  </ol>
+                </div>
+                <div>
+                  <strong className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>Security:</strong> HMAC-SHA256 signatures, timestamp validation, replay attack prevention, encrypted secrets
+                </div>
+              </div>
+            </div>
+
             {faqs.map((faq, idx) => (
               <div key={idx} className={`pb-4 ${idx !== faqs.length - 1 ? (darkMode ? 'border-b border-slate-800' : 'border-b border-slate-200') : ''}`}>
                 <h4 className={`font-semibold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
