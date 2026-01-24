@@ -96,6 +96,46 @@ Deno.serve(async (req) => {
       timestamp: new Date().toISOString()
     });
 
+    // Check for duplicate signals within last 5 minutes
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const recentSignals = await base44.asServiceRole.entities.Signal.filter({
+      user_email: user.email,
+      symbol: signalData.symbol,
+      action: signalData.action
+    });
+
+    // Filter to only signals from last 5 minutes
+    const duplicates = recentSignals.filter(s => 
+      new Date(s.created_date) > new Date(fiveMinutesAgo) &&
+      Math.abs(s.price - signalData.price) < 0.01 && // Same price (within 1 cent/pip)
+      s.stop_loss === signalData.stop_loss &&
+      s.provider === signalData.provider
+    );
+
+    if (duplicates.length > 0) {
+      console.log('⚠️ DUPLICATE SIGNAL DETECTED - Skipping:', {
+        duplicate_id: duplicates[0].id,
+        symbol: signalData.symbol,
+        action: signalData.action,
+        price: signalData.price
+      });
+
+      await base44.asServiceRole.entities.SyncLog.create({
+        sync_type: 'webhook_signal',
+        status: 'success',
+        records_synced: 0,
+        details: `Duplicate signal skipped: ${signalData.symbol} ${signalData.action} @ ${signalData.price}`,
+        user_email: user.email
+      });
+
+      return Response.json({ 
+        success: true,
+        duplicate: true,
+        message: 'Duplicate signal detected and skipped',
+        existing_signal_id: duplicates[0].id
+      });
+    }
+
     // Create signal record using service role
     const signal = await base44.asServiceRole.entities.Signal.create(signalData);
 
