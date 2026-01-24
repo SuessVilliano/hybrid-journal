@@ -31,6 +31,8 @@ import Trades from './pages/Trades';
 import TradingCoach from './pages/TradingCoach';
 import TradingSummaries from './pages/TradingSummaries';
 import Pricing from './pages/Pricing';
+import AdminMessaging from './pages/AdminMessaging';
+import Notifications from './pages/Notifications';
 import __Layout from './Layout.jsx';
 
 
@@ -68,6 +70,8 @@ export const PAGES = {
     "TradingCoach": TradingCoach,
     "TradingSummaries": TradingSummaries,
     "Pricing": Pricing,
+    "AdminMessaging": AdminMessaging,
+    "Notifications": Notifications,
 }
 
 export const pagesConfig = {
