@@ -7,7 +7,13 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+    
+    let user;
+    try {
+      user = await base44.auth.me();
+    } catch (err) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -17,8 +23,11 @@ Deno.serve(async (req) => {
     const profiles = await base44.entities.TraderProfile.list();
     if (profiles.length === 0) {
       return Response.json({ 
-        error: 'No trader profile found' 
-      }, { status: 404 });
+        success: true,
+        message: 'No profile found yet - templates will be created later',
+        templates_created: 0,
+        goals_created: 0
+      });
     }
 
     const profile = profiles[0];

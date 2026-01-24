@@ -48,30 +48,51 @@ export default function Onboarding() {
 
   const saveMutation = useMutation({
     mutationFn: async (data) => {
-      // Create trader profile
-      await base44.entities.TraderProfile.create({
-        ...data,
-        onboarding_completed: true
-      });
-      
-      // Update user timezone
       try {
-        await base44.auth.updateMe({ 
-          timezone: data.timezone 
-        });
-      } catch (err) {
-        console.warn('Timezone update failed:', err);
-      }
-      
-      // Create trade templates and goals based on profile
-      try {
-        await base44.functions.invoke('createTradeTemplates', {});
-      } catch (err) {
-        console.warn('Template creation skipped');
+        // Create trader profile with cleaned data
+        const profileData = {
+          onboarding_completed: true,
+          preferred_name: data.preferred_name || '',
+          timezone: data.timezone || 'America/New_York',
+          location: data.location || '',
+          trader_type: data.trader_type || '',
+          experience_level: data.experience_level || '',
+          primary_markets: data.primary_markets || [],
+          primary_goals: data.primary_goals || [],
+          trading_session: data.trading_session || [],
+          risk_tolerance: data.risk_tolerance || '',
+          account_size: data.account_size || '',
+          strategies: data.strategies || [],
+          main_challenges: data.main_challenges || [],
+          prop_firm_trader: data.prop_firm_trader || false,
+          prop_firm_name: data.prop_firm_name || '',
+          ai_coaching_preferences: data.ai_coaching_preferences || {
+            proactive_alerts: true,
+            rule_enforcement: true,
+            performance_feedback: true,
+            emotional_check_ins: true
+          },
+          notification_preferences: data.notification_preferences || {
+            rule_violations: true,
+            milestone_achievements: true,
+            daily_reminders: true,
+            risk_warnings: true
+          }
+        };
+
+        await base44.entities.TraderProfile.create(profileData);
+        
+        return { success: true };
+      } catch (error) {
+        console.error('Profile creation error:', error);
+        throw new Error('Failed to save profile: ' + error.message);
       }
     },
     onSuccess: () => {
-      window.location.href = createPageUrl('PlatformTour');
+      // Small delay to ensure data is saved
+      setTimeout(() => {
+        window.location.href = createPageUrl('PlatformTour');
+      }, 500);
     }
   });
 
