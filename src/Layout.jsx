@@ -152,24 +152,30 @@ export default function Layout({ children, currentPageName }) {
 
   useEffect(() => {
     const checkOnboarding = async () => {
-      try {
-        const user = await base44.auth.me();
-        setCurrentUser(user);
-        
-        // Check if user has completed onboarding
-        const profiles = await base44.entities.TraderProfile.list();
-        if (profiles.length === 0 || !profiles[0].onboarding_completed) {
-          setNeedsOnboarding(true);
-          if (currentPageName !== 'Landing' && currentPageName !== 'Onboarding') {
+        try {
+          const user = await base44.auth.me();
+          setCurrentUser(user);
+
+          // Check if user has completed onboarding
+          const profiles = await base44.entities.TraderProfile.list();
+          if (profiles.length > 0 && profiles[0].onboarding_completed) {
+            // User has completed onboarding - they're good to go
+            setNeedsOnboarding(false);
+          } else if (currentPageName !== 'Landing' && currentPageName !== 'Onboarding') {
+            // User hasn't completed onboarding and isn't on those pages
+            setNeedsOnboarding(true);
             window.location.href = createPageUrl('Onboarding');
           }
+        } catch (error) {
+          console.error('Auth check failed:', error);
+          setCurrentUser(null);
+          if (currentPageName !== 'Landing') {
+            window.location.href = createPageUrl('Landing');
+          }
         }
-      } catch (error) {
-        setCurrentUser(null);
-      }
-    };
-    
-    checkOnboarding();
+      };
+
+      checkOnboarding();
   }, [currentPageName]);
 
   useEffect(() => {
@@ -586,8 +592,7 @@ export default function Layout({ children, currentPageName }) {
               </div>
             </div>
             <div className={`text-xs ${darkMode ? 'text-cyan-400/70' : 'text-cyan-600/70'} text-right`}>
-              <div className="mb-1">Logged in as</div>
-              <div className={`font-medium ${darkMode ? 'text-cyan-400' : 'text-cyan-700'} truncate max-w-[100px]`}>
+              <div className={`font-medium ${darkMode ? 'text-cyan-400' : 'text-cyan-700'} truncate max-w-[100px] mb-1`}>
                 {currentUser?.full_name || currentUser?.email || '...'}
               </div>
               <button
@@ -595,7 +600,7 @@ export default function Layout({ children, currentPageName }) {
                   base44.auth.logout();
                   window.location.href = createPageUrl('Landing');
                 }}
-                className={`text-xs underline mt-1 ${darkMode ? 'text-cyan-400/70 hover:text-cyan-400' : 'text-cyan-700/70 hover:text-cyan-700'} transition-colors`}
+                className={`text-xs underline ${darkMode ? 'text-cyan-400/70 hover:text-cyan-400' : 'text-cyan-700/70 hover:text-cyan-700'} transition-colors`}
               >
                 Sign out
               </button>
