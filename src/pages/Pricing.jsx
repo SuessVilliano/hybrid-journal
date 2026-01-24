@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Check, X, Zap, TrendingUp, Users, Sparkles } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
-import { createPageUrl } from './utils';
+import { createPageUrl } from '../utils';
 
 export default function Pricing() {
   const [billingPeriod, setBillingPeriod] = useState('monthly');
