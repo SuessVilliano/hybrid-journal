@@ -127,19 +127,19 @@ export default function BrokerConnections() {
         </div>
 
         {/* Info Banner */}
-        <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+        <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200'}>
           <CardContent className="p-6">
             <div className="flex items-start gap-3">
-              <LinkIcon className="h-5 w-5 text-blue-600 mt-0.5" />
+              <LinkIcon className={`h-5 w-5 mt-0.5 ${darkMode ? 'text-cyan-400' : 'text-blue-600'}`} />
               <div>
-                <h3 className="font-bold text-slate-900 mb-2 flex items-center gap-2">
+                <h3 className={`font-bold mb-2 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                   Broker Integration Features
                   <Badge className="bg-green-100 text-green-800">
                     <RefreshCw className="h-3 w-3 mr-1" />
                     Auto-Sync Active
                   </Badge>
                 </h3>
-                <ul className="text-sm text-slate-700 space-y-1">
+                <ul className={`text-sm space-y-1 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
                   <li>✓ Automatic trade history sync from your broker accounts</li>
                   <li>✓ Real-time account balance and equity tracking</li>
                   <li>✓ Secure encrypted API credential storage</li>
@@ -158,10 +158,10 @@ export default function BrokerConnections() {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
         ) : connections.length === 0 ? (
-          <Card className="p-12 text-center">
-            <LinkIcon className="h-16 w-16 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-slate-900 mb-2">No broker connections yet</h3>
-            <p className="text-slate-600 mb-6">
+          <Card className={`p-12 text-center ${darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white'}`}>
+            <LinkIcon className={`h-16 w-16 mx-auto mb-4 ${darkMode ? 'text-slate-700' : 'text-slate-300'}`} />
+            <h3 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>No broker connections yet</h3>
+            <p className={`mb-6 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
               Connect your broker account to automatically import trades and track balances
             </p>
             <Button

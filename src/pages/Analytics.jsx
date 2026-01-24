@@ -69,7 +69,7 @@ export default function Analytics() {
         </div>
 
         <Tabs value={view} onValueChange={setView} className="space-y-6">
-          <TabsList className="bg-white shadow-sm">
+          <TabsList className={darkMode ? 'bg-slate-950/80 border border-cyan-500/20' : 'bg-white shadow-sm'}>
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <Brain className="h-4 w-4" />
               AI Insights
@@ -89,12 +89,12 @@ export default function Analytics() {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
-            <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
+            <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200'}>
               <div className="p-6 flex items-start gap-3">
-                <Brain className="h-5 w-5 text-purple-600 mt-0.5" />
+                <Brain className={`h-5 w-5 mt-0.5 ${darkMode ? 'text-purple-400' : 'text-purple-600'}`} />
                 <div>
-                  <h3 className="font-bold text-slate-900 mb-2">AI-Enhanced Analytics</h3>
-                  <ul className="text-sm text-slate-700 space-y-1">
+                  <h3 className={`font-bold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>AI-Enhanced Analytics</h3>
+                  <ul className={`text-sm space-y-1 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
                     <li>✓ Intelligent pattern recognition and profitable trade identification</li>
                     <li>✓ Risk prediction and emotional impact analysis</li>
                     <li>✓ Personalized strategy recommendations</li>
@@ -118,7 +118,7 @@ export default function Analytics() {
           </TabsContent>
 
           <TabsContent value="trades">
-            <Card>
+            <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white'}>
               <div className="p-6">
                 <TradeList trades={trades} showFilters />
               </div>

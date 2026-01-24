@@ -119,10 +119,10 @@ export default function Imports() {
         <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200'}>
           <CardContent className="p-6">
             <div className="flex items-start gap-3">
-              <FileText className="h-5 w-5 text-blue-600 mt-0.5" />
+              <FileText className={`h-5 w-5 mt-0.5 ${darkMode ? 'text-cyan-400' : 'text-blue-600'}`} />
               <div className="flex-1">
-                <h3 className="font-bold text-slate-900 mb-2">Supported File Types</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm text-slate-700">
+                <h3 className={`font-bold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>Supported File Types</h3>
+                <div className={`grid grid-cols-2 md:grid-cols-3 gap-2 text-sm ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
                   <div>✓ MetaTrader 4/5 (CSV, HTML)</div>
                   <div>✓ cTrader (CSV)</div>
                   <div>✓ DXTrade (CSV)</div>
@@ -147,10 +147,10 @@ export default function Imports() {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
         ) : imports.length === 0 ? (
-          <Card className="p-12 text-center">
-            <Upload className="h-16 w-16 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-slate-900 mb-2">No imports yet</h3>
-            <p className="text-slate-600 mb-4">
+          <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20 p-12 text-center' : 'bg-white p-12 text-center'}>
+            <Upload className={`h-16 w-16 mx-auto mb-4 ${darkMode ? 'text-slate-700' : 'text-slate-300'}`} />
+            <h3 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>No imports yet</h3>
+            <p className={`mb-4 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
               Import trades from your trading platform to get started
             </p>
             <Button 
@@ -168,7 +168,7 @@ export default function Imports() {
               const Icon = config.icon;
 
               return (
-                <Card key={imp.id} className="hover:shadow-md transition-shadow">
+                <Card key={imp.id} className={`hover:shadow-md transition-shadow ${darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white'}`}>
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4 flex-1">

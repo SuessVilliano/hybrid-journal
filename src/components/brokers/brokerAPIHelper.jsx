@@ -59,6 +59,14 @@ export const SUPPORTED_BROKERS = [
     instructions: 'Generate API credentials in Tradovate: Settings > API Keys'
   },
   { 
+    id: 'tradelocker', 
+    name: 'TradeLocker', 
+    type: 'multi', 
+    requiresCredentials: true,
+    fields: ['account_number', 'api_key', 'api_secret'],
+    instructions: 'Get API credentials from your TradeLocker broker. Demo: https://demo.tradelocker.com/'
+  },
+  { 
     id: 'tradingview', 
     name: 'TradingView Paper Trading', 
     type: 'multi', 
@@ -437,9 +445,11 @@ function getBrokerInstrumentType(broker_id) {
     mt4: 'Forex',
     mt5: 'Forex',
     ctrader: 'Forex',
+    dxtrade: 'Forex',
     binance: 'Crypto',
     coinbase: 'Crypto',
     tradovate: 'Futures',
+    tradelocker: 'Forex',
     interactive: 'Stocks'
   };
   return mapping[broker_id] || 'Forex';
