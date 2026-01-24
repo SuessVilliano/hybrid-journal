@@ -43,7 +43,8 @@ export default function SignalCard({
     onIgnore(signal.id);
   };
 
-  const copyToClipboard = (value, label) => {
+  const copyToClipboard = (e, value, label) => {
+    e.stopPropagation();
     if (!value && value !== 0) return;
     navigator.clipboard.writeText(value.toString());
     toast.success(`${label} copied!`);
@@ -85,7 +86,7 @@ export default function SignalCard({
                   </div>
                   {signal.price && (
                     <button
-                      onClick={() => copyToClipboard(signal.price, 'Entry')}
+                      onClick={(e) => copyToClipboard(e, signal.price, 'Entry')}
                       className={`p-1 rounded hover:bg-cyan-500/20 transition ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`}
                     >
                       <Copy className="h-3 w-3" />
@@ -101,7 +102,7 @@ export default function SignalCard({
                       ${signal.stop_loss.toFixed(2)}
                     </div>
                     <button
-                      onClick={() => copyToClipboard(signal.stop_loss, 'Stop Loss')}
+                      onClick={(e) => copyToClipboard(e, signal.stop_loss, 'Stop Loss')}
                       className="p-1 rounded hover:bg-red-500/20 transition text-red-500"
                     >
                       <Copy className="h-3 w-3" />
@@ -133,7 +134,7 @@ export default function SignalCard({
                         ${tp.toFixed(2)}
                       </span>
                       <button
-                        onClick={() => copyToClipboard(tp, `TP${idx + 1}`)}
+                        onClick={(e) => copyToClipboard(e, tp, `TP${idx + 1}`)}
                         className="p-1 rounded hover:bg-green-500/20 transition text-green-500"
                       >
                         <Copy className="h-3 w-3" />
@@ -153,7 +154,7 @@ export default function SignalCard({
                     ${signal.take_profit.toFixed(2)}
                   </span>
                   <button
-                    onClick={() => copyToClipboard(signal.take_profit, 'Take Profit')}
+                    onClick={(e) => copyToClipboard(e, signal.take_profit, 'Take Profit')}
                     className="p-1 rounded hover:bg-green-500/20 transition text-green-500"
                   >
                     <Copy className="h-3 w-3" />

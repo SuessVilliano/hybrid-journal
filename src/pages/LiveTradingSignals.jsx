@@ -372,7 +372,7 @@ export default function LiveTradingSignals() {
                 onForceExecute={(id) => routeTradeMutation.mutate({ signal_id: id, override_approval: true })}
                 onMarkViewed={(id) => updateStatusMutation.mutate({ id, status: 'viewed' })}
                 onIgnore={(id) => updateStatusMutation.mutate({ id, status: 'ignored' })}
-                isRouting={routeTradeMutation.isLoading}
+                isRouting={routeTradeMutation.isPending}
               />
             ))
           )}
