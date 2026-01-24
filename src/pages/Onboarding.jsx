@@ -45,10 +45,14 @@ export default function Onboarding() {
 
   const saveMutation = useMutation({
     mutationFn: async (data) => {
+      // Create trader profile
       await base44.entities.TraderProfile.create({
         ...data,
         onboarding_completed: true
       });
+      
+      // Create trade templates and goals based on profile
+      await base44.functions.invoke('createTradeTemplates', {});
     },
     onSuccess: () => {
       navigate(createPageUrl('Dashboard'));
