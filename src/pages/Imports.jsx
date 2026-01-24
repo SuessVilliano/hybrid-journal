@@ -87,13 +87,25 @@ export default function Imports() {
     setNewName('');
   };
 
+  const darkMode = document.documentElement.classList.contains('dark');
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+    <div className={`min-h-screen p-6 transition-colors ${
+      darkMode 
+        ? 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900' 
+        : 'bg-gradient-to-br from-slate-50 to-slate-100'
+    }`}>
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-4xl font-bold text-slate-900">Import Trades</h1>
-            <p className="text-slate-600 mt-1">Import and analyze trades from any platform</p>
+            <h1 className={`text-4xl font-bold bg-gradient-to-r ${
+              darkMode ? 'from-cyan-400 to-purple-500' : 'from-cyan-600 to-purple-600'
+            } bg-clip-text text-transparent`}>
+              Import Trades
+            </h1>
+            <p className={darkMode ? 'text-cyan-400/70 mt-1' : 'text-slate-600 mt-1'}>
+              Import and analyze trades from any platform
+            </p>
           </div>
           <Button 
             onClick={() => setShowImportModal(true)}
@@ -104,7 +116,7 @@ export default function Imports() {
           </Button>
         </div>
 
-        <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+        <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200'}>
           <CardContent className="p-6">
             <div className="flex items-start gap-3">
               <FileText className="h-5 w-5 text-blue-600 mt-0.5" />

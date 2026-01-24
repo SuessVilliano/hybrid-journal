@@ -193,14 +193,19 @@ export default function LiveTradingSignals() {
             )}
             <Button
               onClick={async () => {
-                await Promise.all([
-                  refetchSignals(),
-                  refetchLogs(),
-                  queryClient.invalidateQueries(['signals']),
-                  queryClient.invalidateQueries(['syncLogs'])
-                ]);
+                try {
+                  await Promise.all([
+                    refetchSignals(),
+                    refetchLogs()
+                  ]);
+                  queryClient.invalidateQueries({ queryKey: ['signals'] });
+                  queryClient.invalidateQueries({ queryKey: ['syncLogs'] });
+                } catch (error) {
+                  console.error('Refresh failed:', error);
+                }
               }}
               variant="outline"
+              className={darkMode ? 'text-cyan-400 border-cyan-500/30' : 'text-cyan-700 border-cyan-500/30'}
             >
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh

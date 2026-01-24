@@ -75,8 +75,20 @@ export function useBrowserNotifications() {
 /**
  * Signal notification helper
  */
-export function showSignalNotification(signal, onClickUrl) {
+export async function showSignalNotification(signal, onClickUrl) {
   if (Notification.permission !== 'granted') return;
+
+  // Play custom audio if set
+  try {
+    const user = await base44.auth.me();
+    const customAudioUrl = user?.notification_preferences?.custom_audio_url;
+    if (customAudioUrl) {
+      const audio = new Audio(customAudioUrl);
+      audio.play().catch(err => console.log('Audio play failed:', err));
+    }
+  } catch (error) {
+    console.log('Failed to play custom audio:', error);
+  }
 
   const title = 'Hybrid Journal Alert';
   const body = `New ${signal.provider} signal: ${signal.symbol} — ${signal.action} — Entry ${signal.price}`;

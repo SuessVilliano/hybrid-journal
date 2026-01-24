@@ -92,15 +92,27 @@ export default function BrokerConnections() {
     }
   };
 
+  const darkMode = document.documentElement.classList.contains('dark');
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+    <div className={`min-h-screen p-6 transition-colors ${
+      darkMode 
+        ? 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900' 
+        : 'bg-gradient-to-br from-slate-50 to-slate-100'
+    }`}>
       <AutoSyncManager />
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-4xl font-bold text-slate-900">Broker Connections</h1>
-            <p className="text-slate-600 mt-1">Connect your trading accounts for automatic sync</p>
+            <h1 className={`text-4xl font-bold bg-gradient-to-r ${
+              darkMode ? 'from-cyan-400 to-purple-500' : 'from-cyan-600 to-purple-600'
+            } bg-clip-text text-transparent`}>
+              Broker Connections
+            </h1>
+            <p className={darkMode ? 'text-cyan-400/70 mt-1' : 'text-slate-600 mt-1'}>
+              Connect your trading accounts for automatic sync
+            </p>
           </div>
           <Button
             onClick={() => {
