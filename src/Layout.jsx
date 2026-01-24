@@ -505,7 +505,7 @@ export default function Layout({ children, currentPageName }) {
                                 className="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group relative overflow-hidden bg-gradient-to-r from-green-500/20 to-emerald-600/20 border border-green-500/30 hover:from-green-500/30 hover:to-emerald-600/30"
                                 title={!sidebarOpen ? item.name : ''}
                               >
-                                {sidebarOpen && menuView === 'all' && (
+                                {sidebarOpen && menuView === 'all' && !item.external && (
                                   <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
                                     <GripVertical className="h-4 w-4 text-green-400/50" />
                                   </div>
