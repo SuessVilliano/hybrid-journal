@@ -18,6 +18,31 @@ export default function SignalCard({
 }) {
   const darkMode = document.documentElement.classList.contains('dark');
 
+  const handleAnalyze = (e) => {
+    e.stopPropagation();
+    onAnalyze(signal);
+  };
+
+  const handleRoute = (e) => {
+    e.stopPropagation();
+    onRoute(signal.id, false);
+  };
+
+  const handleForceExecute = (e) => {
+    e.stopPropagation();
+    onForceExecute(signal.id);
+  };
+
+  const handleMarkViewed = (e) => {
+    e.stopPropagation();
+    onMarkViewed(signal.id);
+  };
+
+  const handleIgnore = (e) => {
+    e.stopPropagation();
+    onIgnore(signal.id);
+  };
+
   const copyToClipboard = (value, label) => {
     if (!value && value !== 0) return;
     navigator.clipboard.writeText(value.toString());
@@ -162,7 +187,7 @@ export default function SignalCard({
             {signal.status === 'new' && (
               <>
                 <Button
-                  onClick={() => onAnalyze(signal)}
+                  onClick={handleAnalyze}
                   className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700"
                   size="sm"
                 >
@@ -170,7 +195,7 @@ export default function SignalCard({
                   <span className="hidden md:inline">Analyze</span>
                 </Button>
                 <Button
-                  onClick={() => onRoute(signal.id, false)}
+                  onClick={handleRoute}
                   className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700"
                   size="sm"
                   disabled={isRouting}
@@ -181,7 +206,7 @@ export default function SignalCard({
                   </span>
                 </Button>
                 <Button
-                  onClick={() => onForceExecute(signal.id)}
+                  onClick={handleForceExecute}
                   className="bg-green-600 hover:bg-green-700"
                   size="sm"
                   disabled={isRouting}
@@ -190,7 +215,7 @@ export default function SignalCard({
                   <span className="hidden md:inline">Force Execute</span>
                 </Button>
                 <Button
-                  onClick={() => onMarkViewed(signal.id)}
+                  onClick={handleMarkViewed}
                   variant="outline"
                   size="sm"
                 >
@@ -198,7 +223,7 @@ export default function SignalCard({
                   <span className="hidden md:inline">Mark Viewed</span>
                 </Button>
                 <Button
-                  onClick={() => onIgnore(signal.id)}
+                  onClick={handleIgnore}
                   variant="outline"
                   size="sm"
                 >
@@ -210,7 +235,7 @@ export default function SignalCard({
             {signal.status === 'viewed' && (
               <>
                 <Button
-                  onClick={() => onRoute(signal.id, false)}
+                  onClick={handleRoute}
                   className="bg-gradient-to-r from-cyan-500 to-purple-600"
                   size="sm"
                   disabled={isRouting}
@@ -219,7 +244,7 @@ export default function SignalCard({
                   AI Route
                 </Button>
                 <Button
-                  onClick={() => onForceExecute(signal.id)}
+                  onClick={handleForceExecute}
                   className="bg-green-600 hover:bg-green-700"
                   size="sm"
                 >

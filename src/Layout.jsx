@@ -135,7 +135,7 @@ export default function Layout({ children, currentPageName }) {
   const [menuView, setMenuView] = useState('all');
   const [settingsId, setSettingsId] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
-
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -151,8 +151,26 @@ export default function Layout({ children, currentPageName }) {
   }, []);
 
   useEffect(() => {
-    base44.auth.me().then(setCurrentUser).catch(() => setCurrentUser(null));
-  }, []);
+    const checkOnboarding = async () => {
+      try {
+        const user = await base44.auth.me();
+        setCurrentUser(user);
+        
+        // Check if user has completed onboarding
+        const profiles = await base44.entities.TraderProfile.list();
+        if (profiles.length === 0 || !profiles[0].onboarding_completed) {
+          setNeedsOnboarding(true);
+          if (currentPageName !== 'Landing' && currentPageName !== 'Onboarding') {
+            window.location.href = createPageUrl('Onboarding');
+          }
+        }
+      } catch (error) {
+        setCurrentUser(null);
+      }
+    };
+    
+    checkOnboarding();
+  }, [currentPageName]);
 
   useEffect(() => {
     localStorage.setItem('theme', darkMode ? 'dark' : 'light');
