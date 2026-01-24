@@ -216,6 +216,8 @@ export default function Accounts() {
 }
 
 function AccountForm({ account, onClose, onSubmit }) {
+  const queryClient = useQueryClient();
+
   const [formData, setFormData] = useState(account || {
     name: '',
     broker: '',
@@ -237,8 +239,6 @@ function AccountForm({ account, onClose, onSubmit }) {
     weekend_holding: false,
     news_trading_allowed: true
   });
-
-  const queryClient = useQueryClient();
 
   const createPropFirmMutation = useMutation({
     mutationFn: (data) => base44.entities.PropFirmSettings.create(data),
