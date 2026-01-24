@@ -14,6 +14,9 @@ export default function Onboarding() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
+    preferred_name: '',
+    timezone: 'America/New_York',
+    location: '',
     trader_type: '',
     experience_level: '',
     primary_markets: [],
@@ -40,22 +43,41 @@ export default function Onboarding() {
   });
   const [customInput, setCustomInput] = useState('');
 
-  const totalSteps = 7;
+  const totalSteps = 8;
   const progress = (step / totalSteps) * 100;
 
   const saveMutation = useMutation({
     mutationFn: async (data) => {
-      // Create trader profile
-      await base44.entities.TraderProfile.create({
-        ...data,
-        onboarding_completed: true
-      });
-      
-      // Create trade templates and goals based on profile
-      await base44.functions.invoke('createTradeTemplates', {});
+      try {
+        // Create trader profile
+        await base44.entities.TraderProfile.create({
+          ...data,
+          onboarding_completed: true
+        });
+        
+        // Update user timezone
+        await base44.auth.updateMe({ 
+          timezone: data.timezone 
+        });
+        
+        // Create trade templates and goals based on profile
+        try {
+          await base44.functions.invoke('createTradeTemplates', {});
+        } catch (err) {
+          console.warn('Template creation failed:', err);
+        }
+        
+        return { success: true };
+      } catch (error) {
+        console.error('Onboarding error:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
-      navigate(createPageUrl('Dashboard'));
+      navigate(createPageUrl('PlatformTour'));
+    },
+    onError: (error) => {
+      alert('Setup failed: ' + error.message);
     }
   });
 
@@ -79,7 +101,58 @@ export default function Onboarding() {
     saveMutation.mutate(formData);
   };
 
+  const timezones = [
+    'America/New_York', 'America/Chicago', 'America/Los_Angeles', 
+    'Europe/London', 'Europe/Paris', 'Europe/Berlin',
+    'Asia/Tokyo', 'Asia/Singapore', 'Asia/Dubai',
+    'Australia/Sydney', 'Pacific/Auckland'
+  ];
+
   const steps = [
+    {
+      title: "Let's get to know you!",
+      description: "Help us personalize your experience",
+      content: (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-400 mb-2">
+              What should we call you?
+            </label>
+            <Input
+              value={formData.preferred_name}
+              onChange={(e) => setFormData({ ...formData, preferred_name: e.target.value })}
+              placeholder="Your preferred name..."
+              className="bg-slate-900/50 border-cyan-500/20 text-white"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-400 mb-2">
+              Where are you located?
+            </label>
+            <Input
+              value={formData.location}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              placeholder="City, Country"
+              className="bg-slate-900/50 border-cyan-500/20 text-white"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-400 mb-2">
+              Your timezone
+            </label>
+            <select
+              value={formData.timezone}
+              onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
+              className="w-full p-3 rounded-lg bg-slate-900/50 border border-cyan-500/20 text-white"
+            >
+              {timezones.map(tz => (
+                <option key={tz} value={tz}>{tz}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )
+    },
     {
       title: "What's your trading style?",
       description: "Help us understand how you trade",
@@ -316,11 +389,20 @@ export default function Onboarding() {
             {step === totalSteps ? (
               <Button
                 onClick={handleComplete}
-                disabled={saveMutation.isLoading}
-                className="bg-gradient-to-r from-cyan-500 to-purple-600"
+                disabled={saveMutation.isPending}
+                className="bg-gradient-to-r from-cyan-500 to-purple-600 min-w-[180px]"
               >
-                {saveMutation.isLoading ? 'Setting up...' : 'Complete Setup'}
-                <Check className="h-4 w-4 ml-2" />
+                {saveMutation.isPending ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+                    Setting up...
+                  </>
+                ) : (
+                  <>
+                    Complete Setup
+                    <Check className="h-4 w-4 ml-2" />
+                  </>
+                )}
               </Button>
             ) : (
               <Button
