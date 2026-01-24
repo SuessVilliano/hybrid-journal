@@ -4,7 +4,7 @@ Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
 
-        const { linkToken } = await req.json();
+        const { linkToken, sourceSystem, sourceUrl } = await req.json();
 
         if (!linkToken) {
             return Response.json({ error: 'Missing linkToken' }, { status: 400 });
@@ -37,40 +37,29 @@ Deno.serve(async (req) => {
         // Generate shared signing secret (32 bytes = 64 hex chars)
         const secretBytes = new Uint8Array(32);
         crypto.getRandomValues(secretBytes);
-        const sharedSecret = Array.from(secretBytes)
+        const sharedSigningSecret = Array.from(secretBytes)
             .map(b => b.toString(16).padStart(2, '0'))
             .join('');
-
-        // Hash the secret for verification (SHA-256)
-        const encoder = new TextEncoder();
-        const data = encoder.encode(sharedSecret);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        const secretHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
         // Mark token as used
         await base44.asServiceRole.entities.AppLinkToken.update(tokenRecord.id, {
             used_at: new Date().toISOString()
         });
 
-        // Create ConnectedApp record
-        const connectedApp = await base44.asServiceRole.entities.ConnectedApp.create({
+        // Create ConnectedApp record (store the actual secret for HMAC verification)
+        await base44.asServiceRole.entities.ConnectedApp.create({
             user_id: tokenRecord.user_id,
             user_email: tokenRecord.created_by,
-            app_name: tokenRecord.target_app || 'iCopyTrade',
-            signing_secret_ref: `secret_${Date.now()}`, // In production, encrypt and store in vault
-            signing_secret_hash: secretHash,
+            app_name: sourceSystem || tokenRecord.target_app || 'iCopyTrade',
+            signing_secret_ref: sharedSigningSecret,
             status: 'active',
             total_events_received: 0
         });
 
+        // Return EXACTLY what HybridCopy expects (nothing more)
         return Response.json({
-            status: 'success',
             journalUserId: tokenRecord.user_id,
-            journalUserEmail: tokenRecord.created_by,
-            sharedSigningSecret: sharedSecret,
-            connectedAppId: connectedApp.id,
-            message: 'Connection established. Store the signing secret securely - it will not be shown again.'
+            sharedSigningSecret: sharedSigningSecret
         });
 
     } catch (error) {

@@ -1,226 +1,218 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
+async function verifyHMAC(secret, timestamp, rawBody) {
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(secret);
+    const messageData = encoder.encode(`${timestamp}.${rawBody}`);
+
+    const cryptoKey = await crypto.subtle.importKey(
+        'raw',
+        keyData,
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign']
+    );
+
+    const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
+    const hexSignature = Array.from(new Uint8Array(signature))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+
+    return hexSignature;
+}
+
 Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
+
+        // Get raw body string BEFORE parsing (needed for signature verification)
+        const rawBody = await req.text();
+        const body = JSON.parse(rawBody);
 
         // Extract headers
         const timestamp = req.headers.get('X-Timestamp');
         const signature = req.headers.get('X-Signature');
         const eventId = req.headers.get('X-Event-Id');
 
-        if (!timestamp || !signature) {
+        if (!timestamp || !signature || !eventId) {
             return Response.json({ 
-                error: 'Missing required headers: X-Timestamp, X-Signature' 
+                error: 'Missing required headers (X-Timestamp, X-Signature, X-Event-Id)' 
             }, { status: 400 });
         }
 
-        // Parse body
-        const body = await req.json();
-        const { sourceApp, journalUserId, events } = body;
+        // Verify timestamp within replay window (300 seconds)
+        const now = Math.floor(Date.now() / 1000);
+        const requestTime = parseInt(timestamp);
 
-        if (!sourceApp || !journalUserId || !events) {
+        if (Math.abs(now - requestTime) > 300) {
             return Response.json({ 
-                error: 'Missing required fields: sourceApp, journalUserId, events' 
-            }, { status: 400 });
+                error: 'Request timestamp outside replay window' 
+            }, { status: 401 });
         }
 
-        // Verify timestamp (reject if older than 5 minutes to prevent replay attacks)
-        const requestTime = new Date(timestamp);
-        const now = new Date();
-        const timeDiff = Math.abs(now - requestTime) / 1000; // seconds
-
-        if (timeDiff > 300) {
-            return Response.json({ 
-                error: 'Request timestamp too old (>5 minutes)' 
-            }, { status: 400 });
-        }
-
-        // Get connected app for this user
+        // Look up the shared secret (use asServiceRole for system-level operation)
         const connectedApps = await base44.asServiceRole.entities.ConnectedApp.filter({
-            user_id: journalUserId,
-            app_name: sourceApp,
+            user_id: body.userId,
+            app_name: body.source || 'iCopyTrade',
             status: 'active'
         });
 
         if (connectedApps.length === 0) {
             return Response.json({ 
-                error: 'No active connection found for this user and app' 
-            }, { status: 403 });
+                error: 'No active connection found for this user and source' 
+            }, { status: 404 });
         }
 
         const connectedApp = connectedApps[0];
+        const sharedSigningSecret = connectedApp.signing_secret_ref;
 
         // Verify HMAC signature
-        // Expected format: HMAC-SHA256(timestamp + JSON.stringify(body), secret)
-        const bodyString = JSON.stringify(body);
-        const message = timestamp + bodyString;
+        const expectedSignature = await verifyHMAC(sharedSigningSecret, timestamp, rawBody);
 
-        // In production, retrieve actual secret from vault using signing_secret_ref
-        // For now, we'll use the hash for validation (simplified)
-        const encoder = new TextEncoder();
-        const keyData = encoder.encode(connectedApp.signing_secret_hash);
-        const messageData = encoder.encode(message);
-
-        const key = await crypto.subtle.importKey(
-            'raw',
-            keyData,
-            { name: 'HMAC', hash: 'SHA-256' },
-            false,
-            ['sign']
-        );
-
-        const signatureBuffer = await crypto.subtle.sign('HMAC', key, messageData);
-        const signatureArray = Array.from(new Uint8Array(signatureBuffer));
-        const expectedSignature = signatureArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-        if (signature !== expectedSignature) {
+        if (signature.toLowerCase() !== expectedSignature.toLowerCase()) {
             return Response.json({ 
                 error: 'Invalid signature' 
-            }, { status: 403 });
+            }, { status: 401 });
         }
 
-        // Process events
-        const results = {
-            processed: 0,
-            duplicates: 0,
-            failed: 0,
-            errors: []
-        };
+        // Check idempotency using X-Event-Id
+        const existingLogs = await base44.asServiceRole.entities.SyncEventLog.filter({
+            event_id: eventId
+        });
 
-        for (const event of events) {
-            const evtId = event.eventId || `${journalUserId}_${Date.now()}_${Math.random()}`;
+        if (existingLogs.length > 0) {
+            return Response.json({ 
+                ok: true, 
+                status: 'DUPLICATE', 
+                eventId: eventId 
+            });
+        }
 
-            // Check for duplicate
-            const existingLogs = await base44.asServiceRole.entities.SyncEventLog.filter({
-                event_id: evtId
+        // Create sync log entry
+        const syncLog = await base44.asServiceRole.entities.SyncEventLog.create({
+            event_id: eventId,
+            user_email: connectedApp.user_email,
+            event_type: body.eventType || 'unknown',
+            source: body.source || 'iCopyTrade',
+            connection_id: body.connectionId || null,
+            payload: body,
+            status: 'pending'
+        });
+
+        // Process event based on eventType
+        let tradesCreated = 0;
+        let tradesUpdated = 0;
+        let tradesSkipped = 0;
+
+        try {
+            if (body.eventType === 'TRADE_UPSERT' && body.trade) {
+                const trade = body.trade;
+
+                // Check if trade already exists
+                const existingTrades = await base44.asServiceRole.entities.Trade.filter({
+                    created_by: connectedApp.user_email,
+                    source: body.provider || body.source,
+                    source_trade_id: trade.sourceTradeId
+                });
+
+                const tradeData = {
+                    source: body.provider || body.source,
+                    source_trade_id: trade.sourceTradeId,
+                    connection_id: body.connectionId || null,
+                    external_account_id: trade.accountExternalId,
+                    symbol: trade.symbol,
+                    side: trade.side,
+                    entry_date: trade.entryTime,
+                    entry_price: trade.entryPrice,
+                    exit_date: trade.exitTime || null,
+                    exit_price: trade.exitPrice || null,
+                    quantity: trade.qty,
+                    stop_loss: trade.stopLoss || null,
+                    take_profit: trade.takeProfit || null,
+                    commission: trade.fees?.commission || 0,
+                    swap: trade.fees?.swap || 0,
+                    pnl: trade.pnlNet || 0,
+                    trade_status: trade.status?.toLowerCase() || 'closed',
+                    raw_payload: trade.rawMaskedJson || {}
+                };
+
+                if (existingTrades.length > 0) {
+                    await base44.asServiceRole.entities.Trade.update(existingTrades[0].id, tradeData);
+                    tradesUpdated = 1;
+                } else {
+                    await base44.asServiceRole.entities.Trade.create(tradeData);
+                    tradesCreated = 1;
+                }
+
+            } else if (body.eventType === 'SNAPSHOT_UPSERT' && body.snapshot) {
+                const snapshot = body.snapshot;
+
+                await base44.asServiceRole.entities.AccountSnapshot.create({
+                    user_email: connectedApp.user_email,
+                    connection_id: body.connectionId || null,
+                    external_account_id: snapshot.accountExternalId,
+                    source: body.provider || body.source,
+                    timestamp: snapshot.timestamp,
+                    balance: snapshot.balance || 0,
+                    equity: snapshot.equity || 0,
+                    margin_used: snapshot.marginUsed || 0,
+                    margin_available: snapshot.freeMargin || 0,
+                    drawdown_daily: snapshot.drawdownDaily || 0,
+                    drawdown_daily_percent: snapshot.drawdownDailyPercent || 0,
+                    drawdown_trailing: snapshot.drawdownTrailing || 0,
+                    drawdown_trailing_percent: snapshot.drawdownTrailingPercent || 0,
+                    raw_masked_json: snapshot.rawMaskedJson || {}
+                });
+
+            } else if (body.eventType === 'SIGNAL' && body.signal) {
+                const signal = body.signal;
+
+                await base44.asServiceRole.entities.Signal.create({
+                    user_email: connectedApp.user_email,
+                    provider: body.provider || 'iCopyTrade',
+                    symbol: signal.symbol,
+                    action: signal.side,
+                    price: signal.entryPrice || null,
+                    stop_loss: signal.stopLoss || null,
+                    take_profit: signal.takeProfit || null,
+                    timeframe: signal.timeframe || null,
+                    strategy: signal.strategy || null,
+                    notes: signal.message || null,
+                    status: 'new',
+                    raw_data: signal
+                });
+            }
+
+            // Update sync log with success
+            await base44.asServiceRole.entities.SyncEventLog.update(syncLog.id, {
+                status: 'processed',
+                processed_at: new Date().toISOString(),
+                trades_created: tradesCreated,
+                trades_updated: tradesUpdated,
+                trades_skipped: tradesSkipped
             });
 
-            if (existingLogs.length > 0) {
-                results.duplicates++;
-                continue;
-            }
+            // Update ConnectedApp last event time and counter
+            await base44.asServiceRole.entities.ConnectedApp.update(connectedApp.id, {
+                last_event_at: new Date().toISOString(),
+                total_events_received: (connectedApp.total_events_received || 0) + 1
+            });
 
-            try {
-                // Create sync event log
-                await base44.asServiceRole.entities.SyncEventLog.create({
-                    event_id: evtId,
-                    connection_id: null,
-                    user_email: connectedApp.user_email,
-                    event_type: event.eventType,
-                    source: sourceApp,
-                    payload: event.payload,
-                    status: 'pending'
-                });
+            return Response.json({ 
+                ok: true, 
+                status: 'OK', 
+                eventId: eventId 
+            });
 
-                // Process based on event type
-                if (event.eventType === 'TRADE_UPSERT') {
-                    const payload = event.payload;
+        } catch (processingError) {
+            // Update sync log with failure
+            await base44.asServiceRole.entities.SyncEventLog.update(syncLog.id, {
+                status: 'failed',
+                error_message: processingError.message
+            });
 
-                    // Check if trade exists (by source + source_trade_id)
-                    const existingTrades = await base44.asServiceRole.entities.Trade.filter({
-                        source: payload.source,
-                        source_trade_id: payload.sourceTradeId,
-                        created_by: connectedApp.user_email
-                    });
-
-                    if (existingTrades.length > 0) {
-                        // Update existing trade
-                        await base44.asServiceRole.entities.Trade.update(existingTrades[0].id, {
-                            exit_date: payload.exitTime,
-                            exit_price: payload.exitPrice,
-                            pnl: payload.pnl,
-                            pnl_net: payload.pnlNet,
-                            trade_status: payload.status,
-                            raw_payload: payload
-                        });
-                    } else {
-                        // Create new trade
-                        await base44.asServiceRole.entities.Trade.create({
-                            source: payload.source,
-                            source_trade_id: payload.sourceTradeId,
-                            connection_id: payload.connectionId,
-                            external_account_id: payload.accountId,
-                            symbol: payload.symbol,
-                            side: payload.side,
-                            entry_date: payload.entryTime,
-                            exit_date: payload.exitTime,
-                            entry_price: payload.entryPrice,
-                            exit_price: payload.exitPrice,
-                            quantity: payload.quantity,
-                            stop_loss: payload.stopLoss,
-                            take_profit: payload.takeProfit,
-                            pnl: payload.pnl,
-                            pnl_net: payload.pnlNet,
-                            trade_status: payload.status,
-                            tags: payload.tags || [],
-                            raw_payload: payload,
-                            created_by: connectedApp.user_email
-                        });
-                    }
-                } else if (event.eventType === 'ACCOUNT_SNAPSHOT') {
-                    const payload = event.payload;
-
-                    await base44.asServiceRole.entities.AccountSnapshot.create({
-                        user_email: connectedApp.user_email,
-                        connection_id: payload.connectionId,
-                        external_account_id: payload.accountId,
-                        source: payload.source,
-                        timestamp: payload.timestamp || new Date().toISOString(),
-                        balance: payload.balance,
-                        equity: payload.equity,
-                        margin_used: payload.marginUsed,
-                        margin_available: payload.marginAvailable,
-                        drawdown_daily: payload.drawdownDaily,
-                        drawdown_daily_percent: payload.drawdownDailyPercent,
-                        drawdown_trailing: payload.drawdownTrailing,
-                        drawdown_trailing_percent: payload.drawdownTrailingPercent,
-                        open_positions: payload.openPositions,
-                        raw_masked_json: payload
-                    });
-                }
-
-                // Mark event as processed
-                await base44.asServiceRole.entities.SyncEventLog.update(existingLogs.length > 0 ? existingLogs[0].id : evtId, {
-                    status: 'processed',
-                    processed_at: new Date().toISOString()
-                });
-
-                results.processed++;
-
-            } catch (error) {
-                results.failed++;
-                results.errors.push({
-                    eventId: evtId,
-                    error: error.message
-                });
-
-                // Mark as failed
-                const failedLogs = await base44.asServiceRole.entities.SyncEventLog.filter({
-                    event_id: evtId
-                });
-                if (failedLogs.length > 0) {
-                    await base44.asServiceRole.entities.SyncEventLog.update(failedLogs[0].id, {
-                        status: 'failed',
-                        error_message: error.message
-                    });
-                }
-            }
+            throw processingError;
         }
-
-        // Update ConnectedApp stats
-        await base44.asServiceRole.entities.ConnectedApp.update(connectedApp.id, {
-            last_event_at: new Date().toISOString(),
-            total_events_received: connectedApp.total_events_received + events.length
-        });
-
-        return Response.json({
-            status: 'success',
-            processed: results.processed,
-            duplicates: results.duplicates,
-            failed: results.failed,
-            errors: results.errors
-        });
 
     } catch (error) {
         return Response.json({ 
