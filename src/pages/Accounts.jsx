@@ -7,11 +7,15 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Wallet, TrendingUp, Edit2, Trash2, X, CheckCircle, DollarSign, Shield } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { useSubscription } from '@/components/subscription/useSubscription';
+import UpgradePrompt from '@/components/subscription/UpgradePrompt';
 
 export default function Accounts() {
   const [showForm, setShowForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState(null);
   const queryClient = useQueryClient();
+  const subscription = useSubscription();
+  const darkMode = document.documentElement.classList.contains('dark');
 
   const { data: accounts = [] } = useQuery({
     queryKey: ['accounts'],
@@ -71,21 +75,41 @@ export default function Accounts() {
     };
   };
 
+  const handleAddAccount = () => {
+    const accountLimit = subscription.getAccountLimit();
+    if (accounts.length >= accountLimit && accountLimit !== Infinity) {
+      alert(`You've reached the limit of ${accountLimit} account(s) for your plan. Upgrade to add more accounts.`);
+      return;
+    }
+    setEditingAccount(null);
+    setShowForm(true);
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6">
+    <div className={`min-h-screen p-6 transition-colors ${
+      darkMode 
+        ? 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900' 
+        : 'bg-gradient-to-br from-cyan-50 via-purple-50 to-pink-50'
+    }`}>
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
+            <h1 className={`text-4xl font-bold bg-gradient-to-r ${
+              darkMode ? 'from-cyan-400 to-purple-500' : 'from-cyan-600 to-purple-600'
+            } bg-clip-text text-transparent`}>
               Trading Accounts
             </h1>
-            <p className="text-cyan-400/70 mt-2">Manage multiple accounts and track performance separately</p>
+            <p className={`mt-2 ${darkMode ? 'text-cyan-400/70' : 'text-cyan-700/70'}`}>
+              Manage multiple accounts and track performance separately
+              {subscription.tier !== 'team' && (
+                <span className={`ml-2 ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>
+                  ({accounts.length}/{subscription.getAccountLimit() === Infinity ? '∞' : subscription.getAccountLimit()} accounts used)
+                </span>
+              )}
+            </p>
           </div>
           <Button
-            onClick={() => {
-              setEditingAccount(null);
-              setShowForm(true);
-            }}
+            onClick={handleAddAccount}
             className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white shadow-lg shadow-cyan-500/20"
           >
             <Plus className="h-5 w-5 mr-2" />
@@ -97,8 +121,12 @@ export default function Accounts() {
           {accounts.map((account) => {
             const stats = getAccountStats(account.id, account.initial_balance);
             return (
-              <Card key={account.id} className="bg-slate-950/80 backdrop-blur-xl border-cyan-500/20 hover:border-cyan-500/40 transition-all shadow-lg hover:shadow-cyan-500/20">
-                <CardHeader className="border-b border-cyan-500/20">
+              <Card key={account.id} className={`backdrop-blur-xl transition-all shadow-lg ${
+                darkMode 
+                  ? 'bg-slate-950/80 border-cyan-500/20 hover:border-cyan-500/40 hover:shadow-cyan-500/20' 
+                  : 'bg-white/80 border-cyan-500/30 hover:border-cyan-500/50'
+              }`}>
+                <CardHeader className={`border-b ${darkMode ? 'border-cyan-500/20' : 'border-cyan-500/30'}`}>
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-3">
                       <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
@@ -109,8 +137,8 @@ export default function Accounts() {
                         <Wallet className="h-6 w-6 text-white" />
                       </div>
                       <div>
-                        <CardTitle className="text-lg text-white">{account.name}</CardTitle>
-                        <p className="text-xs text-cyan-400/70">{account.account_type}</p>
+                        <CardTitle className={`text-lg ${darkMode ? 'text-white' : 'text-slate-900'}`}>{account.name}</CardTitle>
+                        <p className={`text-xs ${darkMode ? 'text-cyan-400/70' : 'text-cyan-600/70'}`}>{account.account_type}</p>
                       </div>
                     </div>
                     <div className="flex gap-1">
@@ -119,7 +147,9 @@ export default function Accounts() {
                           setEditingAccount(account);
                           setShowForm(true);
                         }}
-                        className="p-1.5 hover:bg-cyan-500/10 rounded text-cyan-400 transition"
+                        className={`p-1.5 rounded transition ${
+                          darkMode ? 'hover:bg-cyan-500/10 text-cyan-400' : 'hover:bg-cyan-100 text-cyan-600'
+                        }`}
                       >
                         <Edit2 className="h-4 w-4" />
                       </button>
@@ -129,7 +159,9 @@ export default function Accounts() {
                             deleteMutation.mutate(account.id);
                           }
                         }}
-                        className="p-1.5 hover:bg-red-500/10 rounded text-red-400 transition"
+                        className={`p-1.5 rounded transition ${
+                          darkMode ? 'hover:bg-red-500/10 text-red-400' : 'hover:bg-red-100 text-red-600'
+                        }`}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -139,60 +171,60 @@ export default function Accounts() {
                 <CardContent className="pt-4 space-y-4">
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-slate-400">Broker</span>
-                      <span className="text-white font-medium">{account.broker || 'N/A'}</span>
+                      <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>Broker</span>
+                      <span className={`font-medium ${darkMode ? 'text-white' : 'text-slate-900'}`}>{account.broker || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-slate-400">Account #</span>
-                      <span className="text-cyan-400 font-mono">{account.account_number || 'N/A'}</span>
+                      <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>Account #</span>
+                      <span className={`font-mono ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`}>{account.account_number || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-slate-400">Initial Balance</span>
-                      <span className="text-white font-medium">${account.initial_balance?.toFixed(2) || '0.00'}</span>
+                      <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>Initial Balance</span>
+                      <span className={`font-medium ${darkMode ? 'text-white' : 'text-slate-900'}`}>${account.initial_balance?.toFixed(2) || '0.00'}</span>
                     </div>
                   </div>
 
-                  <div className="h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
+                  <div className={`h-px bg-gradient-to-r from-transparent ${darkMode ? 'via-cyan-500/30' : 'via-cyan-500/40'} to-transparent`} />
 
                   <div className="space-y-3">
                     {stats.brokerConnection && stats.brokerConnection.account_balance && (
-                      <div className="p-2 rounded bg-cyan-500/10 border border-cyan-500/30 mb-2">
+                      <div className={`p-2 rounded border ${darkMode ? 'bg-cyan-500/10 border-cyan-500/30' : 'bg-cyan-50 border-cyan-500/40'}`}>
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-cyan-400">Broker Balance</span>
-                          <span className="text-cyan-400 font-bold">${stats.brokerConnection.account_balance.toFixed(2)}</span>
+                          <span className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>Broker Balance</span>
+                          <span className={`font-bold ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>${stats.brokerConnection.account_balance.toFixed(2)}</span>
                         </div>
                         <div className="flex items-center justify-between text-xs mt-1">
-                          <span className="text-cyan-400/70">Last Synced</span>
-                          <span className="text-cyan-400/70">
+                          <span className={darkMode ? 'text-cyan-400/70' : 'text-cyan-700/70'}>Last Synced</span>
+                          <span className={darkMode ? 'text-cyan-400/70' : 'text-cyan-700/70'}>
                             {new Date(stats.brokerConnection.last_sync).toLocaleString()}
                           </span>
                         </div>
                       </div>
                     )}
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-400">Current Balance</span>
-                      <span className={`text-2xl font-bold ${stats.pnl >= 0 ? 'text-cyan-400' : 'text-orange-400'}`}>
+                      <span className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Current Balance</span>
+                      <span className={`text-2xl font-bold ${stats.pnl >= 0 ? (darkMode ? 'text-cyan-400' : 'text-cyan-600') : (darkMode ? 'text-orange-400' : 'text-orange-600')}`}>
                         ${stats.currentBalance.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-400">Total Trades</span>
-                      <span className="text-2xl font-bold text-white">{stats.trades}</span>
+                      <span className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Total Trades</span>
+                      <span className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>{stats.trades}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-400">P&L</span>
-                      <span className={`text-2xl font-bold ${stats.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      <span className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>P&L</span>
+                      <span className={`text-2xl font-bold ${stats.pnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                         {stats.pnl >= 0 ? '+' : ''}${stats.pnl.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-400">Win Rate</span>
-                      <span className="text-xl font-bold text-purple-400">{stats.winRate.toFixed(1)}%</span>
+                      <span className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Win Rate</span>
+                      <span className={`text-xl font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>{stats.winRate.toFixed(1)}%</span>
                     </div>
                   </div>
 
                   {account.is_active && (
-                    <div className="flex items-center gap-2 text-xs text-green-400 bg-green-500/10 px-2 py-1 rounded">
+                    <div className="flex items-center gap-2 text-xs text-green-500 bg-green-500/10 px-2 py-1 rounded">
                       <CheckCircle className="h-3 w-3" />
                       Active Account
                     </div>
@@ -217,6 +249,7 @@ export default function Accounts() {
 
 function AccountForm({ account, onClose, onSubmit }) {
   const queryClient = useQueryClient();
+  const darkMode = document.documentElement.classList.contains('dark');
 
   const [formData, setFormData] = useState(account || {
     name: '',
@@ -249,13 +282,17 @@ function AccountForm({ account, onClose, onSubmit }) {
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <Card className="max-w-2xl w-full bg-slate-950 border-cyan-500/30 shadow-2xl shadow-cyan-500/20">
-        <CardHeader className="border-b border-cyan-500/20">
+      <Card className={`max-w-2xl w-full shadow-2xl ${
+        darkMode 
+          ? 'bg-slate-950 border-cyan-500/30 shadow-cyan-500/20' 
+          : 'bg-white border-cyan-500/40'
+      }`}>
+        <CardHeader className={`border-b ${darkMode ? 'border-cyan-500/20' : 'border-cyan-500/30'}`}>
           <div className="flex justify-between items-center">
-            <CardTitle className="text-2xl text-white">
+            <CardTitle className={`text-2xl ${darkMode ? 'text-white' : 'text-slate-900'}`}>
               {account ? 'Edit Account' : 'Add New Account'}
             </CardTitle>
-            <button onClick={onClose} className="text-slate-400 hover:text-white transition">
+            <button onClick={onClose} className={`transition ${darkMode ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>
               <X className="h-6 w-6" />
             </button>
           </div>
@@ -264,19 +301,19 @@ function AccountForm({ account, onClose, onSubmit }) {
           <form onSubmit={(e) => { e.preventDefault(); onSubmit(formData); }} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-cyan-400 mb-2">Account Name *</label>
+                <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>Account Name *</label>
                 <Input
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
                   placeholder="Main Trading Account"
                   required
-                  className="bg-slate-900 border-cyan-500/30 text-white"
+                  className={darkMode ? 'bg-slate-900 border-cyan-500/30 text-white' : 'bg-white border-cyan-500/30 text-slate-900'}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-cyan-400 mb-2">Account Type</label>
+                <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>Account Type</label>
                 <Select value={formData.account_type} onValueChange={(value) => setFormData({...formData, account_type: value})}>
-                  <SelectTrigger className="bg-slate-900 border-cyan-500/30 text-white">
+                  <SelectTrigger className={darkMode ? 'bg-slate-900 border-cyan-500/30 text-white' : 'bg-white border-cyan-500/30 text-slate-900'}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -291,43 +328,43 @@ function AccountForm({ account, onClose, onSubmit }) {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-cyan-400 mb-2">Broker</label>
+                <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>Broker</label>
                 <Input
                   value={formData.broker}
                   onChange={(e) => setFormData({...formData, broker: e.target.value})}
                   placeholder="Broker Name"
-                  className="bg-slate-900 border-cyan-500/30 text-white"
+                  className={darkMode ? 'bg-slate-900 border-cyan-500/30 text-white' : 'bg-white border-cyan-500/30 text-slate-900'}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-cyan-400 mb-2">Account Number</label>
+                <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>Account Number</label>
                 <Input
                   value={formData.account_number}
                   onChange={(e) => setFormData({...formData, account_number: e.target.value})}
                   placeholder="123456789"
-                  className="bg-slate-900 border-cyan-500/30 text-white"
+                  className={darkMode ? 'bg-slate-900 border-cyan-500/30 text-white' : 'bg-white border-cyan-500/30 text-slate-900'}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-cyan-400 mb-2">Currency</label>
+                <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>Currency</label>
                 <Input
                   value={formData.currency}
                   onChange={(e) => setFormData({...formData, currency: e.target.value})}
                   placeholder="USD"
-                  className="bg-slate-900 border-cyan-500/30 text-white"
+                  className={darkMode ? 'bg-slate-900 border-cyan-500/30 text-white' : 'bg-white border-cyan-500/30 text-slate-900'}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-cyan-400 mb-2">Initial Balance</label>
+                <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>Initial Balance</label>
                 <Input
                   type="number"
                   value={formData.initial_balance}
                   onChange={(e) => setFormData({...formData, initial_balance: parseFloat(e.target.value)})}
                   placeholder="10000"
-                  className="bg-slate-900 border-cyan-500/30 text-white"
+                  className={darkMode ? 'bg-slate-900 border-cyan-500/30 text-white' : 'bg-white border-cyan-500/30 text-slate-900'}
                 />
               </div>
             </div>
@@ -339,86 +376,86 @@ function AccountForm({ account, onClose, onSubmit }) {
                 onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
                 className="w-4 h-4 accent-cyan-500"
               />
-              <span className="text-sm text-white">Active Account</span>
+              <span className={`text-sm ${darkMode ? 'text-white' : 'text-slate-900'}`}>Active Account</span>
             </label>
 
             {formData.account_type === 'Prop Firm' && (
-              <div className="border-t border-cyan-500/20 pt-4 space-y-4">
+              <div className={`border-t pt-4 space-y-4 ${darkMode ? 'border-cyan-500/20' : 'border-cyan-500/30'}`}>
                 <div className="flex items-center gap-2 mb-4">
-                  <Shield className="h-5 w-5 text-cyan-400" />
-                  <h3 className="text-lg font-bold text-cyan-400">Prop Firm Settings</h3>
+                  <Shield className={`h-5 w-5 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`} />
+                  <h3 className={`text-lg font-bold ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>Prop Firm Settings</h3>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-cyan-400 mb-2">Firm Name *</label>
+                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>Firm Name *</label>
                     <Input
                       value={propFirmSettings.firm_name}
                       onChange={(e) => setPropFirmSettings({...propFirmSettings, firm_name: e.target.value})}
                       placeholder="FTMO, MyForexFunds, etc."
-                      className="bg-slate-900 border-cyan-500/30 text-white"
+                      className={darkMode ? 'bg-slate-900 border-cyan-500/30 text-white' : 'bg-white border-cyan-500/30 text-slate-900'}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-cyan-400 mb-2">Account Size ($)</label>
+                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>Account Size ($)</label>
                     <Input
                       type="number"
                       value={propFirmSettings.account_size}
                       onChange={(e) => setPropFirmSettings({...propFirmSettings, account_size: parseFloat(e.target.value)})}
                       placeholder="100000"
-                      className="bg-slate-900 border-cyan-500/30 text-white"
+                      className={darkMode ? 'bg-slate-900 border-cyan-500/30 text-white' : 'bg-white border-cyan-500/30 text-slate-900'}
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-cyan-400 mb-2">Max Daily Loss (%)</label>
+                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>Max Daily Loss (%)</label>
                     <Input
                       type="number"
                       value={propFirmSettings.max_daily_loss_percent}
                       onChange={(e) => setPropFirmSettings({...propFirmSettings, max_daily_loss_percent: parseFloat(e.target.value)})}
                       placeholder="5"
-                      className="bg-slate-900 border-cyan-500/30 text-white"
+                      className={darkMode ? 'bg-slate-900 border-cyan-500/30 text-white' : 'bg-white border-cyan-500/30 text-slate-900'}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-cyan-400 mb-2">Max Total Loss (%)</label>
+                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>Max Total Loss (%)</label>
                     <Input
                       type="number"
                       value={propFirmSettings.max_total_loss_percent}
                       onChange={(e) => setPropFirmSettings({...propFirmSettings, max_total_loss_percent: parseFloat(e.target.value)})}
                       placeholder="10"
-                      className="bg-slate-900 border-cyan-500/30 text-white"
+                      className={darkMode ? 'bg-slate-900 border-cyan-500/30 text-white' : 'bg-white border-cyan-500/30 text-slate-900'}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-cyan-400 mb-2">Trailing Drawdown (%)</label>
+                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>Trailing Drawdown (%)</label>
                     <Input
                       type="number"
                       value={propFirmSettings.trailing_drawdown_percent}
                       onChange={(e) => setPropFirmSettings({...propFirmSettings, trailing_drawdown_percent: parseFloat(e.target.value)})}
                       placeholder="10"
-                      className="bg-slate-900 border-cyan-500/30 text-white"
+                      className={darkMode ? 'bg-slate-900 border-cyan-500/30 text-white' : 'bg-white border-cyan-500/30 text-slate-900'}
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-cyan-400 mb-2">Profit Target (%)</label>
+                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>Profit Target (%)</label>
                     <Input
                       type="number"
                       value={propFirmSettings.profit_target_percent}
                       onChange={(e) => setPropFirmSettings({...propFirmSettings, profit_target_percent: parseFloat(e.target.value)})}
                       placeholder="10"
-                      className="bg-slate-900 border-cyan-500/30 text-white"
+                      className={darkMode ? 'bg-slate-900 border-cyan-500/30 text-white' : 'bg-white border-cyan-500/30 text-slate-900'}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-cyan-400 mb-2">Phase</label>
+                    <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>Phase</label>
                     <Select value={propFirmSettings.phase} onValueChange={(value) => setPropFirmSettings({...propFirmSettings, phase: value})}>
-                      <SelectTrigger className="bg-slate-900 border-cyan-500/30 text-white">
+                      <SelectTrigger className={darkMode ? 'bg-slate-900 border-cyan-500/30 text-white' : 'bg-white border-cyan-500/30 text-slate-900'}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -436,21 +473,23 @@ function AccountForm({ account, onClose, onSubmit }) {
                       checked={propFirmSettings.weekend_holding}
                       onCheckedChange={(checked) => setPropFirmSettings({...propFirmSettings, weekend_holding: checked})}
                     />
-                    <span className="text-sm text-white">Weekend Holding Allowed</span>
+                    <span className={`text-sm ${darkMode ? 'text-white' : 'text-slate-900'}`}>Weekend Holding Allowed</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <Switch
                       checked={propFirmSettings.news_trading_allowed}
                       onCheckedChange={(checked) => setPropFirmSettings({...propFirmSettings, news_trading_allowed: checked})}
                     />
-                    <span className="text-sm text-white">News Trading Allowed</span>
+                    <span className={`text-sm ${darkMode ? 'text-white' : 'text-slate-900'}`}>News Trading Allowed</span>
                   </label>
                 </div>
               </div>
             )}
 
             <div className="flex justify-end gap-3 pt-4">
-              <Button type="button" variant="outline" onClick={onClose} className="border-slate-700 text-white hover:bg-slate-800">
+              <Button type="button" variant="outline" onClick={onClose} className={
+                darkMode ? 'border-slate-700 text-white hover:bg-slate-800' : 'border-slate-300 text-slate-900 hover:bg-slate-100'
+              }>
                 Cancel
               </Button>
               <Button 

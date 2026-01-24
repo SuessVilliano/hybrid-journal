@@ -291,6 +291,7 @@ export default function Layout({ children, currentPageName }) {
     { id: 'profile', name: 'My Profile', page: 'MyProfile', icon: User },
     { id: 'achievements', name: 'Achievements', page: 'Achievements', icon: Trophy },
     { id: 'help', name: 'Help & Docs', page: 'Help', icon: HelpCircle },
+    { id: 'pricing', name: 'Pricing & Upgrade', page: 'Pricing', icon: Zap },
     { id: 'funded', name: 'Get Funded', external: 'https://hybridfunding.co', icon: TrendingUp },
     ];
 

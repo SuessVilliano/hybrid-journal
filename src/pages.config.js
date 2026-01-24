@@ -17,6 +17,8 @@ import LiveTradingSignals from './pages/LiveTradingSignals';
 import MarketData from './pages/MarketData';
 import MediaLibrary from './pages/MediaLibrary';
 import MyProfile from './pages/MyProfile';
+import Onboarding from './pages/Onboarding';
+import PlatformTour from './pages/PlatformTour';
 import PropFirmSettings from './pages/PropFirmSettings';
 import PublicDashboard from './pages/PublicDashboard';
 import RiskManagement from './pages/RiskManagement';
@@ -28,8 +30,7 @@ import TradePlans from './pages/TradePlans';
 import Trades from './pages/Trades';
 import TradingCoach from './pages/TradingCoach';
 import TradingSummaries from './pages/TradingSummaries';
-import Onboarding from './pages/Onboarding';
-import PlatformTour from './pages/PlatformTour';
+import Pricing from './pages/Pricing';
 import __Layout from './Layout.jsx';
 
 
@@ -53,6 +54,8 @@ export const PAGES = {
     "MarketData": MarketData,
     "MediaLibrary": MediaLibrary,
     "MyProfile": MyProfile,
+    "Onboarding": Onboarding,
+    "PlatformTour": PlatformTour,
     "PropFirmSettings": PropFirmSettings,
     "PublicDashboard": PublicDashboard,
     "RiskManagement": RiskManagement,
@@ -64,8 +67,7 @@ export const PAGES = {
     "Trades": Trades,
     "TradingCoach": TradingCoach,
     "TradingSummaries": TradingSummaries,
-    "Onboarding": Onboarding,
-    "PlatformTour": PlatformTour,
+    "Pricing": Pricing,
 }
 
 export const pagesConfig = {
