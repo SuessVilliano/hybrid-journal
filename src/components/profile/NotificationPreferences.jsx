@@ -19,15 +19,14 @@ export default function NotificationPreferences() {
     queryFn: () => base44.auth.me()
   });
 
-  const [prefs, setPrefs] = useState(
-    user?.notification_preferences || {
-      enabled: true,
-      symbols: [],
-      actions: [],
-      min_confidence: 0,
-      providers: []
-    }
-  );
+  const [prefs, setPrefs] = useState({
+    enabled: true,
+    symbols: [],
+    actions: [],
+    min_confidence: 0,
+    providers: [],
+    ...(user?.notification_preferences || {})
+  });
 
   const [newSymbol, setNewSymbol] = useState('');
   const [newProvider, setNewProvider] = useState('');
@@ -47,31 +46,32 @@ export default function NotificationPreferences() {
   };
 
   const addSymbol = () => {
-    if (newSymbol && !prefs.symbols.includes(newSymbol.toUpperCase())) {
-      setPrefs({ ...prefs, symbols: [...prefs.symbols, newSymbol.toUpperCase()] });
+    if (newSymbol && !(prefs.symbols || []).includes(newSymbol.toUpperCase())) {
+      setPrefs({ ...prefs, symbols: [...(prefs.symbols || []), newSymbol.toUpperCase()] });
       setNewSymbol('');
     }
   };
 
   const removeSymbol = (symbol) => {
-    setPrefs({ ...prefs, symbols: prefs.symbols.filter(s => s !== symbol) });
+    setPrefs({ ...prefs, symbols: (prefs.symbols || []).filter(s => s !== symbol) });
   };
 
   const addProvider = () => {
-    if (newProvider && !prefs.providers.includes(newProvider)) {
-      setPrefs({ ...prefs, providers: [...prefs.providers, newProvider] });
+    if (newProvider && !(prefs.providers || []).includes(newProvider)) {
+      setPrefs({ ...prefs, providers: [...(prefs.providers || []), newProvider] });
       setNewProvider('');
     }
   };
 
   const removeProvider = (provider) => {
-    setPrefs({ ...prefs, providers: prefs.providers.filter(p => p !== provider) });
+    setPrefs({ ...prefs, providers: (prefs.providers || []).filter(p => p !== provider) });
   };
 
   const toggleAction = (action) => {
-    const actions = prefs.actions.includes(action)
-      ? prefs.actions.filter(a => a !== action)
-      : [...prefs.actions, action];
+    const currentActions = prefs.actions || [];
+    const actions = currentActions.includes(action)
+      ? currentActions.filter(a => a !== action)
+      : [...currentActions, action];
     setPrefs({ ...prefs, actions });
   };
 
@@ -121,7 +121,7 @@ export default function NotificationPreferences() {
                 </Button>
               </div>
               <div className="flex flex-wrap gap-2">
-                {prefs.symbols.map((symbol) => (
+                {(prefs.symbols || []).map((symbol) => (
                   <Badge key={symbol} className="flex items-center gap-1">
                     {symbol}
                     <X
@@ -143,7 +143,7 @@ export default function NotificationPreferences() {
                   <Button
                     key={action}
                     onClick={() => toggleAction(action)}
-                    variant={prefs.actions.includes(action) ? 'default' : 'outline'}
+                    variant={(prefs.actions || []).includes(action) ? 'default' : 'outline'}
                     size="sm"
                   >
                     {action}
@@ -185,7 +185,7 @@ export default function NotificationPreferences() {
                 </Button>
               </div>
               <div className="flex flex-wrap gap-2">
-                {prefs.providers.map((provider) => (
+                {(prefs.providers || []).map((provider) => (
                   <Badge key={provider} className="flex items-center gap-1">
                     {provider}
                     <X
