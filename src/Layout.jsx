@@ -426,6 +426,16 @@ export default function Layout({ children, currentPageName }) {
         } overflow-y-auto overflow-x-hidden flex flex-col`}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Desktop Toggle - At top when minimized */}
+        {!isMobile && !sidebarOpen && (
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white p-2 rounded-full shadow-lg hover:scale-110 transition-transform mx-auto mt-4 mb-6"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+        )}
+
         <div className={`p-6 border-b ${darkMode ? 'border-cyan-500/20' : 'border-cyan-500/30'} ${!sidebarOpen && 'hidden'}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -631,18 +641,16 @@ export default function Layout({ children, currentPageName }) {
           </div>
         </div>
 
-        {/* Desktop Toggle */}
-        {!isMobile && (
+        {/* Desktop Toggle - Outside when open */}
+        {!isMobile && sidebarOpen && (
           <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className={`bg-gradient-to-r from-cyan-500 to-purple-600 text-white p-2 rounded-full shadow-lg hover:scale-110 transition-transform z-50 ${
-              sidebarOpen ? 'absolute -right-3 top-6' : 'mx-auto mt-4 mb-6'
-            }`}
+            onClick={() => setSidebarOpen(false)}
+            className="absolute -right-3 top-6 bg-gradient-to-r from-cyan-500 to-purple-600 text-white p-2 rounded-full shadow-lg hover:scale-110 transition-transform z-50"
           >
-            {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+            <X className="h-4 w-4" />
           </button>
         )}
-      </aside>
+        </aside>
 
       <main className={`transition-all duration-300 ${sidebarOpen ? 'ml-64' : isMobile ? 'ml-0' : 'ml-16'}`}>
         {children}
