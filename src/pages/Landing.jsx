@@ -4,12 +4,14 @@ import { createPageUrl } from '../utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, Zap, TrendingUp, Target, Brain, Shield, BarChart3, Award, Sparkles, ArrowRight, Users, Star } from 'lucide-react';
+import { Check, Zap, TrendingUp, Target, Brain, Shield, BarChart3, Award, Sparkles, ArrowRight, Users, Star, X, BookOpen } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 
 export default function Landing() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [darkMode, setDarkMode] = useState(true);
+  const [billingPeriod, setBillingPeriod] = useState('monthly');
+  const [loading, setLoading] = useState(null);
 
   useEffect(() => {
     base44.auth.isAuthenticated().then(setIsAuthenticated);
@@ -19,6 +21,20 @@ export default function Landing() {
     document.documentElement.classList.toggle('dark', darkMode);
   }, [darkMode]);
 
+  const handleSubscribe = async (tier) => {
+    setLoading(tier);
+    try {
+      const response = await base44.functions.invoke('createCheckoutSession', {
+        tier,
+        billing_period: billingPeriod
+      });
+      window.location.href = response.data.url;
+    } catch (error) {
+      alert('Failed to create checkout session');
+      setLoading(null);
+    }
+  };
+
   const features = [
     { icon: Brain, title: 'AI-Powered Analysis', description: 'Get intelligent insights from your trading patterns with our advanced AI coach' },
     { icon: TrendingUp, title: 'Live Market Data', description: 'Real-time charts, heatmaps, and TradingView integration for all markets' },
@@ -26,6 +42,65 @@ export default function Landing() {
     { icon: Target, title: 'Risk Management', description: 'Advanced position sizing and portfolio risk calculators' },
     { icon: BarChart3, title: 'Advanced Analytics', description: 'Comprehensive performance metrics and emotional pattern tracking' },
     { icon: Shield, title: 'Broker Sync', description: 'Automatic trade syncing with MT4, MT5, cTrader, and more' }
+  ];
+
+  const plans = [
+    {
+      name: 'Free',
+      tier: 'free',
+      price: { monthly: 0, yearly: 0 },
+      description: 'Perfect for getting started',
+      color: 'from-slate-400 to-slate-600',
+      features: [
+        { name: '1 Trading Account', included: true },
+        { name: 'Manual Trade Logging', included: true },
+        { name: 'Journal with AI Assistant', included: true },
+        { name: 'Community Access', included: true },
+        { name: 'Funding Opportunities', included: true },
+        { name: 'Basic Analytics (View Only)', included: true },
+        { name: 'AI Coach', included: false },
+        { name: 'Webhooks & API', included: false },
+        { name: 'Signal Routing', included: false }
+      ]
+    },
+    {
+      name: 'Pro',
+      tier: 'pro',
+      price: { monthly: 29, yearly: 313 },
+      description: 'For serious individual traders',
+      color: 'from-cyan-500 to-purple-600',
+      popular: true,
+      features: [
+        { name: '3 Trading Accounts', included: true },
+        { name: 'Full AI Coach Conversations', included: true },
+        { name: 'Webhook Integration', included: true },
+        { name: 'API Access', included: true },
+        { name: 'Signal Routing & Execution', included: true },
+        { name: 'Advanced Analytics & Insights', included: true },
+        { name: 'Export Features (PDF, CSV)', included: true },
+        { name: 'Custom Audio Alerts', included: true },
+        { name: 'All Dashboard Widgets', included: true },
+        { name: 'Trade Templates & Automation', included: true }
+      ]
+    },
+    {
+      name: 'Team',
+      tier: 'team',
+      price: { monthly: 49, yearly: 529 },
+      description: 'For professional traders & teams',
+      color: 'from-purple-500 to-pink-600',
+      features: [
+        { name: 'Unlimited Trading Accounts', included: true },
+        { name: 'Everything in Pro', included: true },
+        { name: 'Shared Access (Mentors/Teams)', included: true },
+        { name: 'Unlimited AI Assistance', included: true },
+        { name: 'Priority AI Responses', included: true },
+        { name: 'Advanced Backtesting', included: true },
+        { name: 'Broker Sync Automation', included: true },
+        { name: 'Team Collaboration', included: true },
+        { name: 'Premium Support', included: true }
+      ]
+    }
   ];
 
   const testimonials = [
@@ -163,96 +238,108 @@ export default function Landing() {
               Simple, Transparent Pricing
             </h2>
             <p className={`text-xl ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-              Choose the plan that works for you. Cancel anytime.
+              Start free, upgrade when you're ready to unlock powerful features
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-            {/* Monthly Plan */}
-            <Card className={`${darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'} relative`}>
-              <CardHeader>
-                <CardTitle className={darkMode ? 'text-white' : 'text-slate-900'}>Monthly</CardTitle>
-                <div className="mt-4">
-                  <span className={`text-5xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>$29</span>
-                  <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>/month</span>
-                </div>
-                <p className={`mt-2 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                  Perfect for getting started
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Button 
-                  onClick={() => base44.auth.redirectToLogin(createPageUrl('Dashboard'))}
-                  className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700"
-                >
-                  Start Free Trial
-                </Button>
-                <ul className="space-y-3">
-                  {[
-                    'Unlimited trade tracking',
-                    'AI-powered analysis',
-                    'Live market data & charts',
-                    'Hybrid Score™ tracking',
-                    'Risk management tools',
-                    'Broker sync (MT4/MT5)',
-                    'Mobile & desktop access',
-                    'Email support'
-                  ].map((feature, idx) => (
-                    <li key={idx} className="flex items-center gap-2">
-                      <Check className={`h-5 w-5 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`} />
-                      <span className={darkMode ? 'text-slate-300' : 'text-slate-700'}>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {plans.map((plan) => {
+              const Icon = plan.tier === 'free' ? Zap : plan.tier === 'pro' ? TrendingUp : Users;
+              const price = plan.price[billingPeriod];
 
-            {/* Yearly Plan */}
-            <Card className="bg-gradient-to-br from-cyan-500 to-purple-600 border-0 relative shadow-2xl shadow-cyan-500/20 transform scale-105">
-              <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-500 text-yellow-900 px-4 py-1">
-                SAVE 34%
-              </Badge>
-              <CardHeader>
-                <CardTitle className="text-white">Yearly</CardTitle>
-                <div className="mt-4">
-                  <span className="text-5xl font-bold text-white">$19</span>
-                  <span className="text-cyan-100">/month</span>
-                </div>
-                <p className="mt-2 text-cyan-100">
-                  Billed $228 annually
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Button 
-                  onClick={() => base44.auth.redirectToLogin(createPageUrl('Dashboard'))}
-                  className="w-full bg-white text-purple-600 hover:bg-cyan-50 font-bold"
+              return (
+                <Card
+                  key={plan.tier}
+                  className={`relative backdrop-blur-xl transition-all ${
+                    plan.popular 
+                      ? `ring-2 ring-cyan-500 ${darkMode ? 'bg-slate-950/90' : 'bg-white/90'} transform scale-105` 
+                      : darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white/80 border-cyan-500/30'
+                  } hover:shadow-2xl hover:scale-110`}
                 >
-                  Start Free Trial
-                </Button>
-                <ul className="space-y-3">
-                  {[
-                    'Everything in Monthly',
-                    'Priority support',
-                    'Advanced AI insights',
-                    'Custom strategies',
-                    'Export to PDF/CSV',
-                    'API access',
-                    'Early access to features',
-                    '2 months FREE'
-                  ].map((feature, idx) => (
-                    <li key={idx} className="flex items-center gap-2">
-                      <Check className="h-5 w-5 text-white" />
-                      <span className="text-white font-medium">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
+                  {plan.popular && (
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                      <Badge className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white px-4 py-1">
+                        <Sparkles className="h-3 w-3 mr-1" />
+                        Most Popular
+                      </Badge>
+                    </div>
+                  )}
+
+                  <CardHeader className={`text-center pb-8 ${plan.popular ? 'pt-8' : ''}`}>
+                    <div className={`w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br ${plan.color} flex items-center justify-center shadow-lg`}>
+                      <Icon className="h-8 w-8 text-white" />
+                    </div>
+                    <CardTitle className={`text-2xl ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                      {plan.name}
+                    </CardTitle>
+                    <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'} mt-2`}>
+                      {plan.description}
+                    </p>
+                    <div className="mt-6">
+                      <span className={`text-5xl font-bold bg-gradient-to-r ${plan.color} bg-clip-text text-transparent`}>
+                        ${price}
+                      </span>
+                      {price > 0 && (
+                        <>
+                          <span className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                            /{billingPeriod === 'monthly' ? 'month' : 'year'}
+                          </span>
+                          {billingPeriod === 'yearly' && (
+                            <div className="text-xs text-green-500 mt-2">Save 10%</div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="space-y-4">
+                    <div className="space-y-3 min-h-[300px]">
+                      {plan.features.map((feature, idx) => (
+                        <div key={idx} className="flex items-start gap-3">
+                          {feature.included ? (
+                            <Check className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                          ) : (
+                            <X className="h-5 w-5 text-slate-400 shrink-0 mt-0.5" />
+                          )}
+                          <span className={`text-sm ${
+                            feature.included 
+                              ? (darkMode ? 'text-white' : 'text-slate-900')
+                              : (darkMode ? 'text-slate-500' : 'text-slate-400')
+                          }`}>
+                            {feature.name}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="pt-4">
+                      {plan.tier === 'free' ? (
+                        <Button
+                          onClick={() => base44.auth.redirectToLogin(createPageUrl('Dashboard'))}
+                          className="w-full bg-gradient-to-r from-slate-400 to-slate-600"
+                        >
+                          Get Started Free
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => handleSubscribe(plan.tier)}
+                          disabled={loading === plan.tier}
+                          className={`w-full bg-gradient-to-r ${plan.color} hover:opacity-90 text-white shadow-lg`}
+                        >
+                          {loading === plan.tier ? 'Loading...' : `Upgrade to ${plan.name}`}
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
 
-          <p className={`text-center mt-8 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-            🎉 14-day free trial. No credit card required. Cancel anytime.
-          </p>
+          <div className={`mt-12 text-center ${darkMode ? 'text-slate-400' : 'text-slate-600'} text-sm`}>
+            <p>All plans include access to Hybrid Funding opportunities</p>
+            <p className="mt-2">Cancel anytime • Secure payment via Stripe • 24/7 Support</p>
+          </div>
         </div>
       </section>
 
