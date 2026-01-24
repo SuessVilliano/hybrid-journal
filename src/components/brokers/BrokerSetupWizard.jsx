@@ -71,20 +71,32 @@ export default function BrokerSetupWizard({ isOpen, onClose, onComplete }) {
     'cTrader': {
       'READONLY_API': {
         steps: [
-          'Log in to your cTrader account',
-          'Navigate to Settings → Open API',
-          'Create a new application with "Read" permissions',
-          'Copy your Client ID and Secret',
-          'Paste them below'
+          'Visit https://openapi.ctrader.com/apps',
+          'Log in with your broker credentials',
+          'Click "Create New Application"',
+          'Set permissions to "Read" (trade history only)',
+          'Copy Client ID (API Key) and Client Secret',
+          'Paste credentials below and click Validate'
         ],
         fields: ['api_key', 'api_secret', 'account_number']
       },
+      'WEBHOOK_PUSH': {
+        steps: [
+          'Download Hybrid Journal cBot from resources',
+          'Place in cTrader/Sources/Robots folder',
+          'Build the cBot in cTrader Automate',
+          'Attach to any chart and enable algo trading',
+          'Your webhook URL will be shown after setup'
+        ],
+        fields: ['webhook_secret', 'account_number']
+      },
       'STATEMENT_INGEST': {
         steps: [
-          'Log in to your cTrader account',
-          'Go to History → Export',
-          'Download your trade history as CSV',
-          'Upload the file in the next step'
+          'Open cTrader platform',
+          'Go to History tab',
+          'Click Export button',
+          'Choose CSV format with all columns',
+          'Save file for upload in next step'
         ],
         fields: ['account_number']
       }
@@ -92,41 +104,74 @@ export default function BrokerSetupWizard({ isOpen, onClose, onComplete }) {
     'DXTrade': {
       'READONLY_API': {
         steps: [
-          'Contact your broker for API access',
-          'Request API credentials from your account dashboard',
-          'Copy your API Key and Secret',
-          'Note your server endpoint URL',
-          'Paste credentials below'
+          'Contact your broker support team',
+          'Request DXTrade API access (provide account number)',
+          'Receive API credentials via email or broker dashboard',
+          'Note your specific API server URL (e.g., api.yourbroker.com)',
+          'Paste credentials below and validate'
         ],
         fields: ['api_key', 'api_secret', 'server', 'account_number']
       },
       'STATEMENT_INGEST': {
         steps: [
-          'Log in to your DXTrade account',
+          'Log in to DXTrade web platform',
           'Navigate to Reports → Trade History',
-          'Export as CSV or Excel',
-          'Upload the file in the next step'
+          'Select date range and export as CSV',
+          'Save file for upload'
         ],
         fields: ['account_number']
+      }
+    },
+    'MatchTrader': {
+      'READONLY_API': {
+        steps: [
+          'Contact your broker to request Match-Trader API access',
+          'Complete broker verification if required',
+          'Receive API credentials from broker',
+          'Paste credentials below and validate'
+        ],
+        fields: ['api_key', 'api_secret', 'server', 'account_number']
+      },
+      'STATEMENT_INGEST': {
+        steps: [
+          'Log in to Match-Trader platform',
+          'Go to Reports section',
+          'Export trade history as CSV',
+          'Save for upload'
+        ],
+        fields: ['account_number']
+      }
+    },
+    'Rithmic': {
+      'READONLY_API': {
+        steps: [
+          'Contact Rithmic support for API access',
+          'Complete enterprise verification process',
+          'Receive gateway credentials and server info',
+          'Note: Rithmic uses custom protocol (not REST)',
+          'Paste credentials below'
+        ],
+        fields: ['api_key', 'api_secret', 'server', 'account_number']
       }
     },
     'MT4': {
       'WEBHOOK_PUSH': {
         steps: [
-          'Download the Hybrid Journal MT4 EA from our resources',
-          'Place the EA in your MT4/Experts folder',
-          'Attach the EA to any chart',
-          'Enter the webhook URL and secret shown below',
-          'EA will automatically send trade updates'
+          'Download Hybrid Journal MT4 EA (Expert Advisor)',
+          'Copy to MetaTrader4/MQL4/Experts folder',
+          'Restart MT4 platform',
+          'Drag EA onto ANY chart (it monitors all trades)',
+          'Webhook URL and secret will be provided after setup'
         ],
         fields: ['webhook_secret', 'account_number']
       },
       'STATEMENT_INGEST': {
         steps: [
-          'Right-click on Account History in MT4',
-          'Select "Save as Report"',
-          'Choose HTML or detailed statement',
-          'Upload the file in the next step'
+          'Open MT4 platform',
+          'Right-click on Account History tab',
+          'Select "Save as Report" → Detailed Statement',
+          'Choose HTML format (best for parsing)',
+          'Save file for upload'
         ],
         fields: ['account_number']
       }
@@ -134,20 +179,22 @@ export default function BrokerSetupWizard({ isOpen, onClose, onComplete }) {
     'MT5': {
       'WEBHOOK_PUSH': {
         steps: [
-          'Download the Hybrid Journal MT5 EA from our resources',
-          'Place the EA in your MT5/Experts folder',
-          'Attach the EA to any chart',
-          'Enter the webhook URL and secret shown below',
-          'EA will automatically send trade updates'
+          'Download Hybrid Journal MT5 EA (Expert Advisor)',
+          'Copy to MetaTrader5/MQL5/Experts folder',
+          'Restart MT5 platform',
+          'Drag EA onto ANY chart',
+          'EA will monitor all trades, positions, and pending orders',
+          'Webhook URL and secret shown after setup'
         ],
         fields: ['webhook_secret', 'account_number']
       },
       'STATEMENT_INGEST': {
         steps: [
-          'Right-click on Account History in MT5',
-          'Select "Save as Report"',
-          'Choose HTML or detailed statement',
-          'Upload the file in the next step'
+          'Open MT5 platform',
+          'Right-click on Account History tab',
+          'Select "Report" → Detailed Statement',
+          'Choose HTML format',
+          'Save file for upload'
         ],
         fields: ['account_number']
       }
@@ -155,23 +202,85 @@ export default function BrokerSetupWizard({ isOpen, onClose, onComplete }) {
     'Tradovate': {
       'READONLY_API': {
         steps: [
-          'Log in to Tradovate',
-          'Go to Account → API Access',
-          'Generate API credentials',
-          'Copy your API Key and Secret',
-          'Paste them below'
+          'Visit https://trader.tradovate.com',
+          'Log in to your account',
+          'Go to Settings → API Access',
+          'Click "Generate New Token" (requires 2FA)',
+          'Select "Read-only" permissions',
+          'Copy Access Token immediately (shown once only)',
+          'Paste below and validate'
         ],
-        fields: ['api_key', 'api_secret', 'account_number']
+        fields: ['api_key', 'account_number']
+      },
+      'STATEMENT_INGEST': {
+        steps: [
+          'Log in to Tradovate web platform',
+          'Navigate to Reports → Trade Log',
+          'Select date range and export as CSV',
+          'Save for upload'
+        ],
+        fields: ['account_number']
+      }
+    },
+    'TradeLocker': {
+      'READONLY_API': {
+        steps: [
+          'Contact your broker for TradeLocker API access',
+          'Request API token from broker dashboard',
+          'Note your specific server URL',
+          'Paste credentials below'
+        ],
+        fields: ['api_key', 'server', 'account_number']
       }
     },
     'Alpaca': {
       'READONLY_API': {
         steps: [
-          'Log in to Alpaca',
-          'Navigate to Paper Trading or Live Trading',
-          'Generate API Key (with trading permissions)',
-          'Copy Key ID and Secret Key',
-          'Paste them below'
+          'Visit https://app.alpaca.markets',
+          'Choose Paper Trading or Live Trading',
+          'Go to API Keys section',
+          'Click "Generate New Key"',
+          'Choose permissions: "Read" (for journal sync)',
+          'Copy Key ID and Secret Key (shown once)',
+          'Paste below and click Validate'
+        ],
+        fields: ['api_key', 'api_secret']
+      },
+      'STATEMENT_INGEST': {
+        steps: [
+          'Log in to Alpaca dashboard',
+          'Go to Activity → Trade History',
+          'Export as CSV',
+          'Save for upload'
+        ],
+        fields: ['account_number']
+      }
+    },
+    'OANDA': {
+      'READONLY_API': {
+        steps: [
+          'Visit https://www.oanda.com',
+          'Log in to your account',
+          'Go to Manage API Access',
+          'Click "Generate" under Personal Access Token',
+          'Choose "Read" permissions',
+          'Copy the token (shown once)',
+          'Your Account ID is in format XXX-XXX-XXXXXXXX-XXX',
+          'Paste both below and validate'
+        ],
+        fields: ['api_key', 'account_number']
+      }
+    },
+    'Binance': {
+      'READONLY_API': {
+        steps: [
+          'Visit https://www.binance.com',
+          'Go to Account → API Management',
+          'Create new API key',
+          'Enable ONLY "Enable Reading" permission',
+          'Copy API Key and Secret Key immediately',
+          'Optionally restrict by IP for added security',
+          'Paste below and validate'
         ],
         fields: ['api_key', 'api_secret']
       }
@@ -185,20 +294,31 @@ export default function BrokerSetupWizard({ isOpen, onClose, onComplete }) {
     setValidationResult(null);
 
     try {
-      // Simulate API validation (in production, call actual validation endpoint)
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const isValid = formData.api_key && formData.api_key.length > 10;
-      
-      setValidationResult({
-        success: isValid,
-        message: isValid ? 'Credentials validated successfully!' : 'Invalid credentials'
+      const response = await base44.functions.invoke('validateCredentials', {
+        provider,
+        apiKey: formData.api_key,
+        apiSecret: formData.api_secret,
+        server: formData.server,
+        accountNumber: formData.account_number
       });
+
+      setValidationResult({
+        success: response.data.status === 'success',
+        message: response.data.message,
+        details: response.data.details
+      });
+
+      if (response.data.status === 'success') {
+        toast.success('Credentials validated!');
+      } else {
+        toast.error('Validation failed');
+      }
     } catch (error) {
       setValidationResult({
         success: false,
         message: error.message
       });
+      toast.error('Validation error');
     } finally {
       setValidating(false);
     }

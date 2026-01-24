@@ -299,22 +299,27 @@ export default function Help() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className={`p-4 rounded-lg ${darkMode ? 'bg-cyan-900/20 border border-cyan-500/30' : 'bg-cyan-50 border border-cyan-200'}`}>
-              <h3 className={`font-bold mb-3 ${darkMode ? 'text-cyan-300' : 'text-cyan-900'}`}>🔗 Hybrid Journal ↔️ iCopyTrade Integration</h3>
-              <div className={`space-y-3 text-sm ${darkMode ? 'text-cyan-300/80' : 'text-cyan-900/80'}`}>
+              <h3 className={`font-bold mb-3 ${darkMode ? 'text-cyan-300' : 'text-cyan-900'}`}>📚 Quick Start Guides</h3>
+              <div className={`space-y-4 text-sm ${darkMode ? 'text-cyan-300/80' : 'text-cyan-900/80'}`}>
                 <div>
-                  <strong className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>Purpose:</strong> Securely link your iCopyTrade execution platform to automatically journal all copied trades
+                  <strong className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>🔌 Broker Auto-Sync:</strong>
+                  <p className="mt-1">Accounts → Broker Connections → Connect Broker → Choose platform → Follow 3-step wizard with real-time credential validation</p>
                 </div>
                 <div>
-                  <strong className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>How it works:</strong>
+                  <strong className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>🔗 iCopyTrade Integration:</strong>
                   <ol className="ml-4 mt-1 space-y-1 list-decimal">
-                    <li>Generate a link token in Accounts → App Linking (expires in 15 min)</li>
-                    <li>Enter token in iCopyTrade → Settings → Connect Journal</li>
-                    <li>iCopyTrade receives a signing secret for authenticated event pushing</li>
-                    <li>All trades are auto-synced to Hybrid Journal with full metadata</li>
+                    <li>Generate link token: Accounts → App Linking (expires 15 min)</li>
+                    <li>Enter token in iCopyTrade → Connect Journal</li>
+                    <li>Trades auto-sync with HMAC security</li>
                   </ol>
                 </div>
                 <div>
-                  <strong className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>Security:</strong> HMAC-SHA256 signatures, timestamp validation, replay attack prevention, encrypted secrets
+                  <strong className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>🔄 Trade Copying:</strong>
+                  <p className="mt-1">Connect source + target accounts → Configure copy parameters (risk multiplier, symbol mapping, filters) → Enable copying → Monitor in real-time with reconciliation</p>
+                </div>
+                <div>
+                  <strong className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>📊 AI Analysis:</strong>
+                  <p className="mt-1">AI Coach → Deep Analysis tab → Select analysis type → View strategy performance, emotion correlation, risk assessment, and weekly summaries</p>
                 </div>
               </div>
             </div>
