@@ -117,8 +117,8 @@ export default function Layout({ children, currentPageName }) {
       URL.revokeObjectURL(manifestURL);
     };
   }, []);
-  // Don't render layout for Landing and PublicDashboard pages
-  if (currentPageName === 'Landing' || currentPageName === 'PublicDashboard') {
+  // Don't render layout for Landing, Onboarding, and PublicDashboard pages
+  if (currentPageName === 'Landing' || currentPageName === 'PublicDashboard' || currentPageName === 'Onboarding') {
     return children;
   }
   const [sidebarOpen, setSidebarOpen] = useState(true);
