@@ -5,14 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Wallet, TrendingUp, Edit2, Trash2, X, CheckCircle, DollarSign, Shield } from 'lucide-react';
+import { Plus, Wallet, TrendingUp, Edit2, Trash2, X, CheckCircle, DollarSign, Shield, Link as LinkIcon } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { useSubscription } from '@/components/subscription/useSubscription';
 import UpgradePrompt from '@/components/subscription/UpgradePrompt';
+import BrokerSetupWizard from '@/components/brokers/BrokerSetupWizard';
+import ConnectionStatusCard from '@/components/brokers/ConnectionStatusCard';
 
 export default function Accounts() {
   const [showForm, setShowForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState(null);
+  const [showBrokerWizard, setShowBrokerWizard] = useState(false);
   const queryClient = useQueryClient();
   const subscription = useSubscription();
   const darkMode = document.documentElement.classList.contains('dark');
@@ -234,6 +237,34 @@ export default function Accounts() {
             );
           })}
         </div>
+
+        {brokerConnections.length > 0 && (
+          <div>
+            <h2 className={`text-2xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+              Broker Connections
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {brokerConnections.map(conn => (
+                <ConnectionStatusCard 
+                  key={conn.id} 
+                  connection={conn}
+                  onSync={() => queryClient.invalidateQueries(['brokerConnections'])}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {showBrokerWizard && (
+          <BrokerSetupWizard
+            isOpen={showBrokerWizard}
+            onClose={() => setShowBrokerWizard(false)}
+            onComplete={() => {
+              queryClient.invalidateQueries(['brokerConnections']);
+              setShowBrokerWizard(false);
+            }}
+          />
+        )}
 
         {showForm && <AccountForm account={editingAccount} onClose={() => { setShowForm(false); setEditingAccount(null); }} onSubmit={(data) => {
           if (editingAccount) {

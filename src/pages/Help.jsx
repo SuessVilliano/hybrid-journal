@@ -55,7 +55,19 @@ export default function Help() {
     },
     {
       q: 'How do I connect my trading account?',
-      a: 'Go to Accounts page, click "Add Account", and choose your broker. Follow the connection wizard to sync your trades.'
+      a: 'Go to Accounts page, click "Connect Broker", and choose your broker platform. Follow the 3-step wizard: (1) Select platform, (2) Choose connection method (API/Webhook/Statement), (3) Enter credentials or upload statements. Supports cTrader, DXTrade, MT4/MT5, Tradovate, and more.'
+    },
+    {
+      q: 'What are the different connection methods?',
+      a: 'API (real-time sync via official APIs), Webhook Push (MT4/MT5 EA sends trades instantly), Statement Ingest (upload CSV/PDF trade history). Choose based on your broker and technical comfort level.'
+    },
+    {
+      q: 'How does trade copying work?',
+      a: 'After connecting source and target accounts, set up copy parameters including risk multiplier, symbol mapping, and filters. Trades are automatically copied with reconciliation and error monitoring. Configure in Accounts > Copy Settings.'
+    },
+    {
+      q: 'How do I avoid duplicate trades?',
+      a: 'Hybrid Journal automatically deduplicates using source + source_trade_id. If you import a statement that contains auto-synced trades, they\'ll be detected and skipped or updated, never duplicated.'
     },
     {
       q: 'Can I share my journal with a mentor?',
