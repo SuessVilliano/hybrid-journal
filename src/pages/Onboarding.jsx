@@ -48,36 +48,30 @@ export default function Onboarding() {
 
   const saveMutation = useMutation({
     mutationFn: async (data) => {
+      // Create trader profile
+      await base44.entities.TraderProfile.create({
+        ...data,
+        onboarding_completed: true
+      });
+      
+      // Update user timezone
       try {
-        // Create trader profile
-        await base44.entities.TraderProfile.create({
-          ...data,
-          onboarding_completed: true
-        });
-        
-        // Update user timezone
         await base44.auth.updateMe({ 
           timezone: data.timezone 
         });
-        
-        // Create trade templates and goals based on profile
-        try {
-          await base44.functions.invoke('createTradeTemplates', {});
-        } catch (err) {
-          console.warn('Template creation failed:', err);
-        }
-        
-        return { success: true };
-      } catch (error) {
-        console.error('Onboarding error:', error);
-        throw error;
+      } catch (err) {
+        console.warn('Timezone update failed:', err);
+      }
+      
+      // Create trade templates and goals based on profile
+      try {
+        await base44.functions.invoke('createTradeTemplates', {});
+      } catch (err) {
+        console.warn('Template creation skipped');
       }
     },
     onSuccess: () => {
-      navigate(createPageUrl('PlatformTour'));
-    },
-    onError: (error) => {
-      alert('Setup failed: ' + error.message);
+      window.location.href = createPageUrl('PlatformTour');
     }
   });
 

@@ -108,11 +108,11 @@ export default function PlatformTour() {
   const Icon = currentStep.icon;
 
   const handleFinish = () => {
-    navigate(createPageUrl('Dashboard'));
+    window.location.href = createPageUrl('Dashboard');
   };
 
   const handleSkip = () => {
-    navigate(createPageUrl('Dashboard'));
+    window.location.href = createPageUrl('Dashboard');
   };
 
   return (
