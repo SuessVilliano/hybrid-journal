@@ -77,28 +77,27 @@ export default function Dashboard() {
   });
 
   const { data: dashboardSettings } = useQuery({
-    queryKey: ['dashboardSettings'],
+    queryKey: ['dashboardSettings', user?.email],
     queryFn: async () => {
-      const user = await base44.auth.me();
       const settings = await base44.entities.DashboardSettings.list();
-      return settings.find(s => s.created_by === user.email);
-    }
+      return settings.find(s => s.created_by === user.email) || null;
+    },
+    enabled: !!user
   });
 
   const saveSettingsMutation = useMutation({
-    mutationFn: async (widgets) => {
-      const user = await base44.auth.me();
+    mutationFn: async (data) => {
       const existing = await base44.entities.DashboardSettings.list();
       const userSettings = existing.find(s => s.created_by === user.email);
       
       if (userSettings) {
-        return base44.entities.DashboardSettings.update(userSettings.id, { widgets });
+        return base44.entities.DashboardSettings.update(userSettings.id, data);
       } else {
-        return base44.entities.DashboardSettings.create({ widgets });
+        return base44.entities.DashboardSettings.create(data);
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['dashboardSettings'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardSettings', user?.email] });
     }
   });
 
@@ -116,7 +115,7 @@ export default function Dashboard() {
       ? enabledWidgets.filter(w => w !== widgetId)
       : [...enabledWidgets, widgetId];
     setEnabledWidgets(newWidgets);
-    saveSettingsMutation.mutate(newWidgets);
+    saveSettingsMutation.mutate({ widgets: newWidgets });
   };
 
   const stats = useMemo(() => {
@@ -221,19 +220,12 @@ export default function Dashboard() {
           <Card className="bg-gradient-to-r from-green-500 to-emerald-600 border-0 shadow-lg shadow-green-500/20 relative">
             <CardContent className="p-6">
               <button
-                onClick={async () => {
+                onClick={() => {
                   setHideFundingBanner(true);
-                  try {
-                    const existing = await base44.entities.DashboardSettings.list();
-                    const userSettings = existing.find(s => s.created_by === user.email);
-                    if (userSettings) {
-                      await base44.entities.DashboardSettings.update(userSettings.id, { hide_funding_banner: true });
-                    } else {
-                      await base44.entities.DashboardSettings.create({ hide_funding_banner: true });
-                    }
-                  } catch (error) {
-                    console.error('Failed to save banner preference:', error);
-                  }
+                  saveSettingsMutation.mutate({ 
+                    hide_funding_banner: true,
+                    widgets: enabledWidgets 
+                  });
                 }}
                 className="absolute top-3 right-3 text-white hover:bg-white/20 rounded-full p-1.5 transition"
               >
