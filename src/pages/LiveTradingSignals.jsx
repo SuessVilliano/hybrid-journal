@@ -10,6 +10,8 @@ import WebhookSettings from '@/components/profile/WebhookSettings';
 import AISignalAnalysis from '@/components/signals/AISignalAnalysis';
 import SignalFilters from '@/components/signals/SignalFilters';
 import RoutingRuleManager from '@/components/signals/RoutingRuleManager';
+import { useBrowserNotifications, showSignalNotification } from '@/components/notifications/BrowserNotifications';
+import { formatInTimezone } from '@/components/utils/timezoneHelper';
 
 export default function LiveTradingSignals() {
   const [showWebhookInfo, setShowWebhookInfo] = useState(false);
@@ -28,6 +30,7 @@ export default function LiveTradingSignals() {
   });
   const queryClient = useQueryClient();
   const darkMode = document.documentElement.classList.contains('dark');
+  const { permission, requestPermission, isSupported } = useBrowserNotifications();
 
   useEffect(() => {
     localStorage.setItem('signal_filters', JSON.stringify(filters));
@@ -47,9 +50,7 @@ export default function LiveTradingSignals() {
       }
       console.log('🔍 Fetching signals for user:', user.email);
       
-      // Try multiple query approaches to debug
       try {
-        // Approach 1: Direct filter by user_email
         const results = await base44.entities.Signal.filter({ user_email: user.email }, '-created_date', 100);
         console.log('📊 Signals fetched (filter by user_email):', results.length, 'signals');
         
@@ -69,7 +70,20 @@ export default function LiveTradingSignals() {
       }
     },
     enabled: !!user?.email,
-    refetchInterval: 5000
+    refetchInterval: 5000,
+    onSuccess: (newSignals) => {
+      // Check for new signals and show browser notification
+      if (user?.notification_preferences?.browser_push && permission === 'granted') {
+        const newUnseenSignals = newSignals.filter(s => s.status === 'new');
+        const prevSignals = queryClient.getQueryData(['signals', user?.email]) || [];
+        const prevNewSignals = prevSignals.filter(s => s.status === 'new');
+        
+        if (newUnseenSignals.length > prevNewSignals.length) {
+          const latestSignal = newUnseenSignals[0];
+          showSignalNotification(latestSignal, '/LiveTradingSignals');
+        }
+      }
+    }
   });
 
   const { data: syncLogs = [], refetch: refetchLogs } = useQuery({
@@ -149,6 +163,16 @@ export default function LiveTradingSignals() {
             </p>
           </div>
           <div className="flex gap-2">
+            {isSupported && permission !== 'granted' && (
+              <Button
+                onClick={requestPermission}
+                variant="outline"
+                className="border-cyan-500/30"
+              >
+                <Bell className="h-4 w-4 mr-2" />
+                Enable Alerts
+              </Button>
+            )}
             <Button
               onClick={async () => {
                 await Promise.all([
@@ -400,7 +424,7 @@ export default function LiveTradingSignals() {
 
                       <div className="flex items-center gap-2 text-xs">
                         <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>
-                          {format(new Date(signal.created_date), 'MMM d, yyyy h:mm a')}
+                          {formatInTimezone(signal.created_date, user?.timezone || 'America/New_York')}
                         </span>
                         {signal.strategy && (
                           <>

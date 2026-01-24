@@ -1,4 +1,4 @@
-import { format, toZonedTime } from 'date-fns-tz';
+import { format } from 'date-fns';
 
 /**
  * Format a UTC timestamp in user's timezone
@@ -12,8 +12,16 @@ export function formatInTimezone(utcTimestamp, timezone = 'America/New_York', fo
   
   try {
     const date = typeof utcTimestamp === 'string' ? new Date(utcTimestamp) : utcTimestamp;
-    const zonedDate = toZonedTime(date, timezone);
-    return format(zonedDate, formatStr, { timeZone: timezone });
+    // Use Intl.DateTimeFormat for timezone conversion
+    return date.toLocaleString('en-US', {
+      timeZone: timezone,
+      month: 'short',
+      day: '2-digit',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
   } catch (error) {
     console.error('Timezone formatting error:', error);
     return new Date(utcTimestamp).toLocaleString();
