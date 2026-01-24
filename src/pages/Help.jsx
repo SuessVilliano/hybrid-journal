@@ -98,6 +98,18 @@ export default function Help() {
       a: 'Go to My Profile > Webhook Settings to get your unique webhook URL. Configure TradingView alerts or TaskMagic to send signals to this URL. All signals appear in Trading Signals page.'
     },
     {
+      q: 'What are the different connection methods?',
+      a: 'API (real-time sync via official APIs), Webhook Push (MT4/MT5 EA sends trades instantly), Statement Ingest (upload CSV/PDF trade history). Choose based on your broker and technical comfort level.'
+    },
+    {
+      q: 'How does trade copying work?',
+      a: 'After connecting source and target accounts, set up copy parameters including risk multiplier, symbol mapping, and filters. Trades are automatically copied with reconciliation and error monitoring. Configure in Accounts > Copy Settings.'
+    },
+    {
+      q: 'How do I avoid duplicate trades?',
+      a: 'Hybrid Journal automatically deduplicates using source + source_trade_id. If you import a statement that contains auto-synced trades, they\'ll be detected and skipped or updated, never duplicated.'
+    },
+    {
       q: 'How does the gamification system work?',
       a: 'Earn XP and level up by logging trades (+10 XP), creating daily plans (+25 XP), writing journal entries (+15 XP), and completing goals (+50 XP). Unlock badges for milestones like first trade, 7-day streak, 100 trades, and more. Compete on leaderboards for points, streaks, and levels!'
     },
