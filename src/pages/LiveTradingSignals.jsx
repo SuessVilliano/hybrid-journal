@@ -173,6 +173,24 @@ export default function LiveTradingSignals() {
                 Enable Alerts
               </Button>
             )}
+            {isSupported && permission === 'granted' && (
+              <Button
+                onClick={() => {
+                  showSignalNotification({
+                    id: 'demo',
+                    provider: 'Demo',
+                    symbol: 'EURUSD',
+                    action: 'BUY',
+                    price: 1.0850
+                  }, '/LiveTradingSignals');
+                }}
+                variant="outline"
+                className="border-green-500/30"
+              >
+                <Bell className="h-4 w-4 mr-2" />
+                Test Alert
+              </Button>
+            )}
             <Button
               onClick={async () => {
                 await Promise.all([
