@@ -14,7 +14,8 @@ export default function SignalCard({
   onForceExecute, 
   onMarkViewed, 
   onIgnore,
-  isRouting 
+  isRouting,
+  isUpdating
 }) {
   const darkMode = document.documentElement.classList.contains('dark');
 
@@ -192,7 +193,7 @@ export default function SignalCard({
               <>
                 <Button
                   onClick={handleAnalyze}
-                  className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 flex-1 md:flex-none"
+                  className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 flex-1 md:flex-none transition-all active:scale-95"
                   size="sm"
                   type="button"
                 >
@@ -201,45 +202,53 @@ export default function SignalCard({
                 </Button>
                 <Button
                   onClick={handleRoute}
-                  className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 flex-1 md:flex-none"
+                  className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 flex-1 md:flex-none transition-all active:scale-95"
                   size="sm"
                   type="button"
-                  disabled={isRouting}
+                  disabled={isRouting || isUpdating}
                 >
-                  <Zap className="h-4 w-4 mr-1" />
+                  <Zap className={`h-4 w-4 mr-1 ${isRouting ? 'animate-spin' : ''}`} />
                   <span className="text-xs">
                     {isRouting ? 'Processing...' : 'AI Route'}
                   </span>
                 </Button>
                 <Button
                   onClick={handleForceExecute}
-                  className="bg-green-600 hover:bg-green-700 flex-1 md:flex-none"
+                  className="bg-green-600 hover:bg-green-700 flex-1 md:flex-none transition-all active:scale-95"
                   size="sm"
                   type="button"
-                  disabled={isRouting}
+                  disabled={isRouting || isUpdating}
                 >
-                  <Check className="h-4 w-4 mr-1" />
-                  <span className="text-xs">Execute</span>
+                  <Check className={`h-4 w-4 mr-1 ${isRouting ? 'animate-spin' : ''}`} />
+                  <span className="text-xs">
+                    {isRouting ? 'Executing...' : 'Execute'}
+                  </span>
                 </Button>
                 <Button
                   onClick={handleMarkViewed}
                   variant="outline"
                   size="sm"
                   type="button"
-                  className="flex-1 md:flex-none"
+                  className="flex-1 md:flex-none transition-all active:scale-95"
+                  disabled={isUpdating}
                 >
-                  <Eye className="h-4 w-4 mr-1" />
-                  <span className="text-xs">Viewed</span>
+                  <Eye className={`h-4 w-4 mr-1 ${isUpdating ? 'animate-pulse' : ''}`} />
+                  <span className="text-xs">
+                    {isUpdating ? 'Updating...' : 'Viewed'}
+                  </span>
                 </Button>
                 <Button
                   onClick={handleIgnore}
                   variant="outline"
                   size="sm"
                   type="button"
-                  className="flex-1 md:flex-none"
+                  className="flex-1 md:flex-none transition-all active:scale-95"
+                  disabled={isUpdating}
                 >
-                  <X className="h-4 w-4 mr-1" />
-                  <span className="text-xs">Ignore</span>
+                  <X className={`h-4 w-4 mr-1 ${isUpdating ? 'animate-pulse' : ''}`} />
+                  <span className="text-xs">
+                    {isUpdating ? 'Updating...' : 'Ignore'}
+                  </span>
                 </Button>
               </>
             )}
@@ -247,22 +256,27 @@ export default function SignalCard({
               <>
                 <Button
                   onClick={handleRoute}
-                  className="bg-gradient-to-r from-cyan-500 to-purple-600 flex-1 md:flex-none"
+                  className="bg-gradient-to-r from-cyan-500 to-purple-600 flex-1 md:flex-none transition-all active:scale-95"
                   size="sm"
                   type="button"
-                  disabled={isRouting}
+                  disabled={isRouting || isUpdating}
                 >
-                  <Zap className="h-4 w-4 mr-1" />
-                  <span className="text-xs">AI Route</span>
+                  <Zap className={`h-4 w-4 mr-1 ${isRouting ? 'animate-spin' : ''}`} />
+                  <span className="text-xs">
+                    {isRouting ? 'Processing...' : 'AI Route'}
+                  </span>
                 </Button>
                 <Button
                   onClick={handleForceExecute}
-                  className="bg-green-600 hover:bg-green-700 flex-1 md:flex-none"
+                  className="bg-green-600 hover:bg-green-700 flex-1 md:flex-none transition-all active:scale-95"
                   size="sm"
                   type="button"
+                  disabled={isRouting || isUpdating}
                 >
-                  <Check className="h-4 w-4 mr-1" />
-                  <span className="text-xs">Execute</span>
+                  <Check className={`h-4 w-4 mr-1 ${isRouting ? 'animate-spin' : ''}`} />
+                  <span className="text-xs">
+                    {isRouting ? 'Executing...' : 'Execute'}
+                  </span>
                 </Button>
               </>
             )}
