@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, X, Check, Eye, Zap, Brain, Copy } from 'lucide-react';
-import { formatInTimezone } from '@/components/utils/timezoneHelper';
+import { formatInTimezone, getRelativeTime } from '@/components/utils/timezoneHelper';
 import { toast } from 'sonner';
 
 export default function SignalCard({ 
@@ -163,17 +163,20 @@ export default function SignalCard({
               </div>
             )}
 
-            <div className="flex items-center gap-2 text-xs">
-              <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>
-                {formatInTimezone(signal.created_date, user?.timezone || 'America/New_York')}
-              </span>
+            <div className="flex flex-col gap-1 text-xs">
+              <div className="flex items-center gap-2">
+                <span className={`font-bold ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`}>
+                  {getRelativeTime(signal.created_date)}
+                </span>
+                <span className={darkMode ? 'text-slate-600' : 'text-slate-400'}>•</span>
+                <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>
+                  {formatInTimezone(signal.created_date, user?.timezone || 'America/New_York')}
+                </span>
+              </div>
               {signal.strategy && (
-                <>
-                  <span className={darkMode ? 'text-slate-600' : 'text-slate-400'}>•</span>
-                  <span className={darkMode ? 'text-cyan-400' : 'text-cyan-600'}>
-                    {signal.strategy}
-                  </span>
-                </>
+                <span className={darkMode ? 'text-cyan-400' : 'text-cyan-600'}>
+                  Strategy: {signal.strategy}
+                </span>
               )}
             </div>
 
@@ -189,47 +192,54 @@ export default function SignalCard({
               <>
                 <Button
                   onClick={handleAnalyze}
-                  className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700"
+                  className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 flex-1 md:flex-none"
                   size="sm"
+                  type="button"
                 >
-                  <Brain className="h-4 w-4 md:mr-2" />
-                  <span className="hidden md:inline">Analyze</span>
+                  <Brain className="h-4 w-4 mr-1" />
+                  <span className="text-xs">Analyze</span>
                 </Button>
                 <Button
                   onClick={handleRoute}
-                  className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700"
+                  className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 flex-1 md:flex-none"
                   size="sm"
+                  type="button"
                   disabled={isRouting}
                 >
-                  <Zap className="h-4 w-4 md:mr-2" />
-                  <span className="hidden md:inline">
+                  <Zap className="h-4 w-4 mr-1" />
+                  <span className="text-xs">
                     {isRouting ? 'Processing...' : 'AI Route'}
                   </span>
                 </Button>
                 <Button
                   onClick={handleForceExecute}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-green-600 hover:bg-green-700 flex-1 md:flex-none"
                   size="sm"
+                  type="button"
                   disabled={isRouting}
                 >
-                  <Check className="h-4 w-4 md:mr-2" />
-                  <span className="hidden md:inline">Force Execute</span>
+                  <Check className="h-4 w-4 mr-1" />
+                  <span className="text-xs">Execute</span>
                 </Button>
                 <Button
                   onClick={handleMarkViewed}
                   variant="outline"
                   size="sm"
+                  type="button"
+                  className="flex-1 md:flex-none"
                 >
-                  <Eye className="h-4 w-4 md:mr-2" />
-                  <span className="hidden md:inline">Mark Viewed</span>
+                  <Eye className="h-4 w-4 mr-1" />
+                  <span className="text-xs">Viewed</span>
                 </Button>
                 <Button
                   onClick={handleIgnore}
                   variant="outline"
                   size="sm"
+                  type="button"
+                  className="flex-1 md:flex-none"
                 >
-                  <X className="h-4 w-4 md:mr-2" />
-                  <span className="hidden md:inline">Ignore</span>
+                  <X className="h-4 w-4 mr-1" />
+                  <span className="text-xs">Ignore</span>
                 </Button>
               </>
             )}
@@ -237,20 +247,22 @@ export default function SignalCard({
               <>
                 <Button
                   onClick={handleRoute}
-                  className="bg-gradient-to-r from-cyan-500 to-purple-600"
+                  className="bg-gradient-to-r from-cyan-500 to-purple-600 flex-1 md:flex-none"
                   size="sm"
+                  type="button"
                   disabled={isRouting}
                 >
-                  <Zap className="h-4 w-4 md:mr-2" />
-                  AI Route
+                  <Zap className="h-4 w-4 mr-1" />
+                  <span className="text-xs">AI Route</span>
                 </Button>
                 <Button
                   onClick={handleForceExecute}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-green-600 hover:bg-green-700 flex-1 md:flex-none"
                   size="sm"
+                  type="button"
                 >
-                  <Check className="h-4 w-4 mr-2" />
-                  Force Execute
+                  <Check className="h-4 w-4 mr-1" />
+                  <span className="text-xs">Execute</span>
                 </Button>
               </>
             )}
