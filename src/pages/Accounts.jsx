@@ -18,9 +18,13 @@ export default function Accounts() {
   const [showForm, setShowForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState(null);
   const [showBrokerWizard, setShowBrokerWizard] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
   const queryClient = useQueryClient();
   const subscription = useSubscription();
-  const darkMode = document.documentElement.classList.contains('dark');
+
+  React.useEffect(() => {
+    setDarkMode(document.documentElement.classList.contains('dark'));
+  }, []);
 
   const { data: accounts = [] } = useQuery({
     queryKey: ['accounts'],
@@ -317,7 +321,11 @@ export default function Accounts() {
 
 function AccountForm({ account, onClose, onSubmit }) {
   const queryClient = useQueryClient();
-  const darkMode = document.documentElement.classList.contains('dark');
+  const [darkMode, setDarkMode] = useState(false);
+
+  React.useEffect(() => {
+    setDarkMode(document.documentElement.classList.contains('dark'));
+  }, []);
 
   const [formData, setFormData] = useState(account || {
     name: '',
