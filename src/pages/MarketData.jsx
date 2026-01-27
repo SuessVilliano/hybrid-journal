@@ -3,13 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, X, BarChart3, TrendingUp, Flame, DollarSign, Newspaper, Calendar, ChevronDown } from 'lucide-react';
+import { Plus, X, BarChart3, TrendingUp, Flame, DollarSign, Newspaper, Calendar, ChevronDown, Brain } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import LivePriceTicker from '@/components/market/LivePriceTicker';
 import TradingChart from '@/components/market/TradingChart';
 import QuickTradePanel from '@/components/market/QuickTradePanel';
 import TradingViewWidget from '@/components/market/TradingViewWidget';
 import ResizableWidget from '@/components/market/ResizableWidget';
+import MarketCauseEngine from '@/components/market/MarketCauseEngine';
 
 export default function MarketData() {
   const [watchlist, setWatchlist] = useState([
@@ -111,6 +112,10 @@ export default function MarketData() {
             <TabsTrigger value="calendar" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
               <Calendar className="h-4 w-4 mr-2" />
               Calendar
+            </TabsTrigger>
+            <TabsTrigger value="intelligence" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
+              <Brain className="h-4 w-4 mr-2" />
+              Market Intelligence
             </TabsTrigger>
           </TabsList>
 
@@ -240,6 +245,11 @@ export default function MarketData() {
             >
               <TradingViewWidget type="calendar" height="100%" />
             </ResizableWidget>
+          </TabsContent>
+
+          {/* Market Intelligence Tab */}
+          <TabsContent value="intelligence">
+            <MarketCauseEngine />
           </TabsContent>
         </Tabs>
 
