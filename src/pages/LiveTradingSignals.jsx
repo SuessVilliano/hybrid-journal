@@ -13,6 +13,7 @@ import RoutingRuleManager from '@/components/signals/RoutingRuleManager';
 import { useBrowserNotifications, showSignalNotification } from '@/components/notifications/BrowserNotifications';
 import { formatInTimezone } from '@/components/utils/timezoneHelper';
 import SignalCard from '@/components/signals/SignalCard';
+import { toast } from 'sonner';
 
 export default function LiveTradingSignals() {
   const [showWebhookInfo, setShowWebhookInfo] = useState(false);
@@ -112,14 +113,32 @@ export default function LiveTradingSignals() {
         executed_at: status === 'executed' ? new Date().toISOString() : undefined,
         trade_id 
       }),
-    onSuccess: () => queryClient.invalidateQueries(['signals'])
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries(['signals']);
+      if (variables.status === 'viewed') {
+        toast.success('Signal marked as viewed');
+      } else if (variables.status === 'ignored') {
+        toast.success('Signal ignored');
+      }
+    },
+    onError: (error) => {
+      toast.error('Failed to update signal: ' + error.message);
+    }
   });
 
   const routeTradeMutation = useMutation({
     mutationFn: ({ signal_id, override_approval }) =>
       base44.functions.invoke('routeTrade', { signal_id, override_approval }),
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries(['signals']);
+      if (response.data.success) {
+        toast.success('Trade executed successfully!');
+      } else {
+        toast.warning(response.data.approval_reason || 'Trade not approved for execution');
+      }
+    },
+    onError: (error) => {
+      toast.error('Routing failed: ' + error.message);
     }
   });
 
@@ -378,6 +397,7 @@ export default function LiveTradingSignals() {
                 onMarkViewed={(id) => updateStatusMutation.mutate({ id, status: 'viewed' })}
                 onIgnore={(id) => updateStatusMutation.mutate({ id, status: 'ignored' })}
                 isRouting={routeTradeMutation.isPending}
+                isUpdating={updateStatusMutation.isPending}
               />
             ))
           )}

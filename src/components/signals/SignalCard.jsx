@@ -171,7 +171,15 @@ export default function SignalCard({
                 </span>
                 <span className={darkMode ? 'text-slate-600' : 'text-slate-400'}>•</span>
                 <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>
-                  {formatInTimezone(signal.created_date, user?.timezone || 'America/New_York')}
+                  {new Date(signal.created_date).toLocaleString('en-US', {
+                    timeZone: user?.timezone || 'America/New_York',
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                  })}
                 </span>
               </div>
               {signal.strategy && (
