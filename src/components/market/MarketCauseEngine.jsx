@@ -15,17 +15,28 @@ export default function MarketCauseEngine() {
   const [analyzing, setAnalyzing] = useState(false);
   const [chatInput, setChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState([]);
+  const [selectedSymbol, setSelectedSymbol] = useState('ES');
+  const [symbolSearch, setSymbolSearch] = useState('');
   const darkMode = document.documentElement.classList.contains('dark');
 
-  useEffect(() => {
-    loadMarketIntel();
-    const interval = setInterval(loadMarketIntel, 60000); // Refresh every minute
-    return () => clearInterval(interval);
-  }, []);
+  const popularSymbols = ['ES', 'NQ', 'YM', 'RTY', 'EURUSD', 'GBPUSD', 'USDJPY', 'BTCUSD', 'ETHUSD', 'GC', 'CL', 'AAPL', 'TSLA', 'NVDA'];
 
-  const loadMarketIntel = async () => {
+  useEffect(() => {
+    loadMarketIntel(selectedSymbol);
+  }, [selectedSymbol]);
+
+  useEffect(() => {
+    const interval = setInterval(() => loadMarketIntel(selectedSymbol), 60000);
+    return () => clearInterval(interval);
+  }, [selectedSymbol]);
+
+  const loadMarketIntel = async (symbol) => {
+    setLoading(true);
     try {
-      const response = await base44.functions.invoke('marketCauseEngine', { action: 'scores' });
+      const response = await base44.functions.invoke('marketCauseEngine', { 
+        action: 'scores',
+        symbol: symbol || 'ES'
+      });
       setScores(response.data.scores);
       setMarketData(response.data.marketData);
       setLoading(false);
@@ -35,10 +46,20 @@ export default function MarketCauseEngine() {
     }
   };
 
+  const handleSymbolSearch = () => {
+    if (symbolSearch.trim()) {
+      setSelectedSymbol(symbolSearch.toUpperCase());
+      setSymbolSearch('');
+    }
+  };
+
   const handleAnalyze = async () => {
     setAnalyzing(true);
     try {
-      const response = await base44.functions.invoke('marketCauseEngine', { action: 'analyze' });
+      const response = await base44.functions.invoke('marketCauseEngine', { 
+        action: 'analyze',
+        symbol: selectedSymbol
+      });
       setAnalysis(response.data.analysis);
     } catch (error) {
       console.error('Analysis failed:', error);
@@ -69,7 +90,10 @@ Current Market Context:
 
 Provide a concise, actionable response about market conditions and drivers.`;
 
-      const aiResponse = await base44.integrations.Core.InvokeLLM({ prompt });
+      const aiResponse = await base44.integrations.Core.InvokeLLM({ 
+        prompt,
+        add_context_from_internet: true
+      });
       
       setChatMessages(prev => [...prev, { 
         role: 'assistant', 
@@ -100,20 +124,32 @@ Provide a concise, actionable response about market conditions and drivers.`;
 
   return (
     <div className="space-y-6">
-      {/* Header with Regime */}
+      {/* Header with Symbol Selection */}
       <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
         <CardContent className="p-6">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <h2 className={`text-2xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                Market Cause Engine
+                Market Cause Engine - {selectedSymbol}
               </h2>
               <p className={darkMode ? 'text-slate-400' : 'text-slate-600'}>
                 Real-time causality analysis - Move upstream from price
               </p>
             </div>
-            <div className="flex items-center gap-4">
-              <Button onClick={loadMarketIntel} variant="outline" size="sm">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Search symbol..."
+                  value={symbolSearch}
+                  onChange={(e) => setSymbolSearch(e.target.value.toUpperCase())}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSymbolSearch()}
+                  className={`w-32 ${darkMode ? 'bg-slate-900 border-slate-700' : ''}`}
+                />
+                <Button onClick={handleSymbolSearch} size="sm" variant="outline">
+                  Search
+                </Button>
+              </div>
+              <Button onClick={() => loadMarketIntel(selectedSymbol)} variant="outline" size="sm">
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
               </Button>
@@ -121,6 +157,25 @@ Provide a concise, actionable response about market conditions and drivers.`;
                 {scores?.regime}
               </Badge>
             </div>
+          </div>
+
+          {/* Popular Symbols Quick Select */}
+          <div className="flex flex-wrap gap-2 mt-4">
+            {popularSymbols.map(symbol => (
+              <button
+                key={symbol}
+                onClick={() => setSelectedSymbol(symbol)}
+                className={`px-3 py-1 rounded-lg text-sm font-medium transition ${
+                  selectedSymbol === symbol
+                    ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white'
+                    : darkMode 
+                      ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                {symbol}
+              </button>
+            ))}
           </div>
         </CardContent>
       </Card>

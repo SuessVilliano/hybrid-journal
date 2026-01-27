@@ -19,18 +19,19 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { action } = await req.json();
+    const { action, symbol } = await req.json();
+    const targetSymbol = symbol || 'ES';
 
-    // Fetch real-time market data
-    const marketData = await fetchMarketData();
+    // Fetch real-time market data for specific symbol
+    const marketData = await fetchMarketData(targetSymbol);
     
-    // Calculate all causality scores
-    const scores = calculateCauseScores(marketData);
+    // Calculate all causality scores for this symbol
+    const scores = calculateCauseScores(marketData, targetSymbol);
     
     // Generate analysis based on action
     let analysis = null;
     if (action === 'analyze') {
-      analysis = generateAnalysis(scores, marketData);
+      analysis = generateAnalysis(scores, marketData, targetSymbol);
     }
 
     // Save snapshot to database
@@ -66,7 +67,7 @@ Deno.serve(async (req) => {
 // DATA FETCHING
 // ═══════════════════════════════════════════════════════════
 
-async function fetchMarketData() {
+async function fetchMarketData(symbol) {
   // Fetch real-time data from multiple sources
   // In production, connect to FRED API, Yahoo Finance, etc.
   
@@ -74,10 +75,10 @@ async function fetchMarketData() {
   // TODO: Connect to real APIs with API keys
   
   const macro = await fetchMacroData();
-  const positioning = await fetchPositioningData();
-  const catalysts = await fetchCatalystCalendar();
+  const positioning = await fetchPositioningData(symbol);
+  const catalysts = await fetchCatalystCalendar(symbol);
   
-  return { macro, positioning, catalysts };
+  return { macro, positioning, catalysts, symbol };
 }
 
 async function fetchMacroData() {
@@ -94,37 +95,59 @@ async function fetchMacroData() {
   };
 }
 
-async function fetchPositioningData() {
+async function fetchPositioningData(symbol) {
   // TODO: Connect to CFTC COT reports and options data
+  // Symbol-specific positioning data
   
-  return {
-    es_net_position: -2.3,
-    dealer_gamma: 'negative',
-    put_call_ratio: 1.24,
-    cot_net_long: -15420
+  const symbolData = {
+    'ES': { net_position: -2.3, dealer_gamma: 'negative', put_call_ratio: 1.24, cot_net_long: -15420 },
+    'NQ': { net_position: -1.8, dealer_gamma: 'negative', put_call_ratio: 1.15, cot_net_long: -12300 },
+    'EURUSD': { net_position: 1.2, dealer_gamma: 'positive', put_call_ratio: 0.95, cot_net_long: 8200 },
+    'BTCUSD': { net_position: -0.5, dealer_gamma: 'negative', put_call_ratio: 1.45, cot_net_long: -5600 },
+    'GC': { net_position: 2.1, dealer_gamma: 'positive', put_call_ratio: 0.88, cot_net_long: 11500 }
   };
+  
+  return symbolData[symbol] || { net_position: 0, dealer_gamma: 'neutral', put_call_ratio: 1.0, cot_net_long: 0 };
 }
 
-async function fetchCatalystCalendar() {
+async function fetchCatalystCalendar(symbol) {
   // TODO: Connect to economic calendar API
+  // Symbol-specific catalysts
   
-  return [
+  const baseCatalysts = [
     { name: 'CPI', time: '14h 23m', impact: 'EXTREME', expected_volatility: 1.2 },
     { name: 'FOMC Decision', time: '3d', impact: 'HIGH', expected_volatility: 0.8 },
     { name: 'Treasury Auction', time: '1d', impact: 'MEDIUM', expected_volatility: 0.3 },
     { name: 'Retail Sales', time: '5d', impact: 'MEDIUM', expected_volatility: 0.4 }
   ];
+  
+  // Add symbol-specific catalysts
+  if (symbol.includes('USD') || symbol === 'ES' || symbol === 'NQ') {
+    return baseCatalysts;
+  } else if (symbol === 'BTCUSD' || symbol === 'ETHUSD') {
+    return [
+      { name: 'Bitcoin ETF Decision', time: '2d', impact: 'HIGH', expected_volatility: 1.5 },
+      ...baseCatalysts.slice(0, 2)
+    ];
+  } else if (symbol === 'GC') {
+    return [
+      { name: 'FOMC Decision', time: '3d', impact: 'EXTREME', expected_volatility: 1.0 },
+      { name: 'USD Data', time: '1d', impact: 'HIGH', expected_volatility: 0.6 }
+    ];
+  }
+  
+  return baseCatalysts;
 }
 
 // ═══════════════════════════════════════════════════════════
 // SCORING LOGIC
 // ═══════════════════════════════════════════════════════════
 
-function calculateCauseScores(marketData) {
-  const macro = scoreMacroPressure(marketData.macro);
+function calculateCauseScores(marketData, symbol) {
+  const macro = scoreMacroPressure(marketData.macro, symbol);
   const positioning = scorePositioning(marketData.positioning);
   const catalyst = scoreCatalystRisk(marketData.catalysts);
-  const sector = scoreSectorSensitivity(marketData.macro);
+  const sector = scoreSectorSensitivity(marketData.macro, symbol);
   
   const composite = (macro + positioning + catalyst + sector) / 4;
   
@@ -147,26 +170,33 @@ function calculateCauseScores(marketData) {
   return { macro, positioning, catalyst, sector, composite, regime, confidence };
 }
 
-function scoreMacroPressure(macro) {
+function scoreMacroPressure(macro, symbol) {
   let score = 50;
   
-  // Rate pressure
-  if (macro.yield_10y > 4.5) score += 10;
-  if (macro.yield_10y > 4.75) score += 10;
+  // Symbol-specific sensitivities
+  const isCrypto = symbol.includes('BTC') || symbol.includes('ETH');
+  const isGold = symbol === 'GC';
+  const isTech = symbol === 'NQ' || ['AAPL', 'TSLA', 'NVDA'].includes(symbol);
+  
+  // Rate pressure (more impact on tech/growth)
+  const rateMultiplier = isTech ? 1.5 : isCrypto ? 1.3 : 1.0;
+  if (macro.yield_10y > 4.5) score += 10 * rateMultiplier;
+  if (macro.yield_10y > 4.75) score += 10 * rateMultiplier;
   
   // Yield curve
   const curveSpread = macro.yield_10y - macro.yield_2y;
-  if (curveSpread < 0) score += 15; // Inverted
+  if (curveSpread < 0) score += 15;
   
-  // Dollar strength
-  if (macro.dxy > 103) score += 10;
-  if (macro.dxy > 105) score += 10;
+  // Dollar strength (inverse for gold, commodities, crypto)
+  const dollarMultiplier = isGold ? -1.5 : isCrypto ? -1.2 : 1.0;
+  if (macro.dxy > 103) score += 10 * dollarMultiplier;
+  if (macro.dxy > 105) score += 10 * dollarMultiplier;
   
   // VIX fear gauge
   if (macro.vix > 20) score += 10;
   if (macro.vix > 25) score += 15;
   
-  // Fed balance sheet (QT = tightening)
+  // Fed balance sheet
   if (macro.fed_balance_sheet < 7.5) score += 7;
   
   return Math.min(100, Math.max(0, score));
@@ -207,18 +237,32 @@ function scoreCatalystRisk(catalysts) {
   return Math.min(100, score);
 }
 
-function scoreSectorSensitivity(macro) {
+function scoreSectorSensitivity(macro, symbol) {
   let score = 50;
   
-  // Tech sensitivity to rates
-  if (macro.yield_10y > 4.5) score += 14;
+  const isCrypto = symbol.includes('BTC') || symbol.includes('ETH');
+  const isGold = symbol === 'GC';
+  const isTech = symbol === 'NQ' || ['AAPL', 'TSLA', 'NVDA'].includes(symbol);
+  const isEnergy = symbol === 'CL';
+  
+  // Tech sensitivity to rates (NQ, tech stocks)
+  if (isTech && macro.yield_10y > 4.5) score += 20;
+  
+  // Gold benefits from dollar weakness
+  if (isGold && macro.dxy > 103) score -= 15;
+  
+  // Crypto correlates with risk-on/tech
+  if (isCrypto) {
+    if (macro.yield_10y > 4.5) score += 18;
+    if (macro.vix > 20) score += 12;
+  }
+  
+  // Energy sensitivity
+  if (isEnergy && macro.dxy > 103) score += 8;
   
   // Financials benefit from steeper curve
   const curve = macro.yield_10y - macro.yield_2y;
   if (curve > 0.3) score -= 5;
-  
-  // Strong dollar hurts commodities
-  if (macro.dxy > 103) score += 10;
   
   return Math.min(100, Math.max(0, score));
 }
@@ -236,26 +280,33 @@ function isNearTerm(timeStr) {
 // ANALYSIS GENERATION
 // ═══════════════════════════════════════════════════════════
 
-function generateAnalysis(scores, marketData) {
+function generateAnalysis(scores, marketData, symbol) {
+  const isCrypto = symbol.includes('BTC') || symbol.includes('ETH');
+  const isGold = symbol === 'GC';
+  const isTech = symbol === 'NQ' || ['AAPL', 'TSLA', 'NVDA'].includes(symbol);
+  
   const causes = [
-    `Rate spike: 10Y yield at ${marketData.macro.yield_10y}% putting pressure on risk assets`,
-    `Dollar strength: DXY at ${marketData.macro.dxy} creating global liquidity pressure`,
-    `Dealer gamma ${marketData.positioning.dealer_gamma}: amplifying volatility`,
-    `VIX at ${marketData.macro.vix}: ${marketData.macro.vix > 20 ? 'elevated fear' : 'normal conditions'}`
+    `${symbol} - Rate environment: 10Y yield at ${marketData.macro.yield_10y}% ${isTech || isCrypto ? '(high pressure on growth assets)' : ''}`,
+    `Dollar at ${marketData.macro.dxy}: ${isGold || isCrypto ? 'creating headwinds' : 'supporting USD pairs'}`,
+    `Dealer gamma ${marketData.positioning.dealer_gamma}: ${marketData.positioning.dealer_gamma === 'negative' ? 'amplifying volatility in both directions' : 'dampening moves'}`,
+    `${symbol} positioning: Net ${marketData.positioning.net_position > 0 ? 'long' : 'short'} ${Math.abs(marketData.positioning.net_position)}B`,
+    `VIX at ${marketData.macro.vix}: ${marketData.macro.vix > 20 ? 'elevated fear environment' : 'calm conditions'}`
   ];
   
   const confirmation = [
-    `10Y yield breaking 4.60% → accelerates tech selling`,
-    `Monitor dealer hedging flows into close`,
-    `Watch VIX expansion above 20`
+    isTech ? `10Y yield breaking 4.60% → accelerates selling in ${symbol}` : `Momentum continuation in current direction`,
+    `Monitor positioning shifts and hedging flows`,
+    `Watch for ${marketData.catalysts[0]?.name} catalyst impact`
   ];
   
   const invalidation = [
-    `Yield reversal below 4.45% would ease pressure`,
-    `Dollar weakness (DXY < 102) would flip sentiment`
+    `Yield reversal below 4.45% would ease ${isTech || isCrypto ? 'rate pressure' : 'macro headwinds'}`,
+    isGold ? `Dollar weakness (DXY < 102) would be bullish for ${symbol}` : `Dollar strength would shift sentiment`,
+    `Regime change to ${scores.regime === 'RISK-OFF' ? 'RISK-ON' : 'RISK-OFF'} invalidates current bias`
   ];
   
-  const keyLevels = ['4485', '4460', '4420'];
+  // Symbol-specific key levels (simulated - in production, calculate from actual price data)
+  const keyLevels = getKeyLevels(symbol);
   
   return {
     causes,
@@ -263,4 +314,18 @@ function generateAnalysis(scores, marketData) {
     invalidation,
     key_levels: keyLevels
   };
+}
+
+function getKeyLevels(symbol) {
+  const levels = {
+    'ES': ['4485', '4460', '4420'],
+    'NQ': ['16800', '16500', '16200'],
+    'EURUSD': ['1.0850', '1.0800', '1.0750'],
+    'BTCUSD': ['42000', '40000', '38000'],
+    'GC': ['2050', '2020', '2000'],
+    'GBPUSD': ['1.2750', '1.2700', '1.2650'],
+    'USDJPY': ['149.50', '148.00', '146.50']
+  };
+  
+  return levels[symbol] || ['Check charts for levels'];
 }
