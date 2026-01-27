@@ -1,0 +1,266 @@
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+
+/**
+ * Market Cause Engine - Core Intelligence
+ * 
+ * Calculates real-time market causality scores and regime
+ * This function can be invoked by:
+ * - Frontend UI components
+ * - AI chatbot for real-time market insights
+ * - Trade entry forms to capture market context
+ */
+
+Deno.serve(async (req) => {
+  try {
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
+
+    if (!user) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { action } = await req.json();
+
+    // Fetch real-time market data
+    const marketData = await fetchMarketData();
+    
+    // Calculate all causality scores
+    const scores = calculateCauseScores(marketData);
+    
+    // Generate analysis based on action
+    let analysis = null;
+    if (action === 'analyze') {
+      analysis = generateAnalysis(scores, marketData);
+    }
+
+    // Save snapshot to database
+    await base44.asServiceRole.entities.MarketSnapshot.create({
+      regime: scores.regime,
+      composite_score: scores.composite,
+      macro_score: scores.macro,
+      positioning_score: scores.positioning,
+      catalyst_score: scores.catalyst,
+      sector_score: scores.sector,
+      primary_causes: analysis?.causes || [],
+      confirmation_signals: analysis?.confirmation || [],
+      invalidation_signals: analysis?.invalidation || [],
+      key_levels: analysis?.key_levels || [],
+      next_catalysts: marketData.catalysts,
+      macro_data: marketData.macro,
+      positioning_data: marketData.positioning
+    });
+
+    return Response.json({
+      scores,
+      analysis,
+      marketData,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+// DATA FETCHING
+// ═══════════════════════════════════════════════════════════
+
+async function fetchMarketData() {
+  // Fetch real-time data from multiple sources
+  // In production, connect to FRED API, Yahoo Finance, etc.
+  
+  // For now, using simulated data structure
+  // TODO: Connect to real APIs with API keys
+  
+  const macro = await fetchMacroData();
+  const positioning = await fetchPositioningData();
+  const catalysts = await fetchCatalystCalendar();
+  
+  return { macro, positioning, catalysts };
+}
+
+async function fetchMacroData() {
+  // TODO: Connect to FRED API and Yahoo Finance
+  // For now, returning structure with simulated data
+  
+  return {
+    yield_10y: 4.52,
+    yield_2y: 4.28,
+    dxy: 103.24,
+    fed_balance_sheet: 7.2,
+    vix: 18.4,
+    timestamp: new Date().toISOString()
+  };
+}
+
+async function fetchPositioningData() {
+  // TODO: Connect to CFTC COT reports and options data
+  
+  return {
+    es_net_position: -2.3,
+    dealer_gamma: 'negative',
+    put_call_ratio: 1.24,
+    cot_net_long: -15420
+  };
+}
+
+async function fetchCatalystCalendar() {
+  // TODO: Connect to economic calendar API
+  
+  return [
+    { name: 'CPI', time: '14h 23m', impact: 'EXTREME', expected_volatility: 1.2 },
+    { name: 'FOMC Decision', time: '3d', impact: 'HIGH', expected_volatility: 0.8 },
+    { name: 'Treasury Auction', time: '1d', impact: 'MEDIUM', expected_volatility: 0.3 },
+    { name: 'Retail Sales', time: '5d', impact: 'MEDIUM', expected_volatility: 0.4 }
+  ];
+}
+
+// ═══════════════════════════════════════════════════════════
+// SCORING LOGIC
+// ═══════════════════════════════════════════════════════════
+
+function calculateCauseScores(marketData) {
+  const macro = scoreMacroPressure(marketData.macro);
+  const positioning = scorePositioning(marketData.positioning);
+  const catalyst = scoreCatalystRisk(marketData.catalysts);
+  const sector = scoreSectorSensitivity(marketData.macro);
+  
+  const composite = (macro + positioning + catalyst + sector) / 4;
+  
+  // Determine regime
+  let regime, confidence;
+  if (composite >= 75) {
+    regime = 'RISK-OFF';
+    confidence = 'EXTREME';
+  } else if (composite >= 60) {
+    regime = 'CAUTION';
+    confidence = 'HIGH';
+  } else if (composite >= 40) {
+    regime = 'NEUTRAL';
+    confidence = 'MEDIUM';
+  } else {
+    regime = 'RISK-ON';
+    confidence = 'HIGH';
+  }
+  
+  return { macro, positioning, catalyst, sector, composite, regime, confidence };
+}
+
+function scoreMacroPressure(macro) {
+  let score = 50;
+  
+  // Rate pressure
+  if (macro.yield_10y > 4.5) score += 10;
+  if (macro.yield_10y > 4.75) score += 10;
+  
+  // Yield curve
+  const curveSpread = macro.yield_10y - macro.yield_2y;
+  if (curveSpread < 0) score += 15; // Inverted
+  
+  // Dollar strength
+  if (macro.dxy > 103) score += 10;
+  if (macro.dxy > 105) score += 10;
+  
+  // VIX fear gauge
+  if (macro.vix > 20) score += 10;
+  if (macro.vix > 25) score += 15;
+  
+  // Fed balance sheet (QT = tightening)
+  if (macro.fed_balance_sheet < 7.5) score += 7;
+  
+  return Math.min(100, Math.max(0, score));
+}
+
+function scorePositioning(positioning) {
+  let score = 50;
+  
+  // Net positioning
+  if (positioning.es_net_position < -2.0) score -= 15; // Heavy shorts = squeeze risk
+  else if (positioning.es_net_position > 2.0) score += 15; // Heavy longs = downside risk
+  
+  // Dealer gamma
+  if (positioning.dealer_gamma === 'negative') score += 15;
+  
+  // Put/Call ratio
+  if (positioning.put_call_ratio > 1.2) score += 10; // Defensive
+  else if (positioning.put_call_ratio < 0.8) score -= 10; // Complacent
+  
+  // COT positioning
+  if (positioning.cot_net_long < -10000) score -= 10;
+  else if (positioning.cot_net_long > 10000) score += 10;
+  
+  return Math.min(100, Math.max(0, score));
+}
+
+function scoreCatalystRisk(catalysts) {
+  let score = 50;
+  
+  for (const catalyst of catalysts) {
+    if (isNearTerm(catalyst.time)) {
+      if (catalyst.impact === 'EXTREME') score += 25;
+      else if (catalyst.impact === 'HIGH') score += 15;
+      else if (catalyst.impact === 'MEDIUM') score += 8;
+    }
+  }
+  
+  return Math.min(100, score);
+}
+
+function scoreSectorSensitivity(macro) {
+  let score = 50;
+  
+  // Tech sensitivity to rates
+  if (macro.yield_10y > 4.5) score += 14;
+  
+  // Financials benefit from steeper curve
+  const curve = macro.yield_10y - macro.yield_2y;
+  if (curve > 0.3) score -= 5;
+  
+  // Strong dollar hurts commodities
+  if (macro.dxy > 103) score += 10;
+  
+  return Math.min(100, Math.max(0, score));
+}
+
+function isNearTerm(timeStr) {
+  if (timeStr.includes('h') || timeStr.includes('m')) return true;
+  if (timeStr.includes('d')) {
+    const days = parseInt(timeStr);
+    return days <= 2;
+  }
+  return false;
+}
+
+// ═══════════════════════════════════════════════════════════
+// ANALYSIS GENERATION
+// ═══════════════════════════════════════════════════════════
+
+function generateAnalysis(scores, marketData) {
+  const causes = [
+    `Rate spike: 10Y yield at ${marketData.macro.yield_10y}% putting pressure on risk assets`,
+    `Dollar strength: DXY at ${marketData.macro.dxy} creating global liquidity pressure`,
+    `Dealer gamma ${marketData.positioning.dealer_gamma}: amplifying volatility`,
+    `VIX at ${marketData.macro.vix}: ${marketData.macro.vix > 20 ? 'elevated fear' : 'normal conditions'}`
+  ];
+  
+  const confirmation = [
+    `10Y yield breaking 4.60% → accelerates tech selling`,
+    `Monitor dealer hedging flows into close`,
+    `Watch VIX expansion above 20`
+  ];
+  
+  const invalidation = [
+    `Yield reversal below 4.45% would ease pressure`,
+    `Dollar weakness (DXY < 102) would flip sentiment`
+  ];
+  
+  const keyLevels = ['4485', '4460', '4420'];
+  
+  return {
+    causes,
+    confirmation,
+    invalidation,
+    key_levels: keyLevels
+  };
+}
