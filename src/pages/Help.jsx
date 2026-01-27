@@ -116,6 +116,18 @@ export default function Help() {
     {
       q: 'How do I earn badges and level up?',
       a: 'Badges are automatically awarded when you hit milestones. Track your progress on the Achievements page. Your level increases as you gain XP - each level requires Level × 1000 XP. Stay consistent to build streaks and climb the leaderboard!'
+    },
+    {
+      q: 'What is the Market Cause Engine?',
+      a: 'The Market Cause Engine analyzes WHY markets move, not just what they do. It scores macro pressure, positioning risk, catalyst threats, and sector sensitivity (0-100 scale) to determine market regime (RISK-ON, NEUTRAL, CAUTION, RISK-OFF). Access it in Live Market > Market Intelligence. Each symbol (ES, NQ, BTCUSD, etc.) gets custom analysis based on its sensitivities - for example, tech stocks are more affected by rate changes, gold by dollar strength.'
+    },
+    {
+      q: 'How do I use Market Intelligence for my trades?',
+      a: 'Search any symbol in the Market Intelligence tab to see its current cause scores and regime. Higher composite scores (70+) indicate more market pressure and volatility. Use the AI Copilot chat to ask questions like "Why is NQ moving?" or "Should I trade ES right now?" The system captures market context automatically when you log trades, so you can later analyze which regimes you perform best in.'
+    },
+    {
+      q: 'What do the Market Cause scores mean?',
+      a: 'Macro Score: rate/dollar/VIX pressure on assets. Positioning Score: where stops are, squeeze potential. Catalyst Score: upcoming event risk in 48h. Sector Score: symbol-specific macro sensitivity. Composite: overall pressure (0-40=RISK-ON, 40-60=NEUTRAL, 60-75=CAUTION, 75+=RISK-OFF). Different symbols react differently - crypto/tech hate high rates, gold loves weak dollar.'
     }
   ];
 
@@ -320,6 +332,10 @@ export default function Help() {
                 <div>
                   <strong className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>📊 AI Analysis:</strong>
                   <p className="mt-1">AI Coach → Deep Analysis tab → Select analysis type → View strategy performance, emotion correlation, risk assessment, and weekly summaries</p>
+                </div>
+                <div>
+                  <strong className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>🧠 Market Cause Engine:</strong>
+                  <p className="mt-1">Live Market → Market Intelligence tab → Search any symbol (ES, NQ, BTCUSD, etc.) → View real-time regime analysis, causality scores, and upcoming catalysts. Each symbol gets custom scoring based on its macro sensitivities.</p>
                 </div>
               </div>
             </div>
