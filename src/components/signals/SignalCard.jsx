@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, X, Check, Eye, Zap, Brain, Copy } from 'lucide-react';
+import { TrendingUp, TrendingDown, X, Check, Eye, Zap, Brain, Copy, Loader2 } from 'lucide-react';
 import { formatInTimezone, getRelativeTime } from '@/components/utils/timezoneHelper';
 import { toast } from 'sonner';
 
@@ -207,7 +207,11 @@ export default function SignalCard({
                   type="button"
                   disabled={isRouting || isUpdating}
                 >
-                  <Zap className={`h-4 w-4 mr-1 ${isRouting ? 'animate-spin' : ''}`} />
+                  {isRouting ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <Zap className="h-4 w-4 mr-1" />
+                  )}
                   <span className="text-xs">
                     {isRouting ? 'Processing...' : 'AI Route'}
                   </span>
@@ -219,7 +223,11 @@ export default function SignalCard({
                   type="button"
                   disabled={isRouting || isUpdating}
                 >
-                  <Check className={`h-4 w-4 mr-1 ${isRouting ? 'animate-spin' : ''}`} />
+                  {isRouting ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <Check className="h-4 w-4 mr-1" />
+                  )}
                   <span className="text-xs">
                     {isRouting ? 'Executing...' : 'Execute'}
                   </span>
@@ -229,10 +237,14 @@ export default function SignalCard({
                   variant="outline"
                   size="sm"
                   type="button"
-                  className="flex-1 md:flex-none transition-all active:scale-95"
+                  className="flex-1 md:flex-none transition-all hover:bg-cyan-500/10 active:scale-95"
                   disabled={isUpdating}
                 >
-                  <Eye className={`h-4 w-4 mr-1 ${isUpdating ? 'animate-pulse' : ''}`} />
+                  {isUpdating ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <Eye className="h-4 w-4 mr-1" />
+                  )}
                   <span className="text-xs">
                     {isUpdating ? 'Updating...' : 'Viewed'}
                   </span>
@@ -242,10 +254,14 @@ export default function SignalCard({
                   variant="outline"
                   size="sm"
                   type="button"
-                  className="flex-1 md:flex-none transition-all active:scale-95"
+                  className="flex-1 md:flex-none transition-all hover:bg-red-500/10 active:scale-95"
                   disabled={isUpdating}
                 >
-                  <X className={`h-4 w-4 mr-1 ${isUpdating ? 'animate-pulse' : ''}`} />
+                  {isUpdating ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <X className="h-4 w-4 mr-1" />
+                  )}
                   <span className="text-xs">
                     {isUpdating ? 'Updating...' : 'Ignore'}
                   </span>
@@ -261,7 +277,11 @@ export default function SignalCard({
                   type="button"
                   disabled={isRouting || isUpdating}
                 >
-                  <Zap className={`h-4 w-4 mr-1 ${isRouting ? 'animate-spin' : ''}`} />
+                  {isRouting ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <Zap className="h-4 w-4 mr-1" />
+                  )}
                   <span className="text-xs">
                     {isRouting ? 'Processing...' : 'AI Route'}
                   </span>
@@ -273,7 +293,11 @@ export default function SignalCard({
                   type="button"
                   disabled={isRouting || isUpdating}
                 >
-                  <Check className={`h-4 w-4 mr-1 ${isRouting ? 'animate-spin' : ''}`} />
+                  {isRouting ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <Check className="h-4 w-4 mr-1" />
+                  )}
                   <span className="text-xs">
                     {isRouting ? 'Executing...' : 'Execute'}
                   </span>
