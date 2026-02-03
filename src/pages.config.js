@@ -7,6 +7,7 @@ import Backtesting from './pages/Backtesting';
 import BrokerConnections from './pages/BrokerConnections';
 import Calculators from './pages/Calculators';
 import DailyPlanning from './pages/DailyPlanning';
+import HybridCopySettings from './pages/HybridCopySettings';
 import Dashboard from './pages/Dashboard';
 import Goals from './pages/Goals';
 import Help from './pages/Help';
@@ -50,6 +51,7 @@ export const PAGES = {
     "Goals": Goals,
     "Help": Help,
     "Home": Home,
+    "HybridCopySettings": HybridCopySettings,
     "Imports": Imports,
     "Journal": Journal,
     "Landing": Landing,
