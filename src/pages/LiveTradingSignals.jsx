@@ -30,6 +30,8 @@ export default function LiveTradingSignals() {
       maxConfidence: 100
     };
   });
+  const [updatingSignalId, setUpdatingSignalId] = useState(null);
+  const [routingSignalId, setRoutingSignalId] = useState(null);
   const queryClient = useQueryClient();
   const darkMode = document.documentElement.classList.contains('dark');
   const { permission, requestPermission, isSupported } = useBrowserNotifications();
@@ -107,14 +109,17 @@ export default function LiveTradingSignals() {
   }, [user, signals]);
 
   const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status, trade_id }) => 
-      base44.entities.Signal.update(id, { 
-        status, 
+    mutationFn: ({ id, status, trade_id }) =>
+      base44.entities.Signal.update(id, {
+        status,
         executed_at: status === 'executed' ? new Date().toISOString() : undefined,
-        trade_id 
+        trade_id
       }),
+    onMutate: (variables) => {
+      setUpdatingSignalId(variables.id);
+    },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries(['signals']);
+      queryClient.invalidateQueries({ queryKey: ['signals', user?.email] });
       if (variables.status === 'viewed') {
         toast.success('Signal marked as viewed');
       } else if (variables.status === 'ignored') {
@@ -123,14 +128,20 @@ export default function LiveTradingSignals() {
     },
     onError: (error) => {
       toast.error('Failed to update signal: ' + error.message);
+    },
+    onSettled: () => {
+      setUpdatingSignalId(null);
     }
   });
 
   const routeTradeMutation = useMutation({
     mutationFn: ({ signal_id, override_approval }) =>
       base44.functions.invoke('routeTrade', { signal_id, override_approval }),
+    onMutate: (variables) => {
+      setRoutingSignalId(variables.signal_id);
+    },
     onSuccess: (response) => {
-      queryClient.invalidateQueries(['signals']);
+      queryClient.invalidateQueries({ queryKey: ['signals', user?.email] });
       if (response.data.success) {
         toast.success('Trade executed successfully!');
       } else {
@@ -139,6 +150,9 @@ export default function LiveTradingSignals() {
     },
     onError: (error) => {
       toast.error('Routing failed: ' + error.message);
+    },
+    onSettled: () => {
+      setRoutingSignalId(null);
     }
   });
 
@@ -396,8 +410,8 @@ export default function LiveTradingSignals() {
                 onForceExecute={(id) => routeTradeMutation.mutate({ signal_id: id, override_approval: true })}
                 onMarkViewed={(id) => updateStatusMutation.mutate({ id, status: 'viewed' })}
                 onIgnore={(id) => updateStatusMutation.mutate({ id, status: 'ignored' })}
-                isRouting={routeTradeMutation.isPending}
-                isUpdating={updateStatusMutation.isPending}
+                isRouting={routingSignalId === signal.id}
+                isUpdating={updatingSignalId === signal.id}
               />
             ))
           )}
