@@ -109,50 +109,94 @@ export default function LiveTradingSignals() {
   }, [user, signals]);
 
   const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status, trade_id }) =>
-      base44.entities.Signal.update(id, {
-        status,
-        executed_at: status === 'executed' ? new Date().toISOString() : undefined,
-        trade_id
-      }),
-    onMutate: (variables) => {
+    mutationFn: ({ id, status }) =>
+      base44.functions.invoke('updateSignalStatus', { signal_id: id, status }),
+    onMutate: async (variables) => {
       setUpdatingSignalId(variables.id);
+
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['signals', user?.email] });
+
+      // Snapshot the previous value
+      const previousSignals = queryClient.getQueryData(['signals', user?.email]);
+
+      // Optimistically update the signal
+      queryClient.setQueryData(['signals', user?.email], (old) => {
+        if (!old) return old;
+        return old.map(signal =>
+          signal.id === variables.id
+            ? { ...signal, status: variables.status }
+            : signal
+        );
+      });
+
+      return { previousSignals };
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['signals', user?.email] });
-      if (variables.status === 'viewed') {
-        toast.success('Signal marked as viewed');
-      } else if (variables.status === 'ignored') {
-        toast.success('Signal ignored');
+    onSuccess: (response, variables) => {
+      if (response.data?.success) {
+        if (variables.status === 'viewed') {
+          toast.success('Signal marked as viewed');
+        } else if (variables.status === 'ignored') {
+          toast.success('Signal ignored');
+        }
+      } else {
+        toast.error(response.data?.error || 'Failed to update signal');
       }
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
+      // Rollback on error
+      if (context?.previousSignals) {
+        queryClient.setQueryData(['signals', user?.email], context.previousSignals);
+      }
       toast.error('Failed to update signal: ' + error.message);
     },
     onSettled: () => {
       setUpdatingSignalId(null);
+      // Refetch to ensure server state
+      queryClient.invalidateQueries({ queryKey: ['signals', user?.email] });
     }
   });
 
   const routeTradeMutation = useMutation({
     mutationFn: ({ signal_id, override_approval }) =>
       base44.functions.invoke('routeTrade', { signal_id, override_approval }),
-    onMutate: (variables) => {
+    onMutate: async (variables) => {
       setRoutingSignalId(variables.signal_id);
+
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['signals', user?.email] });
+
+      // Snapshot the previous value
+      const previousSignals = queryClient.getQueryData(['signals', user?.email]);
+
+      return { previousSignals };
     },
-    onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ['signals', user?.email] });
-      if (response.data.success) {
+    onSuccess: (response, variables) => {
+      if (response.data?.success) {
+        // Optimistically update to executed on success
+        queryClient.setQueryData(['signals', user?.email], (old) => {
+          if (!old) return old;
+          return old.map(signal =>
+            signal.id === variables.signal_id
+              ? { ...signal, status: 'executed', executed_at: new Date().toISOString() }
+              : signal
+          );
+        });
         toast.success('Trade executed successfully!');
       } else {
-        toast.warning(response.data.approval_reason || 'Trade not approved for execution');
+        toast.warning(response.data?.approval_reason || 'Trade not approved for execution');
       }
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
+      // Rollback on error
+      if (context?.previousSignals) {
+        queryClient.setQueryData(['signals', user?.email], context.previousSignals);
+      }
       toast.error('Routing failed: ' + error.message);
     },
     onSettled: () => {
       setRoutingSignalId(null);
+      queryClient.invalidateQueries({ queryKey: ['signals', user?.email] });
     }
   });
 
