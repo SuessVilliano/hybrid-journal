@@ -32,6 +32,7 @@ export default function LiveTradingSignals() {
   });
   const [updatingSignalId, setUpdatingSignalId] = useState(null);
   const [routingSignalId, setRoutingSignalId] = useState(null);
+  const [isMutating, setIsMutating] = useState(false);
   const queryClient = useQueryClient();
   const darkMode = document.documentElement.classList.contains('dark');
   const { permission, requestPermission, isSupported } = useBrowserNotifications();
@@ -74,7 +75,7 @@ export default function LiveTradingSignals() {
       }
     },
     enabled: !!user?.email,
-    refetchInterval: 5000,
+    refetchInterval: isMutating ? false : 10000, // Pause refetch during mutations, slower interval
     onSuccess: (newSignals) => {
       // Check for new signals and show browser notification
       if (user?.notification_preferences?.browser_push && permission === 'granted') {
@@ -109,10 +110,21 @@ export default function LiveTradingSignals() {
   }, [user, signals]);
 
   const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status }) =>
-      base44.functions.invoke('updateSignalStatus', { signal_id: id, status }),
+    mutationFn: async ({ id, status }) => {
+      // Try the new function first, fallback to direct update
+      try {
+        const response = await base44.functions.invoke('updateSignalStatus', { signal_id: id, status });
+        return response;
+      } catch (fnError) {
+        console.log('Function call failed, trying direct update:', fnError.message);
+        // Fallback: try direct entity update (may fail due to permissions)
+        await base44.entities.Signal.update(id, { status });
+        return { data: { success: true, fallback: true } };
+      }
+    },
     onMutate: async (variables) => {
       setUpdatingSignalId(variables.id);
+      setIsMutating(true);
 
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['signals', user?.email] });
@@ -132,18 +144,25 @@ export default function LiveTradingSignals() {
 
       return { previousSignals };
     },
-    onSuccess: (response, variables) => {
-      if (response.data?.success) {
+    onSuccess: (response, variables, context) => {
+      const success = response?.data?.success !== false;
+      if (success) {
         if (variables.status === 'viewed') {
           toast.success('Signal marked as viewed');
         } else if (variables.status === 'ignored') {
           toast.success('Signal ignored');
         }
+        // DON'T invalidate - trust the optimistic update
       } else {
-        toast.error(response.data?.error || 'Failed to update signal');
+        // Rollback on server rejection
+        if (context?.previousSignals) {
+          queryClient.setQueryData(['signals', user?.email], context.previousSignals);
+        }
+        toast.error(response?.data?.error || 'Failed to update signal');
       }
     },
     onError: (error, variables, context) => {
+      console.error('Update mutation error:', error);
       // Rollback on error
       if (context?.previousSignals) {
         queryClient.setQueryData(['signals', user?.email], context.previousSignals);
@@ -152,8 +171,8 @@ export default function LiveTradingSignals() {
     },
     onSettled: () => {
       setUpdatingSignalId(null);
-      // Refetch to ensure server state
-      queryClient.invalidateQueries({ queryKey: ['signals', user?.email] });
+      setIsMutating(false);
+      // Don't invalidate here - causes the revert issue
     }
   });
 
@@ -162,6 +181,7 @@ export default function LiveTradingSignals() {
       base44.functions.invoke('routeTrade', { signal_id, override_approval }),
     onMutate: async (variables) => {
       setRoutingSignalId(variables.signal_id);
+      setIsMutating(true);
 
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['signals', user?.email] });
@@ -173,7 +193,7 @@ export default function LiveTradingSignals() {
     },
     onSuccess: (response, variables) => {
       if (response.data?.success) {
-        // Optimistically update to executed on success
+        // Update to executed on success
         queryClient.setQueryData(['signals', user?.email], (old) => {
           if (!old) return old;
           return old.map(signal =>
@@ -188,6 +208,7 @@ export default function LiveTradingSignals() {
       }
     },
     onError: (error, variables, context) => {
+      console.error('Route trade error:', error);
       // Rollback on error
       if (context?.previousSignals) {
         queryClient.setQueryData(['signals', user?.email], context.previousSignals);
@@ -196,7 +217,8 @@ export default function LiveTradingSignals() {
     },
     onSettled: () => {
       setRoutingSignalId(null);
-      queryClient.invalidateQueries({ queryKey: ['signals', user?.email] });
+      setIsMutating(false);
+      // Don't invalidate - trust the optimistic/success update
     }
   });
 
