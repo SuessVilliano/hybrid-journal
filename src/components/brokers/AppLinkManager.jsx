@@ -59,10 +59,24 @@ export default function AppLinkManager() {
 
   const loadConnectedApps = async () => {
     try {
-      const apps = await base44.entities.ConnectedApp.list();
-      setConnectedApps(apps);
+      // Use the function since ConnectedApps are created by service role
+      const response = await base44.functions.invoke('getConnectedApps', {});
+      if (response.data?.success) {
+        setConnectedApps(response.data.apps || []);
+      } else {
+        // Fallback to direct list
+        const apps = await base44.entities.ConnectedApp.list();
+        setConnectedApps(apps);
+      }
     } catch (error) {
       console.error('Failed to load connected apps:', error);
+      // Fallback to direct list
+      try {
+        const apps = await base44.entities.ConnectedApp.list();
+        setConnectedApps(apps);
+      } catch (e) {
+        console.error('Fallback also failed:', e);
+      }
     }
   };
 
