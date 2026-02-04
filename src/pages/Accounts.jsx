@@ -102,10 +102,10 @@ export default function Accounts() {
     }`}>
       <div className="max-w-7xl mx-auto space-y-6">
         <Tabs defaultValue="accounts" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="accounts">My Accounts</TabsTrigger>
-            <TabsTrigger value="brokers">Broker Connections</TabsTrigger>
-            <TabsTrigger value="apps">App Linking</TabsTrigger>
+          <TabsList className={`${darkMode ? 'bg-slate-900/80' : 'bg-white/80'} p-1 relative z-10`}>
+            <TabsTrigger value="accounts" className="relative z-20 cursor-pointer">My Accounts</TabsTrigger>
+            <TabsTrigger value="brokers" className="relative z-20 cursor-pointer">Broker Connections</TabsTrigger>
+            <TabsTrigger value="apps" className="relative z-20 cursor-pointer">App Linking</TabsTrigger>
           </TabsList>
 
           <TabsContent value="accounts">
