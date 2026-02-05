@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
         await base44.asServiceRole.entities.ConnectedApp.create({
             user_id: tokenRecord.user_id,
             user_email: tokenRecord.created_by,
-            app_name: sourceSystem || tokenRecord.target_app || 'iCopyTrade',
+            app_name: sourceSystem || tokenRecord.target_app || 'HybridCopy',
             signing_secret_ref: sharedSigningSecret,
             status: 'active',
             total_events_received: 0

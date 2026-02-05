@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
     // Check recent sync events from Hybrid Copy
     const recentSyncEvents = await base44.entities.SyncEventLog.filter({
       user_email: user.email,
-      source: 'iCopyTrade'
+      source: 'HybridCopy'
     });
 
     // Get recent signals

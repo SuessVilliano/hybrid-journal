@@ -51,15 +51,16 @@ Deno.serve(async (req) => {
         }
 
         // Look up the shared secret (use asServiceRole for system-level operation)
-        const connectedApps = await base44.asServiceRole.entities.ConnectedApp.filter({
+        // Try the exact source name first
+        let connectedApps = await base44.asServiceRole.entities.ConnectedApp.filter({
             user_id: body.userId,
-            app_name: body.source || 'iCopyTrade',
+            app_name: body.source || 'HybridCopy',
             status: 'active'
         });
 
         if (connectedApps.length === 0) {
-            return Response.json({ 
-                error: 'No active connection found for this user and source' 
+            return Response.json({
+                error: 'No active connection found for this user and source'
             }, { status: 404 });
         }
 
@@ -93,7 +94,7 @@ Deno.serve(async (req) => {
             event_id: eventId,
             user_email: connectedApp.user_email,
             event_type: body.eventType || 'unknown',
-            source: body.source || 'iCopyTrade',
+            source: body.source || 'HybridCopy',
             connection_id: body.connectionId || null,
             payload: body,
             status: 'pending'
@@ -169,7 +170,7 @@ Deno.serve(async (req) => {
 
                 await base44.asServiceRole.entities.Signal.create({
                     user_email: connectedApp.user_email,
-                    provider: body.provider || 'iCopyTrade',
+                    provider: body.provider || 'HybridCopy',
                     symbol: signal.symbol,
                     action: signal.side,
                     price: signal.entryPrice || null,

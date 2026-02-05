@@ -318,10 +318,10 @@ export default function Help() {
                   <p className="mt-1">Accounts → Broker Connections → Connect Broker → Choose platform → Follow 3-step wizard with real-time credential validation</p>
                 </div>
                 <div>
-                  <strong className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>🔗 iCopyTrade Integration:</strong>
+                  <strong className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>🔗 HybridCopy Integration:</strong>
                   <ol className="ml-4 mt-1 space-y-1 list-decimal">
                     <li>Generate link token: Accounts → App Linking (expires 15 min)</li>
-                    <li>Enter token in iCopyTrade → Connect Journal</li>
+                    <li>Enter token in HybridCopy → Connect Journal</li>
                     <li>Trades auto-sync with HMAC security</li>
                   </ol>
                 </div>

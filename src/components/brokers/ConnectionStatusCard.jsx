@@ -35,7 +35,7 @@ export default function ConnectionStatusCard({ connection, onSync }) {
 
   const modeLabels = {
     'READONLY_API': 'API (Read-Only)',
-    'EXECUTION_VIA_ICOPYTRADE': 'iCopyTrade Execution',
+    'EXECUTION_VIA_ICOPYTRADE': 'HybridCopy Execution',
     'WEBHOOK_PUSH': 'Webhook Push',
     'STATEMENT_INGEST': 'Statement Import'
   };

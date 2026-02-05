@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
         const signature = req.headers.get('X-Signature');
         const timestamp = req.headers.get('X-Timestamp');
 
-        // Verify signature if provided (for iCopyTrade or webhook sources)
+        // Verify signature if provided (for HybridCopy or webhook sources)
         if (signature && data.connectionId) {
             const connection = await base44.entities.BrokerConnection.filter({ 
                 id: data.connectionId,

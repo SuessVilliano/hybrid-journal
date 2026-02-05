@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { targetApp = 'iCopyTrade' } = await req.json();
+        const { targetApp = 'HybridCopy' } = await req.json();
 
         // Generate unique token (UUID v4)
         const token = crypto.randomUUID();
