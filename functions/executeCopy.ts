@@ -165,7 +165,7 @@ Deno.serve(async (req) => {
         await base44.functions.invoke('syncEvents', {
             eventId: journalEventId,
             eventType: 'trade.opened',
-            source: 'iCopyTrade',
+            source: 'HybridCopy',
             connectionId: params.target_connection_id,
             trades: [{
                 sourceTradeId: executionResult.trade_id,

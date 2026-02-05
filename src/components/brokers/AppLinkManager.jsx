@@ -84,7 +84,7 @@ export default function AppLinkManager() {
     setGenerating(true);
     try {
       const response = await base44.functions.invoke('linkGenerate', {
-        targetApp: 'iCopyTrade'
+        targetApp: 'HybridCopy'
       });
 
       setLinkToken(response.data.linkToken);
@@ -172,12 +172,12 @@ export default function AppLinkManager() {
         <CardHeader>
           <CardTitle className={`flex items-center gap-2 ${darkMode ? 'text-white' : ''}`}>
             <Link2 className={`h-5 w-5 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`} />
-            Link iCopyTrade / HybridCopy
+            Link HybridCopy
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-            Generate a one-time link token to securely connect iCopyTrade to your Hybrid Journal account.
+            Generate a one-time link token to securely connect HybridCopy to your Hybrid Journal account.
             The token expires in 15 minutes.
           </p>
 
@@ -248,7 +248,7 @@ export default function AppLinkManager() {
                 </p>
                 <ol className={`text-sm space-y-1 list-decimal list-inside ${darkMode ? 'text-blue-200' : 'text-blue-800'}`}>
                   <li>Copy the token above</li>
-                  <li>Go to iCopyTrade → Settings → Connect Journal</li>
+                  <li>Go to HybridCopy → Settings → Connect Journal</li>
                   <li>Paste the token and click "Connect"</li>
                   <li>This page will automatically update when connected</li>
                 </ol>
