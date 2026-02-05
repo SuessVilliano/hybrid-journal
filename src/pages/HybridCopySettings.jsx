@@ -95,7 +95,7 @@ export default function HybridCopySettings() {
 
   const darkMode = document.documentElement.classList.contains('dark');
   const hybridCopyApps = connectedApps.filter(app =>
-    app.app_name === 'HybridCopy' || app.app_name === 'iCopyTrade'
+    app.app_name === 'HybridCopy'
   );
 
   return (

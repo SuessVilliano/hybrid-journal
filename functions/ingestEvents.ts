@@ -58,15 +58,6 @@ Deno.serve(async (req) => {
             status: 'active'
         });
 
-        // Backwards compatibility: if not found and source is HybridCopy, try legacy 'iCopyTrade'
-        if (connectedApps.length === 0 && (body.source === 'HybridCopy' || !body.source)) {
-            connectedApps = await base44.asServiceRole.entities.ConnectedApp.filter({
-                user_id: body.userId,
-                app_name: 'iCopyTrade',
-                status: 'active'
-            });
-        }
-
         if (connectedApps.length === 0) {
             return Response.json({
                 error: 'No active connection found for this user and source'

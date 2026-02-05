@@ -59,7 +59,6 @@ Deno.serve(async (req) => {
         });
 
         // Create ConnectedApp record (store the actual secret for HMAC verification)
-        // Default to 'HybridCopy' for new connections (replacing legacy 'iCopyTrade')
         await base44.asServiceRole.entities.ConnectedApp.create({
             user_id: tokenRecord.user_id,
             user_email: tokenRecord.created_by,
