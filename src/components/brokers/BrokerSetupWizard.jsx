@@ -27,7 +27,7 @@ export default function BrokerSetupWizard({ isOpen, onClose, onComplete }) {
   const [validationResult, setValidationResult] = useState(null);
 
   const providers = [
-    { id: 'DXTrade', name: 'DXTrade', docs: 'https://dx.trade/apis/', modes: ['READONLY_API', 'STATEMENT_INGEST'] },
+    { id: 'DXTrade', name: 'DXTrade', docs: 'https://dx.trade/apis/', modes: ['DXTRADE_LOGIN', 'STATEMENT_INGEST'] },
     { id: 'cTrader', name: 'cTrader', docs: 'https://help.ctrader.com/open-api/', modes: ['READONLY_API', 'STATEMENT_INGEST'] },
     { id: 'MatchTrader', name: 'Match-Trader', docs: 'https://docs.match-trade.com/', modes: ['READONLY_API', 'STATEMENT_INGEST'] },
     { id: 'Rithmic', name: 'Rithmic', docs: 'https://www.rithmic.com/apis', modes: ['READONLY_API', 'STATEMENT_INGEST'] },
@@ -41,6 +41,13 @@ export default function BrokerSetupWizard({ isOpen, onClose, onComplete }) {
   ];
 
   const modeInfo = {
+    'DXTRADE_LOGIN': {
+      name: 'DXtrade Auto-Sync (Recommended)',
+      description: 'Automatically sync trades using your DXtrade login credentials',
+      requirements: ['Account Number', 'Password', 'Server/Domain'],
+      icon: '⚡',
+      difficulty: 'Easy'
+    },
     'READONLY_API': {
       name: 'API Connection (Read-Only)',
       description: 'Automatically sync trades via official API',
@@ -102,15 +109,15 @@ export default function BrokerSetupWizard({ isOpen, onClose, onComplete }) {
       }
     },
     'DXTrade': {
-      'READONLY_API': {
+      'DXTRADE_LOGIN': {
         steps: [
-          'Contact your broker support team',
-          'Request DXTrade API access (provide account number)',
-          'Receive API credentials via email or broker dashboard',
-          'Note your specific API server URL (e.g., api.yourbroker.com)',
-          'Paste credentials below and validate'
+          'Enter your DXtrade account number (login)',
+          'Enter your DXtrade password',
+          'Select your prop firm server (e.g., gooeytrade.com)',
+          'Click Test Login to verify credentials',
+          'Enable auto-sync to automatically import trades'
         ],
-        fields: ['api_key', 'api_secret', 'server', 'account_number']
+        fields: ['account_number', 'password', 'server']
       },
       'STATEMENT_INGEST': {
         steps: [

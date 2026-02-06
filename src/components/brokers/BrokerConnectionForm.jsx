@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { X, Loader2, CheckCircle, AlertCircle, Info } from 'lucide-react';
+import { X, Loader2, CheckCircle, AlertCircle, Info, Zap } from 'lucide-react';
 import { SUPPORTED_BROKERS, validateBrokerCredentials } from './brokerAPIHelper';
+import { base44 } from '@/api/base44Client';
 
 export default function BrokerConnectionForm({ connection, onSubmit, onCancel }) {
   const [formData, setFormData] = useState(connection || {
@@ -28,17 +29,23 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
   const [validating, setValidating] = useState(false);
   const [validationResult, setValidationResult] = useState(null);
 
-  const selectedBroker = useMemo(() => 
+  const selectedBroker = useMemo(() =>
     SUPPORTED_BROKERS.find(b => b.id === formData.broker_id),
     [formData.broker_id]
   );
+
+  // Check if this broker supports direct login (like DXtrade)
+  const isDXTrade = formData.broker_id === 'dxtrade';
+  const supportsAutoSync = selectedBroker?.supportsAutoSync || isDXTrade;
 
   const handleBrokerChange = (broker_id) => {
     const broker = SUPPORTED_BROKERS.find(b => b.id === broker_id);
     setFormData({
       ...formData,
       broker_id,
-      broker_name: broker.name
+      broker_name: broker.name,
+      // Set DXtrade to use dxtrade_login connection type
+      connection_type: broker_id === 'dxtrade' ? 'dxtrade_login' : formData.connection_type
     });
     setValidationResult(null);
   };
@@ -46,16 +53,40 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
   const handleValidate = async () => {
     setValidating(true);
     setValidationResult(null);
-    
+
     try {
-      const result = await validateBrokerCredentials(formData.broker_id, {
-        api_key: formData.api_key,
-        api_secret: formData.api_secret,
-        account_number: formData.account_number,
-        server: formData.server
-      });
-      
-      setValidationResult(result);
+      if (isDXTrade || formData.connection_type === 'dxtrade_login') {
+        // Use the backend validateCredentials for DXtrade
+        const response = await base44.functions.invoke('validateCredentials', {
+          provider: 'DXTrade',
+          apiKey: formData.account_number, // Account number as username
+          apiSecret: formData.password, // Password
+          server: formData.server || 'gooeytrade.com',
+          accountNumber: formData.account_number
+        });
+
+        if (response.data.valid) {
+          setValidationResult({
+            valid: true,
+            message: 'DXtrade login successful! Auto-sync is ready.',
+            account_info: response.data.details
+          });
+        } else {
+          setValidationResult({
+            valid: false,
+            message: response.data.message || 'DXtrade login failed. Check your credentials and server.'
+          });
+        }
+      } else {
+        const result = await validateBrokerCredentials(formData.broker_id, {
+          api_key: formData.api_key,
+          api_secret: formData.api_secret,
+          account_number: formData.account_number,
+          server: formData.server
+        });
+
+        setValidationResult(result);
+      }
     } catch (error) {
       setValidationResult({ valid: false, message: error.message });
     } finally {
@@ -65,10 +96,19 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit({
-      ...formData,
-      status: formData.connection_type === 'credentials' ? 'manual' : (validationResult?.valid ? 'connected' : 'pending')
-    });
+
+    // For DXtrade, store credentials in the right fields for the sync function
+    const submitData = { ...formData };
+    if (isDXTrade || formData.connection_type === 'dxtrade_login') {
+      // Store password in api_secret for the sync function to use
+      submitData.api_secret = formData.password;
+      submitData.connection_type = 'dxtrade_login';
+      submitData.status = validationResult?.valid ? 'connected' : 'pending';
+    } else {
+      submitData.status = formData.connection_type === 'credentials' ? 'manual' : (validationResult?.valid ? 'connected' : 'pending');
+    }
+
+    onSubmit(submitData);
   };
 
   return (
@@ -133,21 +173,101 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Connection Type *
               </label>
-              <Select 
-                value={formData.connection_type} 
+              <Select
+                value={formData.connection_type}
                 onValueChange={(val) => setFormData({...formData, connection_type: val})}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="credentials">Username & Password (Prop Firms)</SelectItem>
+                  {isDXTrade && (
+                    <SelectItem value="dxtrade_login">
+                      <div className="flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-green-500" />
+                        DXtrade Auto-Sync (Recommended)
+                      </div>
+                    </SelectItem>
+                  )}
+                  <SelectItem value="credentials">Username & Password (Manual Import)</SelectItem>
                   <SelectItem value="api">API Keys</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            {formData.connection_type === 'credentials' ? (
+            {/* DXtrade Auto-Sync Login */}
+            {formData.connection_type === 'dxtrade_login' ? (
+              <>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-start gap-2">
+                  <Zap className="h-5 w-5 text-green-600 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-green-900">DXtrade Auto-Sync</p>
+                    <p className="text-xs text-green-700 mt-1">
+                      Enter your DXtrade login credentials to enable automatic trade syncing.
+                      Your trades will be imported automatically.
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Password *
+                  </label>
+                  <Input
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({...formData, password: e.target.value})}
+                    placeholder="Your DXtrade password"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Server / Domain *
+                  </label>
+                  <Select
+                    value={formData.server}
+                    onValueChange={(val) => setFormData({...formData, server: val})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your prop firm server" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="gooeytrade.com">GooyeTrade (gooeytrade.com)</SelectItem>
+                      <SelectItem value="ftmo.com">FTMO (ftmo.com)</SelectItem>
+                      <SelectItem value="thefundedtrader.com">The Funded Trader</SelectItem>
+                      <SelectItem value="e8funding.com">E8 Funding</SelectItem>
+                      <SelectItem value="fundednext.com">Funded Next</SelectItem>
+                      <SelectItem value="custom">Custom Server...</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {formData.server === 'custom' && (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Custom Server Domain
+                    </label>
+                    <Input
+                      value={formData.custom_server || ''}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        custom_server: e.target.value,
+                        server: e.target.value
+                      })}
+                      placeholder="yourpropfirm.com"
+                    />
+                  </div>
+                )}
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-800">
+                    🔒 Your credentials are encrypted and stored securely. We use them only to sync your trade history.
+                  </p>
+                </div>
+              </>
+            ) : formData.connection_type === 'credentials' ? (
               <>
                 {/* Platform Credentials */}
                 <div>
@@ -197,7 +317,7 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
 
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                   <p className="text-sm text-amber-800">
-                    ℹ️ <strong>Manual Import Only:</strong> Username/password credentials cannot be used for automatic syncing. 
+                    ℹ️ <strong>Manual Import Only:</strong> Username/password credentials cannot be used for automatic syncing.
                     Export your statements from the platform and use the Import feature to add trades.
                   </p>
                 </div>
@@ -256,8 +376,8 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
               />
             </div>
 
-            {/* Auto Sync Settings - Only for API connections */}
-            {formData.connection_type === 'api' && (
+            {/* Auto Sync Settings - For API connections and DXtrade */}
+            {(formData.connection_type === 'api' || formData.connection_type === 'dxtrade_login') && (
               <div className="flex items-center gap-4">
                 <label className="flex items-center gap-2">
                   <input
@@ -337,27 +457,31 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
               <Button type="button" variant="outline" onClick={onCancel}>
                 Cancel
               </Button>
-              {formData.connection_type === 'api' && (
+              {(formData.connection_type === 'api' || formData.connection_type === 'dxtrade_login') && (
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handleValidate}
-                  disabled={validating || !formData.api_key || !formData.account_number}
+                  disabled={validating ||
+                    (formData.connection_type === 'dxtrade_login'
+                      ? (!formData.account_number || !formData.password || !formData.server)
+                      : (!formData.api_key || !formData.account_number))
+                  }
                 >
                   {validating ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Validating...
+                      {formData.connection_type === 'dxtrade_login' ? 'Logging in...' : 'Validating...'}
                     </>
                   ) : (
-                    'Test Connection'
+                    formData.connection_type === 'dxtrade_login' ? 'Test Login' : 'Test Connection'
                   )}
                 </Button>
               )}
               <Button
                 type="submit"
                 className="bg-blue-600 hover:bg-blue-700"
-                disabled={formData.connection_type === 'api' && !validationResult?.valid}
+                disabled={(formData.connection_type === 'api' || formData.connection_type === 'dxtrade_login') && !validationResult?.valid}
               >
                 Save Connection
               </Button>

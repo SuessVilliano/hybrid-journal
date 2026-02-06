@@ -51,19 +51,19 @@ export default function ProviderDocs({ provider, mode }) {
       }
     },
     'DXTrade': {
-      'READONLY_API': {
-        title: 'DXTrade API Integration',
-        description: 'Connect using DXTrade REST API',
+      'DXTRADE_LOGIN': {
+        title: 'DXtrade Auto-Sync (Recommended)',
+        description: 'Automatically sync trades using your DXtrade login credentials',
         links: [
-          { label: 'DXTrade API Docs', url: 'https://dx.trade/apis/' },
-          { label: 'Request API Access', url: 'https://dx.trade/contact' }
+          { label: 'GooyeTrade', url: 'https://trade.gooeytrade.com/' },
+          { label: 'DXTrade Platform', url: 'https://dx.trade/' }
         ],
         notes: [
-          'Contact your broker to enable API access (not enabled by default)',
-          'Requires API key and secret from broker dashboard',
-          'Server URL varies by broker (e.g., api.yourbroker.com)',
-          'Polling-based sync (check every 1-5 minutes)',
-          'Best for: Brokers with API access enabled'
+          'Uses your existing DXtrade login (same as web platform)',
+          'Supports most prop firms using DXtrade: FTMO, GooyeTrade, FundedNext, etc.',
+          'Automatic trade syncing every hour or on-demand',
+          'No API keys needed - just your login credentials',
+          'Best for: All DXtrade prop firm accounts'
         ]
       },
       'STATEMENT_INGEST': {
@@ -76,7 +76,7 @@ export default function ProviderDocs({ provider, mode }) {
           'Log in to DXTrade web platform',
           'Navigate to Reports → Trade History',
           'Export as CSV or Excel',
-          'Best for: When API access is unavailable'
+          'Best for: When auto-sync is unavailable'
         ]
       }
     },

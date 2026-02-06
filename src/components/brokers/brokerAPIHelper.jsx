@@ -26,13 +26,15 @@ export const SUPPORTED_BROKERS = [
     fields: ['account_number', 'api_key', 'api_secret'],
     instructions: 'Generate API credentials in cTrader Settings > API Access'
   },
-  { 
-    id: 'dxtrade', 
-    name: 'DXTrade', 
-    type: 'forex', 
+  {
+    id: 'dxtrade',
+    name: 'DXTrade',
+    type: 'forex',
     requiresCredentials: true,
-    fields: ['account_number', 'api_key', 'api_secret'],
-    instructions: 'Get API credentials from your DXTrade broker portal'
+    fields: ['account_number', 'password', 'server'],
+    instructions: 'Enter your DXTrade login credentials. Server is your prop firm domain (e.g., gooeytrade.com, ftmo.com)',
+    supportsAutoSync: true,
+    syncFunction: 'syncDXTrade'
   },
   { 
     id: 'binance', 
@@ -249,10 +251,21 @@ export async function executeSimulatedTrade(brokerConnection, tradeParams) {
 // Sync trades from broker using backend function
 export async function syncBrokerTrades(brokerConnection, syncType = 'manual') {
   try {
-    const response = await base44.functions.invoke('syncBroker', {
+    // Route to the appropriate sync function based on broker type
+    let functionName = 'syncBroker';
+
+    // DXtrade uses its own dedicated sync function
+    if (brokerConnection.broker_id === 'dxtrade' ||
+        brokerConnection.connection_type === 'dxtrade_login') {
+      functionName = 'syncDXTrade';
+    }
+
+    console.log(`[syncBrokerTrades] Using ${functionName} for ${brokerConnection.broker_name}`);
+
+    const response = await base44.functions.invoke(functionName, {
       connection_id: brokerConnection.id
     });
-    
+
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.error || error.message);
