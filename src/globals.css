@@ -94,4 +94,18 @@
       min-width: 44px;
     }
   }
+  
+  /* Active/pressed states for mobile touch feedback */
+  button:active, 
+  a[role="button"]:active,
+  [role="button"]:active {
+    transform: scale(0.97);
+    opacity: 0.9;
+    transition: all 0.1s ease;
+  }
+  
+  .touch-feedback:active {
+    transform: scale(0.98);
+    opacity: 0.95;
+  }
 }

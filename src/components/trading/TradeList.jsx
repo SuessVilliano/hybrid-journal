@@ -5,14 +5,22 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Pencil, Trash2, TrendingUp, TrendingDown } from 'lucide-react';
 import { format } from 'date-fns';
+import PullToRefresh from '@/components/mobile/PullToRefresh';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function TradeList({ trades, onEdit, onDelete, selectedTrades = [], onSelectTrade, onSelectAll, bulkMode }) {
+  const queryClient = useQueryClient();
+
+  const handleRefresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['trades'] });
+  };
   const darkMode = document.documentElement.classList.contains('dark');
   const allSelected = trades.length > 0 && selectedTrades.length === trades.length;
   
   return (
-    <div className="space-y-3">
-      {bulkMode && trades.length > 0 && (
+    <PullToRefresh onRefresh={handleRefresh}>
+      <div className="space-y-3">
+        {bulkMode && trades.length > 0 && (
         <Card className={`p-4 ${darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}`}>
           <div className="flex items-center gap-3">
             <Checkbox
@@ -134,7 +142,8 @@ export default function TradeList({ trades, onEdit, onDelete, selectedTrades = [
             </div>
           )}
         </Card>
-      ))}
-    </div>
+        ))}
+      </div>
+    </PullToRefresh>
   );
 }

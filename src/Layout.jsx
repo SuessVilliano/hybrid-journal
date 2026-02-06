@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { base44 } from '@/api/base44Client';
 import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText, Menu, X, Wallet, Sun, Moon, Home, Users, User, Brain, GripVertical, Star, Clock, List, Bell, HelpCircle, UserCheck, Image as ImageIcon, Trophy } from 'lucide-react';
 import FloatingAIAssistant from '@/components/ai/FloatingAIAssistant';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import MobileHeader from '@/components/layout/MobileHeader';
+import { AnimatePresence, motion } from 'framer-motion';
 
 import NotificationBell from '@/components/notifications/NotificationBell';
 
@@ -34,6 +35,8 @@ export default function Layout({ children, currentPageName }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const [lastTap, setLastTap] = useState({ page: null, time: 0 });
 
   useEffect(() => {
     const checkMobile = () => {
@@ -574,7 +577,17 @@ export default function Layout({ children, currentPageName }) {
       <main className={`transition-all duration-300 ${sidebarOpen ? 'ml-64' : isMobile ? 'ml-0' : 'ml-16'} ${
         isMobile ? 'pt-14 pb-20' : ''
       }`}>
-        {children}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.2, ease: 'easeInOut' }}
+          >
+            {children}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* Mobile Bottom Tab Bar */}
@@ -594,11 +607,23 @@ export default function Layout({ children, currentPageName }) {
               const Icon = item.icon;
               const isActive = currentPageName === item.page;
               
+              const handleTabClick = (e) => {
+                const now = Date.now();
+                if (isActive && lastTap.page === item.page && now - lastTap.time < 500) {
+                  // Double tap on active tab - reset to root
+                  e.preventDefault();
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  navigate(createPageUrl(item.page), { replace: true });
+                }
+                setLastTap({ page: item.page, time: now });
+              };
+              
               return (
                 <Link
                   key={item.id}
                   to={createPageUrl(item.page)}
-                  className={`flex flex-col items-center justify-center flex-1 h-full min-h-[44px] transition-colors ${
+                  onClick={handleTabClick}
+                  className={`flex flex-col items-center justify-center flex-1 h-full min-h-[44px] transition-colors active:scale-95 ${
                     isActive
                       ? darkMode
                         ? 'text-cyan-400'

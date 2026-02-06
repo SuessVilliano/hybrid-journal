@@ -68,6 +68,24 @@ export default function Journal() {
         date: new Date().toISOString()
       });
     },
+    onMutate: async (newEntry) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['journalEntries'] });
+
+      // Snapshot the previous value
+      const previousEntries = queryClient.getQueryData(['journalEntries']);
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(['journalEntries'], (old) => {
+        return [{ ...newEntry, id: 'temp-' + Date.now(), date: new Date().toISOString() }, ...(old || [])];
+      });
+
+      return { previousEntries };
+    },
+    onError: (err, newEntry, context) => {
+      // Rollback on error
+      queryClient.setQueryData(['journalEntries'], context.previousEntries);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['journalEntries']);
       setNewEntry({ content: '', mood_tags: [], entry_type: 'thought' });

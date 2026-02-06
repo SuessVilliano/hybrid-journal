@@ -46,6 +46,24 @@ export default function Trades() {
 
   const createTradeMutation = useMutation({
     mutationFn: (data) => base44.entities.Trade.create(data),
+    onMutate: async (newTrade) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['trades'] });
+
+      // Snapshot the previous value
+      const previousTrades = queryClient.getQueryData(['trades', user?.email]);
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(['trades', user?.email], (old) => {
+        return [{ ...newTrade, id: 'temp-' + Date.now(), created_date: new Date().toISOString() }, ...(old || [])];
+      });
+
+      return { previousTrades };
+    },
+    onError: (err, newTrade, context) => {
+      // Rollback on error
+      queryClient.setQueryData(['trades', user?.email], context.previousTrades);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trades'] });
       setShowForm(false);
