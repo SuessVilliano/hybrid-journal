@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Link as LinkIcon, AlertCircle, RefreshCw } from 'lucide-react';
+import { Plus, Link as LinkIcon, AlertCircle, RefreshCw, Loader2 } from 'lucide-react';
 import BrokerConnectionForm from '@/components/brokers/BrokerConnectionForm';
 import BrokerConnectionCard from '@/components/brokers/BrokerConnectionCard';
 import AutoSyncManager from '@/components/brokers/AutoSyncManager';
@@ -13,6 +13,8 @@ import { syncBrokerTrades } from '@/components/brokers/brokerAPIHelper';
 export default function BrokerConnections() {
   const [showForm, setShowForm] = useState(false);
   const [editingConnection, setEditingConnection] = useState(null);
+  const [syncingAll, setSyncingAll] = useState(false);
+  const [loginSyncDone, setLoginSyncDone] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -92,6 +94,42 @@ export default function BrokerConnections() {
     }
   };
 
+  // Sync all connected accounts
+  const handleSyncAll = async () => {
+    setSyncingAll(true);
+    try {
+      const response = await base44.functions.invoke('onLoginSync', {});
+      const data = response.data;
+
+      queryClient.invalidateQueries(['brokerConnections']);
+      queryClient.invalidateQueries(['trades']);
+
+      if (data.success) {
+        alert(`✅ Sync complete!\n${data.synced} accounts synced\n${data.skipped} skipped (recently synced)\n${data.errors} errors`);
+      } else {
+        alert(`⚠️ Sync partially failed: ${data.error}`);
+      }
+    } catch (error) {
+      alert(`❌ Sync all failed: ${error.message}`);
+    } finally {
+      setSyncingAll(false);
+    }
+  };
+
+  // Auto-sync on first page load (simulates on-login sync)
+  useEffect(() => {
+    if (!loginSyncDone && connections.length > 0) {
+      setLoginSyncDone(true);
+      // Trigger background sync - don't wait for it
+      base44.functions.invoke('onLoginSync', {}).then(() => {
+        queryClient.invalidateQueries(['brokerConnections']);
+        queryClient.invalidateQueries(['trades']);
+      }).catch(err => {
+        console.log('[LoginSync] Background sync error:', err.message);
+      });
+    }
+  }, [connections, loginSyncDone]);
+
   const darkMode = document.documentElement.classList.contains('dark');
 
   return (
@@ -114,16 +152,38 @@ export default function BrokerConnections() {
               Connect your trading accounts for automatic sync
             </p>
           </div>
-          <Button
-            onClick={() => {
-              setEditingConnection(null);
-              setShowForm(true);
-            }}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Broker
-          </Button>
+          <div className="flex gap-3">
+            {connections.length > 0 && (
+              <Button
+                onClick={handleSyncAll}
+                disabled={syncingAll}
+                variant="outline"
+                className={darkMode ? 'border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10' : 'border-slate-300 text-slate-700 hover:bg-slate-100'}
+              >
+                {syncingAll ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Syncing All...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Sync All
+                  </>
+                )}
+              </Button>
+            )}
+            <Button
+              onClick={() => {
+                setEditingConnection(null);
+                setShowForm(true);
+              }}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Broker
+            </Button>
+          </div>
         </div>
 
         {/* Info Banner */}
@@ -177,7 +237,10 @@ export default function BrokerConnections() {
               <BrokerConnectionCard
                 key={connection.id}
                 connection={connection}
-                onEdit={setEditingConnection}
+                onEdit={(conn) => {
+                  setEditingConnection(conn);
+                  setShowForm(true);
+                }}
                 onDelete={handleDelete}
                 onSync={handleSync}
               />
