@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { base44 } from '@/api/base44Client';
 import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText, Menu, X, Wallet, Sun, Moon, Home, Users, User, Brain, GripVertical, Star, Clock, List, Bell, HelpCircle, UserCheck, Image as ImageIcon, Trophy } from 'lucide-react';
 import FloatingAIAssistant from '@/components/ai/FloatingAIAssistant';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import MobileHeader from '@/components/layout/MobileHeader';
 
 import NotificationBell from '@/components/notifications/NotificationBell';
 
@@ -18,7 +19,11 @@ export default function Layout({ children, currentPageName }) {
   const [showAI, setShowAI] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('theme');
-    return saved ? saved === 'dark' : true;
+    if (saved) {
+      return saved === 'dark';
+    }
+    // Auto-detect system preference
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
   const [menuOrder, setMenuOrder] = useState([]);
   const [loadingMenu, setLoadingMenu] = useState(true);
@@ -28,6 +33,7 @@ export default function Layout({ children, currentPageName }) {
   const [settingsId, setSettingsId] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     const checkMobile = () => {
@@ -246,6 +252,24 @@ export default function Layout({ children, currentPageName }) {
       console.error('Failed to update menu view:', error);
     }
   };
+
+  // Bottom tab bar items for mobile
+  const mobileTabItems = [
+    { id: 'dashboard', name: 'Home', page: 'Dashboard', icon: LayoutDashboard },
+    { id: 'planning', name: 'Plans', page: 'TradePlans', icon: Target },
+    { id: 'signals', name: 'Signals', page: 'LiveTradingSignals', icon: Zap },
+    { id: 'coach', name: 'Coach', page: 'TradingCoach', icon: MessageSquare },
+    { id: 'profile', name: 'Profile', page: 'MyProfile', icon: User },
+  ];
+
+  // Get page title from current navigation
+  const getPageTitle = () => {
+    const currentItem = defaultNavigation.find(item => item.page === currentPageName);
+    return currentItem?.name || 'Hybrid Journal';
+  };
+
+  // Check if we should show back button (not on main tabs)
+  const showBackButton = !mobileTabItems.find(item => item.page === currentPageName);
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${
@@ -544,9 +568,54 @@ export default function Layout({ children, currentPageName }) {
         )}
         </aside>
 
-      <main className={`transition-all duration-300 ${sidebarOpen ? 'ml-64' : isMobile ? 'ml-0' : 'ml-16'}`}>
+      {/* Mobile Header */}
+      {isMobile && <MobileHeader title={getPageTitle()} showBack={showBackButton} />}
+
+      <main className={`transition-all duration-300 ${sidebarOpen ? 'ml-64' : isMobile ? 'ml-0' : 'ml-16'} ${
+        isMobile ? 'pt-14 pb-20' : ''
+      }`}>
         {children}
       </main>
+
+      {/* Mobile Bottom Tab Bar */}
+      {isMobile && (
+        <nav 
+          className={`fixed bottom-0 left-0 right-0 z-40 ${
+            darkMode ? 'bg-slate-950/95' : 'bg-white/95'
+          } backdrop-blur-xl border-t ${
+            darkMode ? 'border-cyan-500/20' : 'border-cyan-500/30'
+          } shadow-lg`}
+          style={{
+            paddingBottom: 'env(safe-area-inset-bottom)',
+          }}
+        >
+          <div className="flex items-center justify-around h-16">
+            {mobileTabItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = currentPageName === item.page;
+              
+              return (
+                <Link
+                  key={item.id}
+                  to={createPageUrl(item.page)}
+                  className={`flex flex-col items-center justify-center flex-1 h-full min-h-[44px] transition-colors ${
+                    isActive
+                      ? darkMode
+                        ? 'text-cyan-400'
+                        : 'text-cyan-600'
+                      : darkMode
+                        ? 'text-slate-400 hover:text-cyan-400'
+                        : 'text-slate-600 hover:text-cyan-600'
+                  }`}
+                >
+                  <Icon className={`h-5 w-5 mb-1 ${isActive && 'drop-shadow-[0_0_8px_rgba(0,240,255,0.6)]'}`} />
+                  <span className="text-xs font-medium">{item.name}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+      )}
 
       {/* Floating AI Assistant */}
       <FloatingAIAssistant isOpen={showAI} onClose={() => setShowAI(false)} />

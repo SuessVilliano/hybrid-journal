@@ -7,9 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { User, Save, Calendar, Plus, Clock } from 'lucide-react';
+import { User, Save, Calendar, Plus, Clock, Trash2, AlertTriangle } from 'lucide-react';
 import WebhookSettings from '@/components/profile/WebhookSettings';
 import NotificationPreferences from '@/components/profile/NotificationPreferences';
 import APIKeyManager from '@/components/profile/APIKeyManager';
@@ -40,6 +40,8 @@ export default function MyProfile() {
     endTime: ''
   });
   const [calendarConnected, setCalendarConnected] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const queryClient = useQueryClient();
   const darkMode = document.documentElement.classList.contains('dark');
 
@@ -103,6 +105,43 @@ export default function MyProfile() {
       return;
     }
     createCalendarEventMutation.mutate(calendarEvent);
+  };
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: async () => {
+      // Delete all user data
+      const [profiles, accounts, trades, goals, strategies] = await Promise.all([
+        base44.entities.TraderProfile.filter({ created_by: user.email }),
+        base44.entities.Account.filter({ created_by: user.email }),
+        base44.entities.Trade.filter({ created_by: user.email }),
+        base44.entities.Goal.filter({ created_by: user.email }),
+        base44.entities.Strategy.filter({ created_by: user.email }),
+      ]);
+
+      // Delete all records
+      await Promise.all([
+        ...profiles.map(p => base44.entities.TraderProfile.delete(p.id)),
+        ...accounts.map(a => base44.entities.Account.delete(a.id)),
+        ...trades.map(t => base44.entities.Trade.delete(t.id)),
+        ...goals.map(g => base44.entities.Goal.delete(g.id)),
+        ...strategies.map(s => base44.entities.Strategy.delete(s.id)),
+      ]);
+
+      // Logout
+      base44.auth.logout();
+    },
+    onSuccess: () => {
+      window.location.href = '/';
+    },
+    onError: (error) => {
+      alert('Failed to delete account: ' + error.message);
+    }
+  });
+
+  const handleDeleteAccount = () => {
+    if (deleteConfirmText === 'DELETE MY ACCOUNT') {
+      deleteAccountMutation.mutate();
+    }
   };
 
   return (
@@ -252,6 +291,74 @@ export default function MyProfile() {
         <CustomAudioSettings />
 
         <APIKeyManager />
+
+        {/* Delete Account Section */}
+        <Card className={`${darkMode ? 'bg-slate-950/80 border-red-500/30' : 'bg-white border-red-300'}`}>
+          <CardHeader>
+            <CardTitle className="text-red-500">
+              <AlertTriangle className="h-5 w-5 inline mr-2" />
+              Danger Zone
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className={`text-sm mb-4 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+              Permanently delete your account and all associated data. This action cannot be undone.
+            </p>
+            <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="destructive" 
+                  className="bg-red-600 hover:bg-red-700 min-h-[44px]"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Account
+                </Button>
+              </DialogTrigger>
+              <DialogContent className={darkMode ? 'bg-slate-950 border-red-500/30' : 'bg-white'}>
+                <DialogHeader>
+                  <DialogTitle className="text-red-500">Delete Account</DialogTitle>
+                  <DialogDescription className={darkMode ? 'text-slate-300' : 'text-slate-700'}>
+                    This will permanently delete your account and all data including trades, plans, goals, and strategies. This action cannot be undone.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div>
+                    <Label className={darkMode ? 'text-slate-300' : 'text-slate-700'}>
+                      Type "DELETE MY ACCOUNT" to confirm:
+                    </Label>
+                    <Input
+                      value={deleteConfirmText}
+                      onChange={(e) => setDeleteConfirmText(e.target.value)}
+                      placeholder="DELETE MY ACCOUNT"
+                      className="mt-2"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowDeleteDialog(false);
+                      setDeleteConfirmText('');
+                    }}
+                    className="min-h-[44px]"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={handleDeleteAccount}
+                    disabled={deleteConfirmText !== 'DELETE MY ACCOUNT' || deleteAccountMutation.isPending}
+                    className="bg-red-600 hover:bg-red-700 min-h-[44px]"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {deleteAccountMutation.isPending ? 'Deleting...' : 'Delete Forever'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
