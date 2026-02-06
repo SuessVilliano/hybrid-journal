@@ -127,12 +127,64 @@ Deno.serve(async (req) => {
                     }
                     break;
 
+                case 'DXTrade':
+                case 'dxtrade':
+                    // Validate DXtrade credentials by attempting login
+                    // DXtrade uses username (account), password, and server/domain
+                    const dxServer = server || 'gooeytrade.com';
+                    let dxBaseUrl = dxServer;
+                    if (!dxServer.startsWith('http')) {
+                        if (dxServer.includes('.')) {
+                            dxBaseUrl = `https://dxtrade.${dxServer}`;
+                        } else {
+                            dxBaseUrl = `https://dxtrade.${dxServer}.com`;
+                        }
+                    }
+                    dxBaseUrl = dxBaseUrl.replace(/\/$/, '');
+
+                    console.log(`[DXtrade] Validating credentials for ${dxBaseUrl}`);
+
+                    const dxLoginResponse = await fetch(`${dxBaseUrl}/api/auth/login`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            username: accountNumber || apiKey, // Account number as username
+                            password: apiSecret, // Password
+                            vendor: dxServer.replace(/\.[^.]+$/, '').replace('dxtrade.', '')
+                        })
+                    });
+
+                    if (dxLoginResponse.ok) {
+                        // Check for session cookies
+                        const dxCookies = dxLoginResponse.headers.get('set-cookie');
+                        validationResult = {
+                            valid: true,
+                            message: 'DXtrade credentials validated successfully!',
+                            details: {
+                                server: dxBaseUrl,
+                                accountNumber: accountNumber || apiKey,
+                                hasSession: !!dxCookies
+                            }
+                        };
+                    } else {
+                        const dxError = await dxLoginResponse.text();
+                        console.error(`[DXtrade] Login failed: ${dxLoginResponse.status} - ${dxError}`);
+                        validationResult = {
+                            valid: false,
+                            message: `DXtrade login failed: Invalid username, password, or server. Status: ${dxLoginResponse.status}`
+                        };
+                    }
+                    break;
+
                 default:
                     // For other providers, do basic format validation
                     validationResult = {
                         valid: apiKey.length >= 10 && (!apiSecret || apiSecret.length >= 10),
-                        message: apiKey.length >= 10 
-                            ? 'Credentials format looks valid (full validation on first sync)' 
+                        message: apiKey.length >= 10
+                            ? 'Credentials format looks valid (full validation on first sync)'
                             : 'API key seems too short - please verify'
                     };
             }
