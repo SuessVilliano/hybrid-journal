@@ -113,42 +113,67 @@ async function fetchRealMacroData() {
 // ═══════════════════════════════════════════════════════════
 
 async function fetchRealEconomicCalendar(symbol) {
-  try {
-    const now = new Date();
-    const from = now.toISOString().split('T')[0];
-    const to = new Date(now.getTime() + 7 * 86400000).toISOString().split('T')[0];
+  const now = new Date();
+  const from = now.toISOString().split('T')[0];
+  const to = new Date(now.getTime() + 14 * 86400000).toISOString().split('T')[0];
 
-    const url = `https://finnhub.io/api/v1/calendar/economic?from=${from}&to=${to}&token=${FINNHUB_KEY}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Finnhub calendar failed');
-    const data = await res.json();
-
-    const events = (data.economicCalendar || [])
-      .filter(e => e.impact === 'high' || e.impact === 'medium')
-      .slice(0, 6)
-      .map(e => {
-        const eventDate = new Date(e.time || e.date);
-        const diffMs = eventDate - now;
-        const diffHours = Math.floor(diffMs / 3600000);
-        const diffDays = Math.floor(diffMs / 86400000);
-        const timeStr = diffHours < 24 ? `${diffHours}h` : `${diffDays}d`;
-
-        return {
-          name: e.event || e.description,
-          time: timeStr,
-          impact: e.impact === 'high' ? 'HIGH' : 'MEDIUM',
-          expected_volatility: e.impact === 'high' ? 0.8 : 0.4,
-          country: e.country,
-          actual: e.actual,
-          estimate: e.estimate
-        };
-      });
-
-    return events.length > 0 ? events : getDefaultCatalysts(symbol);
-  } catch (err) {
-    console.error('[Calendar]', err.message);
-    return getDefaultCatalysts(symbol);
+  // For equities: use Finnhub earnings calendar (free tier)
+  if (isEquity(symbol)) {
+    try {
+      const url = `https://finnhub.io/api/v1/calendar/earnings?from=${from}&to=${to}&symbol=${symbol}&token=${FINNHUB_KEY}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        const events = (data.earningsCalendar || []).slice(0, 4).map(e => ({
+          name: `${e.symbol} Earnings`,
+          time: calcTimeStr(new Date(e.date), now),
+          impact: 'HIGH',
+          expected_volatility: 1.0,
+          estimate: e.revenueEstimate ? `Rev est: $${(e.revenueEstimate / 1e9).toFixed(1)}B` : null
+        }));
+        if (events.length > 0) return [...events, ...getDefaultCatalysts(symbol).slice(0, 2)];
+      }
+    } catch (err) {
+      console.error('[Earnings Calendar]', err.message);
+    }
   }
+
+  // For all instruments: use Finnhub general news as proxy for market-moving events
+  try {
+    const url = `https://finnhub.io/api/v1/news?category=general&minId=0&token=${FINNHUB_KEY}`;
+    const res = await fetch(url);
+    if (res.ok) {
+      const news = await res.json();
+      // Extract high-impact keywords as synthetic catalysts
+      const macroKeywords = ['fed', 'fomc', 'cpi', 'inflation', 'payroll', 'gdp', 'rate', 'treasury', 'jobs'];
+      const macroArticles = (news || [])
+        .filter(n => macroKeywords.some(k => (n.headline || '').toLowerCase().includes(k)))
+        .slice(0, 3);
+
+      if (macroArticles.length > 0) {
+        const syntheticEvents = macroArticles.map(a => ({
+          name: a.headline?.substring(0, 50) + (a.headline?.length > 50 ? '...' : ''),
+          time: calcTimeStr(new Date(a.datetime * 1000), now),
+          impact: 'HIGH',
+          expected_volatility: 0.7,
+          url: a.url
+        }));
+        return [...syntheticEvents, ...getDefaultCatalysts(symbol).slice(0, 2)];
+      }
+    }
+  } catch (err) {
+    console.error('[News Calendar]', err.message);
+  }
+
+  return getDefaultCatalysts(symbol);
+}
+
+function calcTimeStr(date, now) {
+  const diffMs = date - now;
+  if (diffMs < 0) return 'recent';
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  return diffHours < 24 ? `${diffHours}h` : `${diffDays}d`;
 }
 
 async function fetchInsiderActivity(ticker) {
