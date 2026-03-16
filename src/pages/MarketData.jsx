@@ -3,7 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, X, BarChart3, TrendingUp, Flame, DollarSign, Newspaper, Calendar, ChevronDown, Brain } from 'lucide-react';
+import { Plus, X, BarChart3, TrendingUp, Flame, DollarSign, Newspaper, Calendar, ChevronDown, Brain, Filter } from 'lucide-react';
+import ForexScreener from '@/components/screeners/ForexScreener';
+import StockScreener from '@/components/screeners/StockScreener';
+import CryptoScreener from '@/components/screeners/CryptoScreener';
+import ETFScreener from '@/components/screeners/ETFScreener';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import LivePriceTicker from '@/components/market/LivePriceTicker';
 import TradingChart from '@/components/market/TradingChart';
@@ -116,6 +120,10 @@ export default function MarketData() {
             <TabsTrigger value="intelligence" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
               <Brain className="h-4 w-4 mr-2" />
               Market Intelligence
+            </TabsTrigger>
+            <TabsTrigger value="screeners" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
+              <Filter className="h-4 w-4 mr-2" />
+              Screeners
             </TabsTrigger>
           </TabsList>
 
@@ -250,6 +258,11 @@ export default function MarketData() {
           {/* Market Intelligence Tab */}
           <TabsContent value="intelligence">
             <MarketCauseEngine />
+          </TabsContent>
+
+          {/* Screeners Tab */}
+          <TabsContent value="screeners" className="space-y-4">
+            <ScreenersPanel darkMode={darkMode} />
           </TabsContent>
         </Tabs>
 
