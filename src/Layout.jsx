@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { base44 } from '@/api/base44Client';
-import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText, Menu, X, Wallet, Sun, Moon, Home, Users, User, Brain, GripVertical, Star, Clock, List, Bell, HelpCircle, UserCheck, Image as ImageIcon, Trophy } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText, Menu, X, Wallet, Sun, Moon, Home, Users, User, Brain, GripVertical, Star, Clock, List, Bell, HelpCircle, UserCheck, Image as ImageIcon, Trophy, Filter } from 'lucide-react';
 import FloatingAIAssistant from '@/components/ai/FloatingAIAssistant';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import MobileHeader from '@/components/layout/MobileHeader';
@@ -177,6 +177,7 @@ export default function Layout({ children, currentPageName }) {
     { id: 'journal', name: 'Journal', page: 'Journal', icon: BookOpen },
     { id: 'accounts', name: 'Accounts', page: 'Accounts', icon: Wallet },
     { id: 'market', name: 'Live Market', page: 'MarketData', icon: TrendingUp },
+    { id: 'screeners', name: 'Screeners', page: 'Screeners', icon: Filter },
     { id: 'signals', name: 'Trading Signals', page: 'LiveTradingSignals', icon: Zap },
     { id: 'analytics', name: 'Analytics', page: 'Analytics', icon: BarChart3 },
     { id: 'summaries', name: 'Summaries', page: 'TradingSummaries', icon: FileText },
