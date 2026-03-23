@@ -431,6 +431,31 @@ export default function Layout({ children, currentPageName }) {
                     const Icon = item.icon;
                     const isActive = currentPageName === item.page;
 
+                    // External link items must NOT be wrapped in Draggable
+                    // (they have no drag handle, causing DnD invariant crash)
+                    if (item.external) {
+                      return (
+                        <div key={item.id}>
+                          <a
+                            href={item.external}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group relative overflow-hidden bg-gradient-to-r from-green-500/20 to-emerald-600/20 border border-green-500/30 hover:from-green-500/30 hover:to-emerald-600/30"
+                            title={!sidebarOpen ? item.name : ''}
+                          >
+                            <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-emerald-600/10 animate-pulse" />
+                            <Icon className="h-5 w-5 relative z-10 text-green-400 drop-shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
+                            {sidebarOpen && <span className="font-medium relative z-10 text-green-400 flex-1">{item.name}</span>}
+                            {sidebarOpen && (
+                              <button onClick={(e) => { e.preventDefault(); toggleFavorite(item.id); }} className="relative z-10">
+                                <Star className={`h-4 w-4 ${favorites.includes(item.id) ? 'fill-yellow-400 text-yellow-400' : 'text-slate-400'}`} />
+                              </button>
+                            )}
+                          </a>
+                        </div>
+                      );
+                    }
+
                     return (
                       <Draggable key={item.id} draggableId={item.id} index={index}>
                         {(provided, snapshot) => (
@@ -439,86 +464,49 @@ export default function Layout({ children, currentPageName }) {
                             {...provided.draggableProps}
                             className={snapshot.isDragging ? 'opacity-50' : ''}
                           >
-                            {item.external ? (
-                              <a
-                                href={item.external}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group relative overflow-hidden bg-gradient-to-r from-green-500/20 to-emerald-600/20 border border-green-500/30 hover:from-green-500/30 hover:to-emerald-600/30"
-                                title={!sidebarOpen ? item.name : ''}
-                              >
-                                {sidebarOpen && menuView === 'all' && !item.external && (
-                                  <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
-                                    <GripVertical className="h-4 w-4 text-green-400/50" />
-                                  </div>
-                                )}
-                                <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-emerald-600/10 animate-pulse" />
-                                <Icon className="h-5 w-5 relative z-10 text-green-400 drop-shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
-                                {sidebarOpen && <span className="font-medium relative z-10 text-green-400 flex-1">{item.name}</span>}
-                                {sidebarOpen && (
-                                  <button
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      toggleFavorite(item.id);
-                                    }}
-                                    className="relative z-10"
-                                  >
-                                    <Star className={`h-4 w-4 ${favorites.includes(item.id) ? 'fill-yellow-400 text-yellow-400' : 'text-slate-400'}`} />
-                                  </button>
-                                )}
-                              </a>
-                            ) : (
-                              <Link
-                                to={createPageUrl(item.page)}
-                                className={`
-                                  flex items-center justify-center gap-3 rounded-lg transition-all group relative overflow-hidden
-                                  ${sidebarOpen ? 'px-4 py-3' : 'p-3 mx-auto w-12 h-12'}
-                                  ${isActive 
-                                    ? 'bg-gradient-to-r from-cyan-500/20 to-purple-600/20 text-cyan-600 shadow-lg shadow-cyan-500/20 border border-cyan-500/30' 
-                                    : !sidebarOpen && item.id === 'dashboard'
-                                      ? darkMode 
-                                        ? 'bg-gradient-to-br from-cyan-500/20 to-cyan-600/20 text-cyan-400 border border-cyan-500/40 shadow-lg shadow-cyan-500/20'
-                                        : 'bg-gradient-to-br from-cyan-100 to-cyan-200 text-cyan-700 border border-cyan-300 shadow-lg'
-                                      : !sidebarOpen && item.id === 'community'
-                                        ? darkMode
-                                          ? 'bg-gradient-to-br from-pink-500/20 to-rose-600/20 text-pink-400 border border-pink-500/40 shadow-lg shadow-pink-500/20'
-                                          : 'bg-gradient-to-br from-pink-100 to-rose-200 text-pink-700 border border-pink-300 shadow-lg'
-                                        : !sidebarOpen && item.id === 'funded'
-                                          ? darkMode
-                                            ? 'bg-gradient-to-br from-green-500/20 to-emerald-600/20 text-green-400 border border-green-500/40 shadow-lg shadow-green-500/20'
-                                            : 'bg-gradient-to-br from-green-100 to-emerald-200 text-green-700 border border-green-300 shadow-lg'
-                                          : darkMode 
-                                            ? 'text-slate-300 hover:bg-slate-800/50 hover:text-cyan-400 border border-transparent'
-                                            : 'text-slate-600 hover:bg-cyan-50 hover:text-cyan-600 border border-transparent'
-                                  }
-                                `}
-                                title={!sidebarOpen ? item.name : ''}
-                              >
-                                {sidebarOpen && menuView === 'all' && (
-                                  <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
-                                    <GripVertical className={`h-4 w-4 ${isActive ? 'text-cyan-400/50' : 'text-slate-400/50'}`} />
-                                  </div>
-                                )}
-                                {isActive && (
-                                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-purple-600/10 animate-pulse" />
-                                )}
-                                <Icon className={`${sidebarOpen ? 'h-5 w-5' : 'h-6 w-6'} relative z-10 ${
-                                  isActive && 'drop-shadow-[0_0_8px_rgba(0,240,255,0.8)]'
-                                }`} />
-                                {sidebarOpen && <span className="font-medium relative z-10 flex-1">{item.name}</span>}
-                                {sidebarOpen && (
-                                  <button
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      toggleFavorite(item.id);
-                                    }}
-                                    className="relative z-10"
-                                  >
-                                    <Star className={`h-4 w-4 ${favorites.includes(item.id) ? 'fill-yellow-400 text-yellow-400' : 'text-slate-400'}`} />
-                                  </button>
-                                )}
-                              </Link>
-                            )}
+                            <Link
+                              to={createPageUrl(item.page)}
+                              className={`
+                                flex items-center justify-center gap-3 rounded-lg transition-all group relative overflow-hidden
+                                ${sidebarOpen ? 'px-4 py-3' : 'p-3 mx-auto w-12 h-12'}
+                                ${isActive 
+                                  ? 'bg-gradient-to-r from-cyan-500/20 to-purple-600/20 text-cyan-600 shadow-lg shadow-cyan-500/20 border border-cyan-500/30' 
+                                  : !sidebarOpen && item.id === 'dashboard'
+                                    ? darkMode 
+                                      ? 'bg-gradient-to-br from-cyan-500/20 to-cyan-600/20 text-cyan-400 border border-cyan-500/40 shadow-lg shadow-cyan-500/20'
+                                      : 'bg-gradient-to-br from-cyan-100 to-cyan-200 text-cyan-700 border border-cyan-300 shadow-lg'
+                                    : !sidebarOpen && item.id === 'community'
+                                      ? darkMode
+                                        ? 'bg-gradient-to-br from-pink-500/20 to-rose-600/20 text-pink-400 border border-pink-500/40 shadow-lg shadow-pink-500/20'
+                                        : 'bg-gradient-to-br from-pink-100 to-rose-200 text-pink-700 border border-pink-300 shadow-lg'
+                                      : darkMode 
+                                        ? 'text-slate-300 hover:bg-slate-800/50 hover:text-cyan-400 border border-transparent'
+                                        : 'text-slate-600 hover:bg-cyan-50 hover:text-cyan-600 border border-transparent'
+                                }
+                              `}
+                              title={!sidebarOpen ? item.name : ''}
+                            >
+                              {sidebarOpen && menuView === 'all' && (
+                                <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
+                                  <GripVertical className={`h-4 w-4 ${isActive ? 'text-cyan-400/50' : 'text-slate-400/50'}`} />
+                                </div>
+                              )}
+                              {isActive && (
+                                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-purple-600/10 animate-pulse" />
+                              )}
+                              <Icon className={`${sidebarOpen ? 'h-5 w-5' : 'h-6 w-6'} relative z-10 ${
+                                isActive && 'drop-shadow-[0_0_8px_rgba(0,240,255,0.8)]'
+                              }`} />
+                              {sidebarOpen && <span className="font-medium relative z-10 flex-1">{item.name}</span>}
+                              {sidebarOpen && (
+                                <button
+                                  onClick={(e) => { e.preventDefault(); toggleFavorite(item.id); }}
+                                  className="relative z-10"
+                                >
+                                  <Star className={`h-4 w-4 ${favorites.includes(item.id) ? 'fill-yellow-400 text-yellow-400' : 'text-slate-400'}`} />
+                                </button>
+                              )}
+                            </Link>
                           </div>
                         )}
                       </Draggable>
