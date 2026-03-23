@@ -13,9 +13,7 @@ export function useAchievements() {
 
       if (response.data.badges_unlocked && response.data.badges_unlocked.length > 0) {
         setNotification({
-          badge: response.data.new_badges[0],
-          xpGained: null
-        });
+          badge: response.data.badges_unlocked[0],
       } else if (response.data.xp_gained > 0) {
         setNotification({
           badge: null,
