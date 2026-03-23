@@ -177,7 +177,7 @@ export default function Layout({ children, currentPageName }) {
     { id: 'journal', name: 'Journal', page: 'Journal', icon: BookOpen },
     { id: 'accounts', name: 'Accounts', page: 'Accounts', icon: Wallet },
     { id: 'market', name: 'Live Market', page: 'MarketData', icon: TrendingUp },
-    { id: 'screeners', name: 'Screeners', page: 'Screeners', icon: Filter },
+
     { id: 'signals', name: 'Trading Signals', page: 'LiveTradingSignals', icon: Zap },
     { id: 'analytics', name: 'Analytics', page: 'Analytics', icon: BarChart3 },
     { id: 'summaries', name: 'Summaries', page: 'TradingSummaries', icon: FileText },
