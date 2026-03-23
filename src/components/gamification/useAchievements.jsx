@@ -14,11 +14,14 @@ export function useAchievements() {
       if (response.data.badges_unlocked && response.data.badges_unlocked.length > 0) {
         setNotification({
           badge: response.data.badges_unlocked[0],
+          xpGained: null
+        });
       } else if (response.data.xp_gained > 0) {
         setNotification({
           badge: null,
           xpGained: response.data.xp_gained
         });
+      });
       }
 
       return response.data;
