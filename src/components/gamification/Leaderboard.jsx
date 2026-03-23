@@ -11,10 +11,10 @@ export default function Leaderboard() {
   const [period, setPeriod] = useState('weekly');
 
   const { data: achievements = [] } = useQuery({
-    queryKey: ['leaderboard', period],
+    queryKey: ['leaderboard'],
     queryFn: async () => {
-      const allAchievements = await base44.entities.Achievement.list('-total_points', 50);
-      return allAchievements;
+      const response = await base44.functions.invoke('getLeaderboard', {});
+      return response.data?.achievements || [];
     }
   });
 
