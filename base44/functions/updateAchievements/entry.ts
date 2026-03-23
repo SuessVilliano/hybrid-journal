@@ -16,12 +16,15 @@ Deno.serve(async (req) => {
     const payload = await req.json();
     const { action, metadata = {} } = payload;
 
+    // Use service role for all achievement writes (user RLS blocks backend updates)
+    const svc = base44.asServiceRole;
+
     // Fetch or create achievement record
-    let achievements = await base44.entities.Achievement.filter({ user_email: user.email });
+    let achievements = await svc.entities.Achievement.filter({ user_email: user.email });
     let achievement = achievements[0];
 
     if (!achievement) {
-      achievement = await base44.entities.Achievement.create({
+      achievement = await svc.entities.Achievement.create({
         user_email: user.email,
         total_points: 0,
         level: 1,
@@ -37,6 +40,7 @@ Deno.serve(async (req) => {
           perfect_plan_days: 0
         }
       });
+    };
     }
 
     // Award points and update stats based on action
@@ -79,54 +83,12 @@ Deno.serve(async (req) => {
 
     // First trade badge
     if (action === 'trade_logged' && newStats.trades_logged === 1 && !earnedBadgeIds.includes('first_trade')) {
-      const badge = await base44.entities.Badge.create({
-        user_email: user.email,
-        badge_id: 'first_trade',
-        badge_name: 'First Trade',
-        badge_description: 'Logged your first trade',
-        badge_icon: 'trophy',
-        badge_tier: 'bronze',
-        earned_date: new Date().toISOString(),
-        points_awarded: 50
-      });
-      newBadges.push(badge);
-      earnedBadgeIds.push('first_trade');
-    }
-
-    // 100 trades milestone
+      const badge = await svc.entities.Badge.create({
     if (action === 'trade_logged' && newStats.trades_logged === 100 && !earnedBadgeIds.includes('century_trader')) {
-      const badge = await base44.entities.Badge.create({
-        user_email: user.email,
-        badge_id: 'century_trader',
-        badge_name: 'Century Trader',
-        badge_description: 'Logged 100 trades',
-        badge_icon: 'award',
-        badge_tier: 'gold',
-        earned_date: new Date().toISOString(),
-        points_awarded: 200
-      });
-      newBadges.push(badge);
-      earnedBadgeIds.push('century_trader');
-    }
-
-    // 7-day streak
+      const badge = await svc.entities.Badge.create({
     if (achievement.streak_days === 7 && !earnedBadgeIds.includes('week_warrior')) {
-      const badge = await base44.entities.Badge.create({
-        user_email: user.email,
-        badge_id: 'week_warrior',
-        badge_name: 'Week Warrior',
-        badge_description: 'Maintained 7-day activity streak',
-        badge_icon: 'flame',
-        badge_tier: 'silver',
-        earned_date: new Date().toISOString(),
-        points_awarded: 100
-      });
-      newBadges.push(badge);
-      earnedBadgeIds.push('week_warrior');
-    }
-
-    // Update achievement record
-    const updated = await base44.entities.Achievement.update(achievement.id, {
+      const badge = await svc.entities.Badge.create({
+    const updated = await svc.entities.Achievement.update(achievement.id, {
       total_points: (achievement.total_points || 0) + points + newBadges.reduce((sum, b) => sum + (b.points_awarded || 0), 0),
       level: newLevel,
       experience: remainingXP,
