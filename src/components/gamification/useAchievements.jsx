@@ -6,7 +6,6 @@ export function useAchievements() {
 
   const triggerAchievement = useCallback(async (actionType) => {
     try {
-      // Backend reads 'action', not 'action_type'
       const response = await base44.functions.invoke('updateAchievements', { 
         action: actionType 
       });
@@ -21,7 +20,6 @@ export function useAchievements() {
           badge: null,
           xpGained: response.data.xp_gained
         });
-      });
       }
 
       return response.data;
