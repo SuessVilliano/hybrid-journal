@@ -6,11 +6,12 @@ export function useAchievements() {
 
   const triggerAchievement = useCallback(async (actionType) => {
     try {
+      // Backend reads 'action', not 'action_type'
       const response = await base44.functions.invoke('updateAchievements', { 
-        action_type: actionType 
+        action: actionType 
       });
 
-      if (response.data.new_badges && response.data.new_badges.length > 0) {
+      if (response.data.badges_unlocked && response.data.badges_unlocked.length > 0) {
         setNotification({
           badge: response.data.new_badges[0],
           xpGained: null
