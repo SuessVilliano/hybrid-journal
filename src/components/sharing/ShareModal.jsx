@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,11 +20,22 @@ export default function ShareModal({ onClose }) {
   });
 
   const [formData, setFormData] = useState({
-    is_public: shareSettings?.is_public || false,
-    hide_dollar_amounts: shareSettings?.hide_dollar_amounts || false,
-    show_individual_trades: shareSettings?.show_individual_trades !== false,
-    custom_title: shareSettings?.custom_title || 'Trading Performance Dashboard'
+    is_public: false,
+    hide_dollar_amounts: false,
+    show_individual_trades: true,
+    custom_title: 'Trading Performance Dashboard'
   });
+
+  useEffect(() => {
+    if (shareSettings) {
+      setFormData({
+        is_public: shareSettings.is_public || false,
+        hide_dollar_amounts: shareSettings.hide_dollar_amounts || false,
+        show_individual_trades: shareSettings.show_individual_trades !== false,
+        custom_title: shareSettings.custom_title || 'Trading Performance Dashboard'
+      });
+    }
+  }, [shareSettings]);
 
   const saveMutation = useMutation({
     mutationFn: async (data) => {
@@ -44,6 +55,7 @@ export default function ShareModal({ onClose }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['shareSettings']);
+      onClose();
     }
   });
 
