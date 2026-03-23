@@ -38,23 +38,35 @@ export default function ComprehensiveStats({ trades }) {
     ) : 0;
 
     // Max drawdown & run-up
+    // Sort by entry date to get chronological order
+    const sortedTrades = [...trades].sort((a, b) => new Date(a.entry_date) - new Date(b.entry_date));
     let cumulative = 0;
     let peak = 0;
+    let trough = 0;
     let maxDrawdown = 0;
     let maxRunup = 0;
     
-    trades.forEach(t => {
+    sortedTrades.forEach(t => {
       cumulative += t.pnl || 0;
       if (cumulative > peak) {
         peak = cumulative;
+        trough = cumulative; // reset trough when new peak
       }
-      const drawdown = ((peak - cumulative) / Math.max(peak, 1)) * 100;
-      if (drawdown > maxDrawdown) {
-        maxDrawdown = drawdown;
+      if (cumulative < trough) {
+        trough = cumulative;
       }
-      const runup = cumulative > 0 ? (cumulative / Math.max(Math.abs(peak), 1)) * 100 : 0;
-      if (runup > maxRunup) {
-        maxRunup = runup;
+      // Drawdown as % of peak (only meaningful when peak > 0)
+      if (peak > 0) {
+        const drawdown = ((peak - cumulative) / peak) * 100;
+        if (drawdown > maxDrawdown) maxDrawdown = drawdown;
+      } else if (peak === 0 && cumulative < 0) {
+        // All trades are losses from the start — use dollar drawdown, cap at 100%
+        const drawdown = Math.min(Math.abs(cumulative), 100);
+        if (drawdown > maxDrawdown) maxDrawdown = drawdown;
+      }
+      if (cumulative > 0) {
+        const runup = peak > 0 ? (cumulative / peak) * 100 : 0;
+        if (runup > maxRunup) maxRunup = runup;
       }
     });
 
