@@ -246,8 +246,12 @@ Provide a concise, data-backed, actionable response.`;
                   <CardTitle className={`text-sm flex items-center gap-2 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`}>
                     <Users className="h-4 w-4" />
                     {selectedSymbol} Positioning
+                    <Badge variant="outline" className="text-xs ml-auto opacity-70">Estimated</Badge>
                   </CardTitle>
-                </CardHeader>
+                  <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                    Model-based estimates — live COT requires CFTC subscription
+                  </p>
+                  </CardHeader>
                 <CardContent className="space-y-2">
                   <MetricRow label="Net Position" value={`$${marketData?.positioning?.net_position}B`} />
                   <MetricRow label="Dealer Gamma" value={marketData?.positioning?.dealer_gamma}
@@ -370,7 +374,7 @@ Provide a concise, data-backed, actionable response.`;
                   </Button>
                 </div>
                 <p className={`text-xs mt-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Uses real FRED + Finnhub data fed into AI for grounded causality analysis
+                  Uses real FRED + Finnhub data fed into AI for grounded causality analysis. AI output is for research only — not financial advice.
                 </p>
               </CardHeader>
               <CardContent>
