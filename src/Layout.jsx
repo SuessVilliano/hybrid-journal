@@ -6,6 +6,7 @@ import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload
 import FloatingAIAssistant from '@/components/ai/FloatingAIAssistant';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import MobileHeader from '@/components/layout/MobileHeader';
+import MobileTabCustomizer, { ALL_OPTIONS } from '@/components/layout/MobileTabCustomizer';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import NotificationBell from '@/components/notifications/NotificationBell';
@@ -37,6 +38,11 @@ export default function Layout({ children, currentPageName }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [lastTap, setLastTap] = useState({ page: null, time: 0 });
+  const [showTabCustomizer, setShowTabCustomizer] = useState(false);
+  const [mobileTabIds, setMobileTabIds] = useState(() => {
+    const saved = localStorage.getItem('mobile_tab_ids');
+    return saved ? JSON.parse(saved) : ['dashboard', 'planning', 'signals', 'coach', 'profile'];
+  });
 
   useEffect(() => {
     const checkMobile = () => {
@@ -258,13 +264,10 @@ export default function Layout({ children, currentPageName }) {
   };
 
   // Bottom tab bar items for mobile
-  const mobileTabItems = [
-    { id: 'dashboard', name: 'Home', page: 'Dashboard', icon: LayoutDashboard },
-    { id: 'planning', name: 'Plans', page: 'TradePlans', icon: Target },
-    { id: 'signals', name: 'Signals', page: 'LiveTradingSignals', icon: Zap },
-    { id: 'coach', name: 'Coach', page: 'TradingCoach', icon: MessageSquare },
-    { id: 'profile', name: 'Profile', page: 'MyProfile', icon: User },
-  ];
+  const mobileTabItems = mobileTabIds
+    .map(id => ALL_OPTIONS.find(o => o.id === id))
+    .filter(Boolean)
+    .map(o => ({ ...o, icon: defaultNavigation.find(n => n.id === o.id)?.icon || LayoutDashboard }));
 
   // Get page title from current navigation
   const getPageTitle = () => {
@@ -611,7 +614,6 @@ export default function Layout({ children, currentPageName }) {
               const handleTabClick = (e) => {
                 const now = Date.now();
                 if (isActive && lastTap.page === item.page && now - lastTap.time < 500) {
-                  // Double tap on active tab - reset to root
                   e.preventDefault();
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                   navigate(createPageUrl(item.page), { replace: true });
@@ -626,12 +628,8 @@ export default function Layout({ children, currentPageName }) {
                   onClick={handleTabClick}
                   className={`flex flex-col items-center justify-center flex-1 h-full min-h-[44px] transition-colors active:scale-95 ${
                     isActive
-                      ? darkMode
-                        ? 'text-cyan-400'
-                        : 'text-cyan-600'
-                      : darkMode
-                        ? 'text-slate-400 hover:text-cyan-400'
-                        : 'text-slate-600 hover:text-cyan-600'
+                      ? darkMode ? 'text-cyan-400' : 'text-cyan-600'
+                      : darkMode ? 'text-slate-400 hover:text-cyan-400' : 'text-slate-600 hover:text-cyan-600'
                   }`}
                 >
                   <Icon className={`h-5 w-5 mb-1 ${isActive && 'drop-shadow-[0_0_8px_rgba(0,240,255,0.6)]'}`} />
@@ -639,8 +637,31 @@ export default function Layout({ children, currentPageName }) {
                 </Link>
               );
             })}
+            {/* Settings gear to open customizer */}
+            <button
+              onClick={() => setShowTabCustomizer(true)}
+              className={`flex flex-col items-center justify-center flex-1 h-full min-h-[44px] transition-colors active:scale-95 ${
+                darkMode ? 'text-slate-500 hover:text-cyan-400' : 'text-slate-400 hover:text-cyan-600'
+              }`}
+            >
+              <svg className="h-5 w-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              <span className="text-xs font-medium">More</span>
+            </button>
           </div>
         </nav>
+      )}
+
+      {showTabCustomizer && (
+        <MobileTabCustomizer
+          selectedIds={mobileTabIds}
+          darkMode={darkMode}
+          onClose={() => setShowTabCustomizer(false)}
+          onSave={(ids) => {
+            setMobileTabIds(ids);
+            localStorage.setItem('mobile_tab_ids', JSON.stringify(ids));
+            setShowTabCustomizer(false);
+          }}
+        />
       )}
 
       {/* Floating AI Assistant */}
