@@ -205,7 +205,10 @@ export default function BrokerConnections() {
                   <li>✓ Secure encrypted API credential storage</li>
                   <li>✓ Configurable sync intervals (every 5-60 minutes)</li>
                   <li>✓ Background sync without manual intervention</li>
-                  <li>✓ Support for MT4/MT5, cTrader, DXTrade, Binance, TradingView, and more</li>
+                  <li>✓ Support for MT4/MT5, cTrader, DXTrade, Binance, Kraken, Tradovate, NinjaTrader, and more</li>
+                  <li>✓ Kraken crypto API (read-only key required)</li>
+                  <li>✓ Tradovate futures (live &amp; demo environments)</li>
+                  <li>✓ NinjaTrader via statement import (CSV/Excel export)</li>
                 </ul>
               </div>
             </div>

@@ -34,18 +34,25 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
     [formData.broker_id]
   );
 
-  // Check if this broker supports direct login (like DXtrade)
+  // Broker-specific flags
   const isDXTrade = formData.broker_id === 'dxtrade';
+  const isTradovate = formData.broker_id === 'tradovate';
+  const isKraken = formData.broker_id === 'kraken';
+  const isNinjaTrader = formData.broker_id === 'ninjatrader';
   const supportsAutoSync = selectedBroker?.supportsAutoSync || isDXTrade;
+  const isImportOnly = selectedBroker?.importOnly || isNinjaTrader;
 
   const handleBrokerChange = (broker_id) => {
     const broker = SUPPORTED_BROKERS.find(b => b.id === broker_id);
+    let connection_type = formData.connection_type;
+    if (broker_id === 'dxtrade') connection_type = 'dxtrade_login';
+    else if (broker_id === 'tradovate') connection_type = 'tradovate_login';
+    else if (broker_id === 'ninjatrader') connection_type = 'import_only';
     setFormData({
       ...formData,
       broker_id,
       broker_name: broker.name,
-      // Set DXtrade to use dxtrade_login connection type
-      connection_type: broker_id === 'dxtrade' ? 'dxtrade_login' : formData.connection_type
+      connection_type
     });
     setValidationResult(null);
   };
@@ -59,23 +66,28 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
         // Use the backend validateCredentials for DXtrade
         const response = await base44.functions.invoke('validateCredentials', {
           provider: 'DXTrade',
-          apiKey: formData.account_number, // Account number as username
-          apiSecret: formData.password, // Password
+          apiKey: formData.account_number,
+          apiSecret: formData.password,
           server: formData.server || 'gooeytrade.com',
           accountNumber: formData.account_number
         });
-
         if (response.data.valid) {
-          setValidationResult({
-            valid: true,
-            message: 'DXtrade login successful! Auto-sync is ready.',
-            account_info: response.data.details
-          });
+          setValidationResult({ valid: true, message: 'DXtrade login successful! Auto-sync is ready.', account_info: response.data.details });
         } else {
-          setValidationResult({
-            valid: false,
-            message: response.data.message || 'DXtrade login failed. Check your credentials and server.'
-          });
+          setValidationResult({ valid: false, message: response.data.message || 'DXtrade login failed. Check your credentials and server.' });
+        }
+      } else if (isTradovate || formData.connection_type === 'tradovate_login') {
+        const response = await base44.functions.invoke('validateCredentials', {
+          provider: 'Tradovate',
+          apiKey: formData.username,
+          apiSecret: formData.password,
+          server: formData.server || 'live',
+          accountNumber: formData.account_number
+        });
+        if (response.data.valid) {
+          setValidationResult({ valid: true, message: 'Tradovate login successful! Auto-sync is ready.', account_info: response.data.details });
+        } else {
+          setValidationResult({ valid: false, message: response.data.message || 'Tradovate login failed. Check your credentials.' });
         }
       } else {
         const result = await validateBrokerCredentials(formData.broker_id, {
@@ -84,7 +96,6 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
           account_number: formData.account_number,
           server: formData.server
         });
-
         setValidationResult(result);
       }
     } catch (error) {
@@ -97,17 +108,20 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // For DXtrade, store credentials in the right fields for the sync function
     const submitData = { ...formData };
     if (isDXTrade || formData.connection_type === 'dxtrade_login') {
-      // Store password in api_secret for the sync function to use
       submitData.api_secret = formData.password;
       submitData.connection_type = 'dxtrade_login';
       submitData.status = validationResult?.valid ? 'connected' : 'pending';
+    } else if (isTradovate || formData.connection_type === 'tradovate_login') {
+      submitData.connection_type = 'tradovate_login';
+      submitData.status = validationResult?.valid ? 'connected' : 'pending';
+    } else if (isNinjaTrader || formData.connection_type === 'import_only') {
+      submitData.connection_type = 'import_only';
+      submitData.status = 'manual';
     } else {
       submitData.status = formData.connection_type === 'credentials' ? 'manual' : (validationResult?.valid ? 'connected' : 'pending');
     }
-
     onSubmit(submitData);
   };
 
@@ -168,7 +182,28 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
               />
             </div>
 
-            {/* Connection Type */}
+            {/* NinjaTrader — Import Only */}
+            {isNinjaTrader && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-2">
+                <div className="flex items-start gap-2">
+                  <Info className="h-5 w-5 text-amber-600 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-amber-900">NinjaTrader — Statement Import Only</p>
+                    <p className="text-sm text-amber-800 mt-1">
+                      NinjaTrader does not provide a cloud API. To import trades:
+                    </p>
+                    <ol className="text-sm text-amber-800 mt-1 ml-4 list-decimal space-y-1">
+                      <li>Open NinjaTrader → Control Center → New → Export</li>
+                      <li>Select <strong>NinjaTrader Performance</strong> (CSV)</li>
+                      <li>Save and upload via <strong>Trades → Import</strong></li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Connection Type — hide for NinjaTrader and Tradovate */}
+            {!isNinjaTrader && !isTradovate && (
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Connection Type *
@@ -194,6 +229,83 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
                 </SelectContent>
               </Select>
             </div>
+            )}
+
+            {/* Tradovate Login */}
+            {isTradovate && (
+              <>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-start gap-2">
+                  <Zap className="h-5 w-5 text-green-600 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-green-900">Tradovate Auto-Sync</p>
+                    <p className="text-xs text-green-700 mt-1">Enter your Tradovate login credentials. Trades will sync automatically.</p>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Username / Email *</label>
+                  <Input
+                    value={formData.username || ''}
+                    onChange={(e) => setFormData({...formData, username: e.target.value})}
+                    placeholder="your@email.com"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Password *</label>
+                  <Input
+                    type="password"
+                    value={formData.password || ''}
+                    onChange={(e) => setFormData({...formData, password: e.target.value})}
+                    placeholder="Your Tradovate password"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Environment *</label>
+                  <Select
+                    value={formData.server || 'live'}
+                    onValueChange={(val) => setFormData({...formData, server: val})}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="live">Live (live.tradovateapi.com)</SelectItem>
+                      <SelectItem value="demo">Demo (demo.tradovateapi.com)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-800">🔒 Credentials are encrypted. We use read-only access to fetch your trade history.</p>
+                </div>
+              </>
+            )}
+
+            {/* Kraken — show API key label customization */}
+            {isKraken && formData.connection_type !== 'credentials' && (
+              <>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">
+                  <Info className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <p className="text-sm text-blue-800">Create a <strong>Read-Only</strong> API key in Kraken: Security → API → Create Key. Enable: Query Funds, Query Closed Orders, Query Trades History. Never enable withdrawal permissions.</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">API Key *</label>
+                  <Input
+                    type="password"
+                    value={formData.api_key || ''}
+                    onChange={(e) => setFormData({...formData, api_key: e.target.value})}
+                    placeholder="Kraken API Key"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Private Key (API Secret) *</label>
+                  <Input
+                    type="password"
+                    value={formData.api_secret || ''}
+                    onChange={(e) => setFormData({...formData, api_secret: e.target.value})}
+                    placeholder="Kraken Private Key"
+                  />
+                </div>
+              </>
+            )}
 
             {/* DXtrade Auto-Sync Login */}
             {formData.connection_type === 'dxtrade_login' ? (
@@ -457,33 +569,24 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
               <Button type="button" variant="outline" onClick={onCancel}>
                 Cancel
               </Button>
-              {(formData.connection_type === 'api' || formData.connection_type === 'dxtrade_login') && (
+              {(formData.connection_type === 'api' || formData.connection_type === 'dxtrade_login' || formData.connection_type === 'tradovate_login' || isKraken) && !isNinjaTrader && (
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handleValidate}
-                  disabled={validating ||
-                    (formData.connection_type === 'dxtrade_login'
-                      ? (!formData.account_number || !formData.password || !formData.server)
-                      : (!formData.api_key || !formData.account_number))
-                  }
+                  disabled={validating}
                 >
                   {validating ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      {formData.connection_type === 'dxtrade_login' ? 'Logging in...' : 'Validating...'}
-                    </>
-                  ) : (
-                    formData.connection_type === 'dxtrade_login' ? 'Test Login' : 'Test Connection'
-                  )}
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Testing...</>
+                  ) : 'Test Connection'}
                 </Button>
               )}
               <Button
                 type="submit"
                 className="bg-blue-600 hover:bg-blue-700"
-                disabled={(formData.connection_type === 'api' || formData.connection_type === 'dxtrade_login') && !validationResult?.valid}
+                disabled={!isNinjaTrader && !isImportOnly && (formData.connection_type === 'api' || formData.connection_type === 'dxtrade_login' || formData.connection_type === 'tradovate_login') && !validationResult?.valid}
               >
-                Save Connection
+                {isNinjaTrader ? 'Save & Go to Import' : 'Save Connection'}
               </Button>
             </div>
           </form>

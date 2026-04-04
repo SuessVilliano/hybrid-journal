@@ -57,8 +57,29 @@ export const SUPPORTED_BROKERS = [
     name: 'Tradovate', 
     type: 'futures', 
     requiresCredentials: true,
-    fields: ['account_number', 'api_key', 'api_secret'],
-    instructions: 'Generate API credentials in Tradovate: Settings > API Keys'
+    fields: ['username', 'password', 'environment'],
+    supportsAutoSync: true,
+    syncFunction: 'syncBroker',
+    instructions: 'Enter your Tradovate login credentials. Select Demo for paper trading or Live for real accounts. Environment: demo.tradovateapi.com or live.tradovateapi.com'
+  },
+  { 
+    id: 'kraken', 
+    name: 'Kraken', 
+    type: 'crypto', 
+    requiresCredentials: true,
+    fields: ['api_key', 'api_secret'],
+    supportsAutoSync: true,
+    syncFunction: 'syncBroker',
+    instructions: 'Generate API key in Kraken: Security > API. Enable: Query Funds, Query Open Orders & Trades, Query Closed Orders & Trades. DO NOT enable trading permissions.'
+  },
+  { 
+    id: 'ninjatrader', 
+    name: 'NinjaTrader', 
+    type: 'futures', 
+    requiresCredentials: false,
+    fields: [],
+    importOnly: true,
+    instructions: 'NinjaTrader does not support a direct cloud API. Export your trade history: Control Center > New > Export > NinjaTrader Performance. Then use the Import feature on the Trades page to upload the CSV/Excel file.'
   },
   { 
     id: 'tradelocker', 
@@ -461,7 +482,9 @@ function getBrokerInstrumentType(broker_id) {
     dxtrade: 'Forex',
     binance: 'Crypto',
     coinbase: 'Crypto',
+    kraken: 'Crypto',
     tradovate: 'Futures',
+    ninjatrader: 'Futures',
     tradelocker: 'Forex',
     interactive: 'Stocks'
   };
