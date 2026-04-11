@@ -37,37 +37,42 @@ export default function ComprehensiveStats({ trades }) {
       losing.reduce((sum, t) => sum + Math.pow(Math.abs(t.pnl) - avgLoss, 2), 0) / (losing.length - 1)
     ) : 0;
 
-    // Max drawdown & run-up
-    // Sort by entry date to get chronological order
+    // Max Drawdown & Max Run-up — computed in dollar terms
+    // Max Drawdown: largest peak-to-trough drop in cumulative P&L
+    // Max Run-up: largest trough-to-peak gain in cumulative P&L
     const sortedTrades = [...trades].sort((a, b) => new Date(a.entry_date) - new Date(b.entry_date));
-    let cumulative = 0;
-    let peak = 0;
-    let trough = 0;
-    let maxDrawdown = 0;
-    let maxRunup = 0;
-    
+
+    let cum = 0;
+    let peakCum = 0;   // highest cumulative P&L seen so far
+    let troughSincePeak = 0; // lowest cumulative P&L since last peak
+    let maxDrawdown = 0; // max dollar drawdown (peak - subsequent trough)
+
+    let cum2 = 0;
+    let troughCum = 0; // lowest cumulative P&L seen so far
+    let maxRunup = 0;  // max dollar run-up (trough to subsequent peak)
+
     sortedTrades.forEach(t => {
-      cumulative += t.pnl || 0;
-      if (cumulative > peak) {
-        peak = cumulative;
-        trough = cumulative; // reset trough when new peak
+      const pnl = t.pnl || 0;
+
+      // Drawdown pass
+      cum += pnl;
+      if (cum > peakCum) {
+        peakCum = cum;
+        troughSincePeak = cum; // reset trough on new peak
       }
-      if (cumulative < trough) {
-        trough = cumulative;
+      if (cum < troughSincePeak) {
+        troughSincePeak = cum;
       }
-      // Drawdown as % of peak (only meaningful when peak > 0)
-      if (peak > 0) {
-        const drawdown = ((peak - cumulative) / peak) * 100;
-        if (drawdown > maxDrawdown) maxDrawdown = drawdown;
-      } else if (peak === 0 && cumulative < 0) {
-        // All trades are losses from the start — use dollar drawdown, cap at 100%
-        const drawdown = Math.min(Math.abs(cumulative), 100);
-        if (drawdown > maxDrawdown) maxDrawdown = drawdown;
+      const drawdown = peakCum - troughSincePeak;
+      if (drawdown > maxDrawdown) maxDrawdown = drawdown;
+
+      // Run-up pass
+      cum2 += pnl;
+      if (cum2 < troughCum) {
+        troughCum = cum2;
       }
-      if (cumulative > 0) {
-        const runup = peak > 0 ? (cumulative / peak) * 100 : 0;
-        if (runup > maxRunup) maxRunup = runup;
-      }
+      const runup = cum2 - troughCum;
+      if (runup > maxRunup) maxRunup = runup;
     });
 
     // Consecutive wins/losses
@@ -360,10 +365,10 @@ export default function ComprehensiveStats({ trades }) {
               valueClass={stats.tradeExpectancy >= 0 ? 'text-green-600' : 'text-red-600'} />
             
             <StatRow label="Gross P&L" value={`$${stats.grossPnl.toFixed(2)}`} />
-            <StatRow label="Max Drawdown" value={`${stats.maxDrawdown.toFixed(2)}%`} valueClass="text-red-600" />
+            <StatRow label="Max Drawdown" value={`$${stats.maxDrawdown.toFixed(2)}`} valueClass="text-red-600" />
             
             <StatRow label="Total Contracts/Lots" value={stats.totalContracts.toFixed(2)} />
-            <StatRow label="Max Run-up" value={`${stats.maxRunup.toFixed(2)}%`} valueClass="text-green-600" />
+            <StatRow label="Max Run-up" value={`$${stats.maxRunup.toFixed(2)}`} valueClass="text-green-600" />
             
             <StatRow label="Win Std Deviation" value={`$${stats.winStdDev.toFixed(2)}`} />
             <StatRow label="Loss Std Deviation" value={`$${stats.lossStdDev.toFixed(2)}`} />
