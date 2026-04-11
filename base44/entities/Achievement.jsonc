@@ -1,0 +1,87 @@
+{
+  "name": "Achievement",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "User who owns this achievement record"
+    },
+    "total_points": {
+      "type": "number",
+      "default": 0,
+      "description": "Total points accumulated"
+    },
+    "level": {
+      "type": "number",
+      "default": 1,
+      "description": "Current trader level"
+    },
+    "experience": {
+      "type": "number",
+      "default": 0,
+      "description": "XP toward next level"
+    },
+    "streak_days": {
+      "type": "number",
+      "default": 0,
+      "description": "Current daily activity streak"
+    },
+    "longest_streak": {
+      "type": "number",
+      "default": 0,
+      "description": "Longest streak achieved"
+    },
+    "last_activity_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Last day user was active"
+    },
+    "badges_earned": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Array of badge IDs earned"
+    },
+    "milestones_completed": {
+      "type": "object",
+      "description": "Tracking completed milestones"
+    },
+    "stats": {
+      "type": "object",
+      "properties": {
+        "trades_logged": {
+          "type": "number",
+          "default": 0
+        },
+        "plans_created": {
+          "type": "number",
+          "default": 0
+        },
+        "journal_entries": {
+          "type": "number",
+          "default": 0
+        },
+        "goals_completed": {
+          "type": "number",
+          "default": 0
+        },
+        "perfect_plan_days": {
+          "type": "number",
+          "default": 0
+        }
+      }
+    }
+  },
+  "required": [
+    "user_email"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "user_email": "{{user.email}}"
+    },
+    "update": {},
+    "delete": {}
+  }
+}
