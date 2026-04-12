@@ -57,7 +57,7 @@ export default function LiveTradingSignals() {
       console.log('🔍 Fetching signals for user:', user.email);
       
       try {
-        const results = await base44.entities.Signal.filter({ user_email: user.email }, '-created_date', 100);
+        const results = await base44.entities.Signal.filter({ user_email: user.email }, '-created_date', 500);
         console.log('📊 Signals fetched (filter by user_email):', results.length, 'signals');
         
         if (results.length > 0) {
@@ -153,7 +153,15 @@ export default function LiveTradingSignals() {
         } else if (variables.status === 'ignored') {
           toast.success('Signal ignored');
         }
-        // DON'T invalidate - trust the optimistic update
+        // Sync the cache with the server-returned signal to prevent rollbacks
+        if (response?.data?.signal) {
+          queryClient.setQueryData(['signals', user?.email], (old) => {
+            if (!old) return old;
+            return old.map(s =>
+              s.id === variables.id ? { ...s, ...response.data.signal } : s
+            );
+          });
+        }
       } else {
         // Rollback on server rejection
         if (context?.previousSignals) {
@@ -170,10 +178,13 @@ export default function LiveTradingSignals() {
       }
       toast.error('Failed to update signal: ' + error.message);
     },
-    onSettled: () => {
+    onSettled: (data, error) => {
       setUpdatingSignalId(null);
       setIsMutating(false);
-      // Don't invalidate here - causes the revert issue
+      // Only invalidate on error so server state is re-fetched to recover from failure
+      if (error) {
+        queryClient.invalidateQueries({ queryKey: ['signals', user?.email] });
+      }
     }
   });
 

@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 /**
  * Update signal status (viewed, ignored, executed)
@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
     }
 
     // Build update data
-    const updateData: Record<string, any> = { status };
+    const updateData = { status };
 
     if (status === 'executed') {
       updateData.executed_at = new Date().toISOString();
