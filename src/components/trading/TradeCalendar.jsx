@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, startOfWeek, endOfWeek, addWeeks, subWeeks, addMonths, subMonths } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, startOfWeek, endOfWeek, addWeeks, subWeeks, addMonths, subMonths, isToday } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Target, FileText } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
@@ -39,6 +39,7 @@ export default function TradeCalendar({ trades }) {
     }
 
     return days.map(day => {
+
       const dayTrades = trades.filter(t => 
         isSameDay(new Date(t.entry_date), day)
       );
@@ -226,6 +227,10 @@ export default function TradeCalendar({ trades }) {
             ))}
           </div>
           <div className="grid grid-cols-7 gap-2">
+            {/* Leading blank cells to align day 1 to the correct weekday */}
+            {view === 'month' && calendarData.length > 0 && Array.from({ length: calendarData[0].date.getDay() }).map((_, i) => (
+              <div key={`blank-${i}`} className="aspect-square" />
+            ))}
             {calendarData.map((day, idx) => (
               <div
                 key={idx}
@@ -234,11 +239,13 @@ export default function TradeCalendar({ trades }) {
                   if (day.hasPlan) setShowPlanModal(true);
                 }}
                 className={`aspect-square p-2 rounded-lg border transition-all cursor-pointer relative ${
-                  day.tradeCount === 0
-                    ? darkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-200'
-                    : day.pnl >= 0
-                      ? darkMode ? 'bg-green-900/30 border-green-700/30 hover:bg-green-900/50' : 'bg-green-50 border-green-200 hover:bg-green-100'
-                      : darkMode ? 'bg-red-900/30 border-red-700/30 hover:bg-red-900/50' : 'bg-red-50 border-red-200 hover:bg-red-100'
+                  isToday(day.date)
+                    ? darkMode ? 'bg-cyan-900/40 border-cyan-500 ring-2 ring-cyan-500' : 'bg-cyan-50 border-cyan-500 ring-2 ring-cyan-500'
+                    : day.tradeCount === 0
+                      ? darkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-200'
+                      : day.pnl >= 0
+                        ? darkMode ? 'bg-green-900/30 border-green-700/30 hover:bg-green-900/50' : 'bg-green-50 border-green-200 hover:bg-green-100'
+                        : darkMode ? 'bg-red-900/30 border-red-700/30 hover:bg-red-900/50' : 'bg-red-50 border-red-200 hover:bg-red-100'
                 }`}
               >
                 <div className="flex items-center justify-between">
