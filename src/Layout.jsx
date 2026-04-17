@@ -12,10 +12,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import NotificationBell from '@/components/notifications/NotificationBell';
 
 export default function Layout({ children, currentPageName }) {
-  // Don't render layout for Landing, Onboarding, PlatformTour, and PublicDashboard pages
-  if (currentPageName === 'Landing' || currentPageName === 'PublicDashboard' || currentPageName === 'Onboarding' || currentPageName === 'PlatformTour') {
-    return children;
-  }
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [showAI, setShowAI] = useState(false);
@@ -277,6 +273,11 @@ export default function Layout({ children, currentPageName }) {
 
   // Check if we should show back button (not on main tabs)
   const showBackButton = !mobileTabItems.find(item => item.page === currentPageName);
+
+  // Don't render layout for Landing, Onboarding, PlatformTour, and PublicDashboard pages
+  if (currentPageName === 'Landing' || currentPageName === 'PublicDashboard' || currentPageName === 'Onboarding' || currentPageName === 'PlatformTour') {
+    return children;
+  }
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${

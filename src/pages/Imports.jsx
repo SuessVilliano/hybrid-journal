@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Upload, FileText, CheckCircle, XCircle, Clock, Plus, BarChart3, Trash2, Edit2, Check, X } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
 import ImportModal from '@/components/trading/ImportModal';
 import ImportVisualization from '@/components/trading/ImportVisualization';

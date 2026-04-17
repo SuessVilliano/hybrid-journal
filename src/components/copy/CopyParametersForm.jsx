@@ -227,7 +227,7 @@ export default function CopyParametersForm({ sourceConnectionId, onSave }) {
         </div>
 
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setStep(2)} className="flex-1">
+          <Button variant="outline" onClick={() => onSave && onSave()} className="flex-1">
             Back
           </Button>
           <Button 
