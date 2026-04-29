@@ -204,7 +204,7 @@ export default function SignalCard({
                 </span>
                 <span className={darkMode ? 'text-slate-600' : 'text-slate-400'}>•</span>
                 <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>
-                  {formatInTimezone(signal.created_date, user?.timezone || 'America/New_York')}
+                  {formatInTimezone(signal.created_date, 'America/New_York')} EST
                 </span>
               </div>
               {signal.strategy && (
