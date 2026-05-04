@@ -4,7 +4,18 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MultiSelect } from '@/components/ui/multi-select';
 import { Card } from '@/components/ui/card';
 import { Wallet } from 'lucide-react';
-import { HYBRIDCOPY_PROVIDERS } from '@/lib/providers';
+import { HYBRIDCOPY_PROVIDERS, getProvider } from '@/lib/providers';
+
+// Resolve the row of DashboardSettings owned by the current user.
+// `list()[0]` is unsafe across users — we explicitly pick the row whose
+// created_by matches the logged-in email so two users in the same browser
+// or admin views never collide.
+async function loadCurrentDashboardSettings() {
+  const me = await base44.auth.me().catch(() => null);
+  const all = await base44.entities.DashboardSettings.list().catch(() => []);
+  if (!me?.email) return all[0] || null;
+  return all.find((s) => s.created_by === me.email) || null;
+}
 
 export default function GlobalAccountSelector({ onAccountsChange, onProvidersChange }) {
   const queryClient = useQueryClient();
@@ -16,10 +27,7 @@ export default function GlobalAccountSelector({ onAccountsChange, onProvidersCha
 
   const { data: settings } = useQuery({
     queryKey: ['dashboardSettings'],
-    queryFn: async () => {
-      const allSettings = await base44.entities.DashboardSettings.list();
-      return allSettings[0] || null;
-    }
+    queryFn: loadCurrentDashboardSettings
   });
 
   const updateSettingsMutation = useMutation({
@@ -31,12 +39,24 @@ export default function GlobalAccountSelector({ onAccountsChange, onProvidersCha
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['dashboardSettings']);
+      queryClient.invalidateQueries({ queryKey: ['dashboardSettings'] });
     }
   });
 
   const selectedAccountIds = settings?.selected_account_ids || [];
   const selectedProviders = settings?.selected_providers || [];
+
+  // Notify parents on every render-after-load so pages that subscribe via
+  // onAccountsChange pick up the persisted selection on first mount, not
+  // only after the user clicks something.
+  const accountIdsKey = JSON.stringify(selectedAccountIds);
+  const providersKey = JSON.stringify(selectedProviders);
+  useEffect(() => {
+    if (onAccountsChange) onAccountsChange(selectedAccountIds);
+  }, [accountIdsKey, onAccountsChange]);
+  useEffect(() => {
+    if (onProvidersChange) onProvidersChange(selectedProviders);
+  }, [providersKey, onProvidersChange]);
 
   const handleSelectionChange = (newIds) => {
     updateSettingsMutation.mutate({ selected_account_ids: newIds });
@@ -130,14 +150,20 @@ export default function GlobalAccountSelector({ onAccountsChange, onProvidersCha
   );
 }
 
-// Hook to get selected accounts in any component
+// Hook to get selected accounts in any component.
+//
+// Returns a `filterTrades(trades)` helper that every page should use when
+// rendering account-scoped data. Centralising the filter prevents drift
+// between pages — all of them already need to handle:
+//   • exact account_id match
+//   • HybridCopy synced trades that only carry an external_account_id —
+//     resolve to a local Account by matching account.external_id /
+//     account_external_id
+//   • selected provider chips applied as an AND filter
 export function useSelectedAccounts() {
   const { data: settings } = useQuery({
     queryKey: ['dashboardSettings'],
-    queryFn: async () => {
-      const allSettings = await base44.entities.DashboardSettings.list();
-      return allSettings[0] || null;
-    }
+    queryFn: loadCurrentDashboardSettings
   });
 
   const { data: accounts = [] } = useQuery({
@@ -149,11 +175,47 @@ export function useSelectedAccounts() {
   const selectedProviders = settings?.selected_providers || [];
   const selectedAccounts = accounts.filter(acc => selectedAccountIds.includes(acc.id));
 
+  // Build a fast lookup of the external ids attached to each selected
+  // account so HybridCopy trades that only carry account_external_id still
+  // get matched.
+  const selectedExternalIds = new Set();
+  for (const acc of selectedAccounts) {
+    if (acc.external_id) selectedExternalIds.add(String(acc.external_id));
+    if (acc.account_external_id) selectedExternalIds.add(String(acc.account_external_id));
+    if (acc.account_number) selectedExternalIds.add(String(acc.account_number));
+  }
+
+  const matchesAccount = (trade) => {
+    if (selectedAccountIds.length === 0) return true;
+    if (trade.account_id && selectedAccountIds.includes(trade.account_id)) return true;
+    const ext = trade.account_external_id || trade.external_account_id;
+    if (ext && selectedExternalIds.has(String(ext))) return true;
+    return false;
+  };
+
+  const matchesProvider = (trade) => {
+    if (selectedProviders.length === 0) return true;
+    const provider = getProvider(trade);
+    if (!provider) return false;
+    return selectedProviders.includes(provider.key);
+  };
+
+  const filterTrades = (trades) => {
+    if (!Array.isArray(trades)) return [];
+    if (selectedAccountIds.length === 0 && selectedProviders.length === 0) {
+      return trades;
+    }
+    return trades.filter((t) => matchesAccount(t) && matchesProvider(t));
+  };
+
   return {
     selectedAccountIds,
     selectedProviders,
     selectedAccounts,
     allAccounts: accounts,
-    hasSelection: selectedAccountIds.length > 0
+    hasSelection: selectedAccountIds.length > 0 || selectedProviders.length > 0,
+    matchesAccount,
+    matchesProvider,
+    filterTrades
   };
 }

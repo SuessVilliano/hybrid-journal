@@ -124,12 +124,35 @@ Deno.serve(async (req) => {
                         : ['GOOEYPRO', 'HYBRID_FUNDING_EQUITIES'].includes(providerKey)
                         ? 'equities'
                         : 'forex');
+
+                // Resolve a local Account so account-filtered views include
+                // this trade.
+                let resolvedAccountId: string | null = null;
+                if (trade.accountExternalId) {
+                    try {
+                        const candidates = await base44.asServiceRole.entities.Account.filter({
+                            created_by: connectedApp.user_email
+                        });
+                        const ext = String(trade.accountExternalId);
+                        const match = candidates.find((a: any) =>
+                            String(a.external_id || '') === ext ||
+                            String(a.account_external_id || '') === ext ||
+                            String(a.account_number || '') === ext ||
+                            String(a.broker_account_id || '') === ext
+                        );
+                        if (match) resolvedAccountId = match.id;
+                    } catch (err) {
+                        console.warn('[ingestEvents] account resolution failed:', err.message);
+                    }
+                }
+
                 const tradeData = {
                     source: body.provider || body.source,
                     provider: providerKey || null,
                     source_trade_id: trade.sourceTradeId,
                     connection_id: body.connectionId || null,
                     external_account_id: trade.accountExternalId,
+                    account_id: resolvedAccountId,
                     account_external_id: trade.accountExternalId,
                     symbol: trade.symbol,
                     symbol_class: symbolClass,

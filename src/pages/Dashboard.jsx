@@ -23,14 +23,18 @@ import InstrumentAnalysisWidget from '@/components/dashboard/InstrumentAnalysisW
 import CompoundCalculatorWidget from '@/components/dashboard/CompoundCalculatorWidget';
 import HybridScoreWidget from '@/components/dashboard/HybridScoreWidget';
 import TodaysPlanWidget from '@/components/planning/TodaysPlanWidget';
-import GlobalAccountSelector from '@/components/accounts/GlobalAccountSelector';
+import GlobalAccountSelector, { useSelectedAccounts } from '@/components/accounts/GlobalAccountSelector';
 
 export default function Dashboard() {
   const [timeframe, setTimeframe] = useState('all');
   const [showShareModal, setShowShareModal] = useState(false);
   const [showAIAnalysis, setShowAIAnalysis] = useState(false);
   const [showWidgetSelector, setShowWidgetSelector] = useState(false);
-  const [selectedAccounts, setSelectedAccounts] = useState([]);
+  // Authoritative source of truth for the global account/provider selection.
+  // Reading from the hook (instead of local state) means the Dashboard
+  // reflects the persisted selection on first paint and stays in sync with
+  // every other page.
+  const { filterTrades } = useSelectedAccounts();
   const [enabledWidgets, setEnabledWidgets] = useState([
     'pnl', 'winRate', 'profitFactor', 'avgWin', 'hybridScore', 'equityCurve', 'recentTrades', 'performance'
   ]);
@@ -67,9 +71,7 @@ export default function Dashboard() {
     enabled: !!user
   });
 
-  const trades = selectedAccounts.length > 0
-    ? allTrades.filter(t => selectedAccounts.includes(t.account_id))
-    : allTrades;
+  const trades = filterTrades(allTrades);
 
   const { data: sessions = [] } = useQuery({
     queryKey: ['sessions'],
@@ -250,7 +252,7 @@ export default function Dashboard() {
         )}
 
         {/* Global Account Selector */}
-        <GlobalAccountSelector onAccountsChange={setSelectedAccounts} />
+        <GlobalAccountSelector />
 
         {/* Key Metrics */}
         {stats && (

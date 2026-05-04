@@ -35,9 +35,15 @@ async function generateReportForUser(base44: any, userEmail: string) {
         synced_from_hybridcopy: true
     });
 
-    const today = trades.filter(
-        (t: any) => new Date(t.entry_date).toISOString() >= dayStart
-    );
+    // Realised P&L is anchored to the close date — a trade entered
+    // yesterday but closed today belongs in *today's* report. Open trades
+    // (no exit_date) fall back to entry_date so they still show up if the
+    // user opened a position today and is asking about today.
+    const today = trades.filter((t: any) => {
+        const anchor = t.exit_date || t.entry_date;
+        if (!anchor) return false;
+        return new Date(anchor).toISOString() >= dayStart;
+    });
 
     if (today.length === 0) {
         return { user_email: userEmail, sent: false, reason: 'No HybridCopy trades today' };

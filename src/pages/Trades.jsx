@@ -9,6 +9,8 @@ import TradeForm from '@/components/trading/TradeForm';
 import TradeList from '@/components/trading/TradeList';
 import TradeFilters from '@/components/trading/TradeFilters';
 import ImportModal from '@/components/trading/ImportModal';
+import GlobalAccountSelector, { useSelectedAccounts } from '@/components/accounts/GlobalAccountSelector';
+import { getProvider } from '@/lib/providers';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 
@@ -22,6 +24,7 @@ export default function Trades() {
   const [selectedTrades, setSelectedTrades] = useState([]);
 
   const queryClient = useQueryClient();
+  const { filterTrades } = useSelectedAccounts();
 
   const { data: user } = useQuery({
     queryKey: ['user'],
@@ -156,10 +159,15 @@ export default function Trades() {
     }
   };
 
-  // Get all unique tags from trades
-  const availableTags = [...new Set(trades.flatMap(t => t.tags || []))];
+  // Apply the global account/provider selection first so the trade list,
+  // counts, and tag suggestions all reflect the same scope as the rest of
+  // the app.
+  const accountScopedTrades = filterTrades(trades);
 
-  const filteredTrades = trades.filter(trade => {
+  // Get all unique tags from trades visible to the current scope
+  const availableTags = [...new Set(accountScopedTrades.flatMap(t => t.tags || []))];
+
+  const filteredTrades = accountScopedTrades.filter(trade => {
     if (searchQuery && !trade.symbol?.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false;
     }
@@ -167,17 +175,19 @@ export default function Trades() {
     if (filters.instrument_type && trade.instrument_type !== filters.instrument_type) return false;
     if (filters.side && trade.side !== filters.side) return false;
     if (filters.provider) {
-      const tradeProvider = (trade.provider || trade.source || '').toString().toUpperCase();
-      if (tradeProvider !== filters.provider) return false;
+      // Normalise via getProvider so platform aliases ("Tradovate" vs
+      // "TRADOVATE" vs "TV") all match.
+      const provider = getProvider(trade);
+      if (!provider || provider.key !== filters.provider) return false;
     }
-    
+
     // Filter by tags - trade must have all selected tags
     if (filters.tags && filters.tags.length > 0) {
       const tradeTags = trade.tags || [];
       const hasAllTags = filters.tags.every(tag => tradeTags.includes(tag));
       if (!hasAllTags) return false;
     }
-    
+
     return true;
   });
 
@@ -231,6 +241,10 @@ export default function Trades() {
             </Button>
           </div>
         </div>
+
+        {/* Global account / provider filter — same selector as Dashboard
+            and Analytics so the trade list reflects the same scope. */}
+        <GlobalAccountSelector />
 
         {/* Bulk Actions Bar */}
         {bulkMode && selectedTrades.length > 0 && (

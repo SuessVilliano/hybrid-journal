@@ -134,9 +134,20 @@ export function getSymbolClass(trade) {
   return 'unknown';
 }
 
+// A trade is "synced from HybridCopy" only if it actually came in through
+// the journal-sync pipeline. We deliberately do NOT infer this from a
+// matching provider key alone — a trader who manually logs a Tradovate
+// trade should not get a "Synced from HybridCopy" badge with a
+// deep-link that goes nowhere.
+//
+// Trust order:
+//   1. explicit synced_from_hybridcopy boolean (set by every sync path)
+//   2. presence of source_trade_id + recognisable provider (legacy rows
+//      ingested before we added the boolean)
 export function isHybridCopySynced(trade) {
   if (!trade) return false;
-  if (trade.synced_from_hybridcopy) return true;
+  if (trade.synced_from_hybridcopy === true) return true;
+  if (!trade.source_trade_id) return false;
   const provider = getProvider(trade);
   if (!provider) return false;
   return [

@@ -218,6 +218,45 @@ Deno.serve(async (req) => {
         const symbolClassDefault = PROVIDER_DEFAULT_CLASS[providerKey] || 'futures';
         const platformLabel = PROVIDER_PLATFORM_LABEL[providerKey] || providerKey;
 
+        // Resolve the local journal Account that this HybridCopy connection
+        // maps to. Without this every synced trade has no account_id and
+        // gets filtered out the moment a user picks an account in the
+        // global selector.
+        //
+        // We try a few common shapes — different account import flows save
+        // the external id under different field names — and we fall back
+        // to a JournalLink mapping if the user explicitly chose where this
+        // connection should land.
+        let resolvedAccountId: string | null = null;
+        if (account_external_id) {
+            try {
+                const candidates = await base44.asServiceRole.entities.Account.filter({
+                    created_by: userEmail
+                });
+                const ext = String(account_external_id);
+                const match = candidates.find((a: any) =>
+                    String(a.external_id || '') === ext ||
+                    String(a.account_external_id || '') === ext ||
+                    String(a.account_number || '') === ext ||
+                    String(a.broker_account_id || '') === ext
+                );
+                if (match) {
+                    resolvedAccountId = match.id;
+                } else {
+                    const links = await base44.asServiceRole.entities.JournalLink.filter({
+                        user_email: userEmail,
+                        provider: providerKey,
+                        account_external_id: ext
+                    }).catch(() => []);
+                    if (links && links[0]?.account_id) {
+                        resolvedAccountId = links[0].account_id;
+                    }
+                }
+            } catch (err) {
+                console.warn('[receiveFromHybridCopy] account resolution failed:', err.message);
+            }
+        }
+
         const syncLog = await base44.asServiceRole.entities.SyncEventLog.create({
             event_id: eventId,
             user_email: userEmail,
@@ -251,6 +290,10 @@ Deno.serve(async (req) => {
                     connection_id: effectiveConnectionId,
                     external_account_id: account_external_id,
                     account_external_id: account_external_id,
+                    // Tag the journal Account so account-filtered views
+                    // (Dashboard, Analytics, Trades, Calendar) include
+                    // these trades.
+                    account_id: resolvedAccountId,
                     platform: platformLabel,
                     symbol: t.symbol,
                     symbol_class: t.symbol_class || symbolClassDefault,
@@ -279,11 +322,24 @@ Deno.serve(async (req) => {
                     raw_payload: t.raw_payload || t
                 };
 
-                const existing = await base44.asServiceRole.entities.Trade.filter({
+                // Idempotency lookup. Primary key is (provider,
+                // source_trade_id). Legacy rows ingested through
+                // ingestEvents may only carry `source` (e.g. 'HybridCopy')
+                // — we check that as a fallback so re-syncs upgrade those
+                // rows in place instead of creating duplicates.
+                let existing = await base44.asServiceRole.entities.Trade.filter({
                     user_email: userEmail,
                     provider: providerKey,
                     source_trade_id: t.source_trade_id
                 });
+
+                if (!existing || existing.length === 0) {
+                    const legacy = await base44.asServiceRole.entities.Trade.filter({
+                        user_email: userEmail,
+                        source_trade_id: t.source_trade_id
+                    });
+                    existing = legacy || [];
+                }
 
                 if (existing && existing.length > 0) {
                     await base44.asServiceRole.entities.Trade.update(existing[0].id, tradeData);

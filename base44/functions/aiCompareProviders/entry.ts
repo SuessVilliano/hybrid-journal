@@ -47,9 +47,13 @@ Deno.serve(async (req) => {
             synced_from_hybridcopy: true
         });
 
-        const mtdTrades = trades.filter(
-            (t: any) => new Date(t.entry_date) >= monthStart
-        );
+        // Anchor on close date for realised P&L; fall back to entry date
+        // for open positions.
+        const mtdTrades = trades.filter((t: any) => {
+            const anchor = t.exit_date || t.entry_date;
+            if (!anchor) return false;
+            return new Date(anchor) >= monthStart;
+        });
 
         const buckets: Record<string, { provider: string; symbol_class: string; pnl: number; count: number; latest_balance: number | null }> = {};
 

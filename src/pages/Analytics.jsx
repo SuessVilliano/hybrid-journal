@@ -18,16 +18,14 @@ export default function Analytics() {
   const [view, setView] = useState('overview');
   const [showAIAnalysis, setShowAIAnalysis] = useState(false);
   const darkMode = document.documentElement.classList.contains('dark');
-  const { selectedAccountIds, hasSelection } = useSelectedAccounts();
+  const { filterTrades } = useSelectedAccounts();
 
   const { data: allTrades = [], isLoading } = useQuery({
     queryKey: ['trades'],
     queryFn: () => base44.entities.Trade.list('-entry_date', 1000)
   });
 
-  const trades = hasSelection 
-    ? allTrades.filter(t => selectedAccountIds.includes(t.account_id))
-    : allTrades;
+  const trades = filterTrades(allTrades);
 
   if (isLoading) {
     return (
