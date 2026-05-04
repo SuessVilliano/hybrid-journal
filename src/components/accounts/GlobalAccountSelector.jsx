@@ -4,8 +4,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MultiSelect } from '@/components/ui/multi-select';
 import { Card } from '@/components/ui/card';
 import { Wallet } from 'lucide-react';
+import { HYBRIDCOPY_PROVIDERS } from '@/lib/providers';
 
-export default function GlobalAccountSelector({ onAccountsChange }) {
+export default function GlobalAccountSelector({ onAccountsChange, onProvidersChange }) {
   const queryClient = useQueryClient();
 
   const { data: accounts = [] } = useQuery({
@@ -22,15 +23,11 @@ export default function GlobalAccountSelector({ onAccountsChange }) {
   });
 
   const updateSettingsMutation = useMutation({
-    mutationFn: async (selectedAccountIds) => {
+    mutationFn: async (patch) => {
       if (settings?.id) {
-        return await base44.entities.DashboardSettings.update(settings.id, {
-          selected_account_ids: selectedAccountIds
-        });
+        return await base44.entities.DashboardSettings.update(settings.id, patch);
       } else {
-        return await base44.entities.DashboardSettings.create({
-          selected_account_ids: selectedAccountIds
-        });
+        return await base44.entities.DashboardSettings.create(patch);
       }
     },
     onSuccess: () => {
@@ -39,12 +36,21 @@ export default function GlobalAccountSelector({ onAccountsChange }) {
   });
 
   const selectedAccountIds = settings?.selected_account_ids || [];
+  const selectedProviders = settings?.selected_providers || [];
 
   const handleSelectionChange = (newIds) => {
-    updateSettingsMutation.mutate(newIds);
+    updateSettingsMutation.mutate({ selected_account_ids: newIds });
     if (onAccountsChange) {
       onAccountsChange(newIds);
     }
+  };
+
+  const toggleProvider = (key) => {
+    const next = selectedProviders.includes(key)
+      ? selectedProviders.filter((k) => k !== key)
+      : [...selectedProviders, key];
+    updateSettingsMutation.mutate({ selected_providers: next });
+    if (onProvidersChange) onProvidersChange(next);
   };
 
   const accountOptions = accounts.map(acc => ({
@@ -83,6 +89,43 @@ export default function GlobalAccountSelector({ onAccountsChange }) {
           </div>
         )}
       </div>
+
+      <div className="mt-3 flex items-center gap-2 flex-wrap">
+        <span className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+          HybridCopy provider:
+        </span>
+        {HYBRIDCOPY_PROVIDERS.map((p) => {
+          const active = selectedProviders.includes(p.key);
+          return (
+            <button
+              key={p.key}
+              type="button"
+              onClick={() => toggleProvider(p.key)}
+              className={`text-xs px-2 py-0.5 rounded-md border transition-colors ${
+                active
+                  ? darkMode
+                    ? `${p.darkBg} ${p.darkText} border-transparent`
+                    : `${p.bg} ${p.text} border-transparent`
+                  : darkMode
+                    ? 'border-slate-700 text-slate-400 hover:bg-slate-800'
+                    : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+              }`}
+              title={p.label}
+            >
+              {p.short} · {p.label}
+            </button>
+          );
+        })}
+        {selectedProviders.length > 0 && (
+          <button
+            type="button"
+            onClick={() => updateSettingsMutation.mutate({ selected_providers: [] })}
+            className={`text-xs underline ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}
+          >
+            clear
+          </button>
+        )}
+      </div>
     </Card>
   );
 }
@@ -103,10 +146,12 @@ export function useSelectedAccounts() {
   });
 
   const selectedAccountIds = settings?.selected_account_ids || [];
+  const selectedProviders = settings?.selected_providers || [];
   const selectedAccounts = accounts.filter(acc => selectedAccountIds.includes(acc.id));
 
   return {
     selectedAccountIds,
+    selectedProviders,
     selectedAccounts,
     allAccounts: accounts,
     hasSelection: selectedAccountIds.length > 0

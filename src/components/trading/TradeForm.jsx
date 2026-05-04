@@ -10,6 +10,7 @@ import { autoPopulateTradeFields, detectInstrumentType } from './AITradeHelper';
 import TemplateSelector from './TemplateSelector';
 import { useAchievements } from '@/components/gamification/useAchievements';
 import AchievementNotification from '@/components/gamification/AchievementNotification';
+import HybridCopyBadge from '@/components/journal/HybridCopyBadge';
 
 export default function TradeForm({ trade, onSubmit, onCancel }) {
   const { triggerAchievement, notification, clearNotification } = useAchievements();
@@ -292,6 +293,7 @@ Please provide:
             <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
               {trade ? 'Edit Trade' : showTemplateSelector ? 'Select Template' : selectedTemplate ? selectedTemplate.name : 'Add New Trade'}
             </h2>
+            {trade && <HybridCopyBadge trade={trade} />}
           </div>
           {!showTemplateSelector && (
             <button onClick={onCancel} className={darkMode ? 'text-slate-400 hover:text-white' : 'text-slate-400 hover:text-slate-600'}>
@@ -368,6 +370,9 @@ Please provide:
                   <SelectItem value="MT4">MetaTrader 4</SelectItem>
                   <SelectItem value="MT5">MetaTrader 5</SelectItem>
                   <SelectItem value="Tradovate">Tradovate</SelectItem>
+                  <SelectItem value="Volumetrica">Volumetrica</SelectItem>
+                  <SelectItem value="GooeyPro">GooeyPro</SelectItem>
+                  <SelectItem value="HybridFunding">Hybrid Funding</SelectItem>
                   <SelectItem value="NinjaTrader">NinjaTrader</SelectItem>
                   <SelectItem value="TradingView">TradingView</SelectItem>
                   <SelectItem value="Binance">Binance</SelectItem>

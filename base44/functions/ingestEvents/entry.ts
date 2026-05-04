@@ -116,12 +116,23 @@ Deno.serve(async (req) => {
                     source_trade_id: trade.sourceTradeId
                 });
 
+                const providerKey = (body.provider || body.source || '').toString().toUpperCase();
+                const symbolClass =
+                    trade.symbolClass ||
+                    (['TRADOVATE', 'DXTRADE', 'VOLUMETRICA'].includes(providerKey)
+                        ? 'futures'
+                        : ['GOOEYPRO', 'HYBRID_FUNDING_EQUITIES'].includes(providerKey)
+                        ? 'equities'
+                        : 'forex');
                 const tradeData = {
                     source: body.provider || body.source,
+                    provider: providerKey || null,
                     source_trade_id: trade.sourceTradeId,
                     connection_id: body.connectionId || null,
                     external_account_id: trade.accountExternalId,
+                    account_external_id: trade.accountExternalId,
                     symbol: trade.symbol,
+                    symbol_class: symbolClass,
                     side: trade.side,
                     entry_date: trade.entryTime,
                     entry_price: trade.entryPrice,
@@ -132,8 +143,11 @@ Deno.serve(async (req) => {
                     take_profit: trade.takeProfit || null,
                     commission: trade.fees?.commission || 0,
                     swap: trade.fees?.swap || 0,
+                    fees_json: trade.fees || null,
                     pnl: trade.pnlNet || 0,
                     trade_status: trade.status?.toLowerCase() || 'closed',
+                    session_type: trade.sessionType || null,
+                    synced_from_hybridcopy: true,
                     raw_payload: trade.rawMaskedJson || {}
                 };
 
@@ -148,22 +162,43 @@ Deno.serve(async (req) => {
             } else if (body.eventType === 'SNAPSHOT_UPSERT' && body.snapshot) {
                 const snapshot = body.snapshot;
 
-                await base44.asServiceRole.entities.AccountSnapshot.create({
+                const snapProviderKey = (body.provider || body.source || '').toString().toUpperCase();
+                const snapshotData = {
                     user_email: connectedApp.user_email,
                     connection_id: body.connectionId || null,
                     external_account_id: snapshot.accountExternalId,
+                    account_external_id: snapshot.accountExternalId,
                     source: body.provider || body.source,
+                    provider: snapProviderKey || null,
                     timestamp: snapshot.timestamp,
                     balance: snapshot.balance || 0,
                     equity: snapshot.equity || 0,
                     margin_used: snapshot.marginUsed || 0,
                     margin_available: snapshot.freeMargin || 0,
+                    free_margin: snapshot.freeMargin || 0,
+                    unrealized_pnl: snapshot.unrealizedPnl || 0,
+                    buying_power: snapshot.buyingPower ?? null,
+                    session_type:
+                        snapshot.sessionType ||
+                        (snapProviderKey === 'GOOEYPRO' ? 'SINGLE_SESSION_EQUITIES' : null),
                     drawdown_daily: snapshot.drawdownDaily || 0,
                     drawdown_daily_percent: snapshot.drawdownDailyPercent || 0,
                     drawdown_trailing: snapshot.drawdownTrailing || 0,
                     drawdown_trailing_percent: snapshot.drawdownTrailingPercent || 0,
                     raw_masked_json: snapshot.rawMaskedJson || {}
+                };
+
+                // Idempotent upsert by (provider, connection_id, timestamp).
+                const existingSnaps = await base44.asServiceRole.entities.AccountSnapshot.filter({
+                    provider: snapProviderKey,
+                    connection_id: body.connectionId || null,
+                    timestamp: snapshot.timestamp
                 });
+                if (existingSnaps && existingSnaps.length > 0) {
+                    await base44.asServiceRole.entities.AccountSnapshot.update(existingSnaps[0].id, snapshotData);
+                } else {
+                    await base44.asServiceRole.entities.AccountSnapshot.create(snapshotData);
+                }
 
             } else if (body.eventType === 'SIGNAL' && body.signal) {
                 const signal = body.signal;

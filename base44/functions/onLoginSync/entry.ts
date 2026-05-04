@@ -123,6 +123,42 @@ Deno.serve(async (req) => {
 
         console.log(`[OnLoginSync] Complete: ${successCount} success, ${errorCount} errors`);
 
+        // ---- HybridCopy auto-sync (15 min staleness threshold) -----------
+        // If the user has the auto_sync_hybridcopy preference on, refresh
+        // any HybridCopy provider data older than 15 minutes.
+        let hybridCopyResult: any = null;
+        try {
+            const prefs = await base44.entities.UserPreference.filter({
+                user_email: user.email
+            }).catch(() => []);
+            const autoSyncOn = prefs[0]?.auto_sync_hybridcopy ?? true;
+
+            if (autoSyncOn) {
+                const apps = await base44.asServiceRole.entities.ConnectedApp.filter({
+                    user_email: user.email,
+                    app_name: 'HybridCopy',
+                    status: 'active'
+                });
+
+                if (apps.length > 0) {
+                    const fifteenMinAgo = Date.now() - 15 * 60 * 1000;
+                    const stale =
+                        !apps[0].last_event_at ||
+                        new Date(apps[0].last_event_at).getTime() < fifteenMinAgo;
+
+                    if (stale) {
+                        const test = await base44.functions.invoke('testHybridCopySync', {});
+                        hybridCopyResult = test.data;
+                    } else {
+                        hybridCopyResult = { status: 'fresh', skipped: true };
+                    }
+                }
+            }
+        } catch (err) {
+            console.warn('[OnLoginSync] HybridCopy auto-sync failed:', err.message);
+            hybridCopyResult = { error: err.message };
+        }
+
         return Response.json({
             success: true,
             total_connections: connections.length,
@@ -130,6 +166,7 @@ Deno.serve(async (req) => {
             errors: errorCount,
             skipped: connections.length - successCount - errorCount,
             results,
+            hybridcopy: hybridCopyResult,
             duration_ms: Date.now() - startTime
         }, {
             headers: { 'Access-Control-Allow-Origin': '*' }

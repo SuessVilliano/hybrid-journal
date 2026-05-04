@@ -1,0 +1,93 @@
+{
+  "name": "AccountSnapshot",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string"
+    },
+    "connection_id": {
+      "type": "string"
+    },
+    "external_account_id": {
+      "type": "string"
+    },
+    "account_external_id": {
+      "type": "string",
+      "description": "HybridCopy alias for external_account_id"
+    },
+    "source": {
+      "type": "string"
+    },
+    "provider": {
+      "type": "string",
+      "enum": [
+        "MANUAL",
+        "DXTRADE",
+        "TRADOVATE",
+        "VOLUMETRICA",
+        "GOOEYPRO",
+        "HYBRID_FUNDING",
+        "HYBRID_FUNDING_EQUITIES",
+        "HYBRID_COPY",
+        "MT4",
+        "MT5",
+        "CTRADER",
+        "MATCHTRADER",
+        "RITHMIC",
+        "BINANCE",
+        "OTHER"
+      ]
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "balance": {
+      "type": "number"
+    },
+    "equity": {
+      "type": "number"
+    },
+    "margin_used": {
+      "type": "number"
+    },
+    "margin_available": {
+      "type": "number"
+    },
+    "free_margin": {
+      "type": "number",
+      "description": "Alias of margin_available used by HybridCopy snapshots"
+    },
+    "unrealized_pnl": {
+      "type": "number"
+    },
+    "buying_power": {
+      "type": "number",
+      "description": "Buying power for equities accounts (e.g. GooeyPro single-session equities)"
+    },
+    "session_type": {
+      "type": "string",
+      "enum": ["RTH", "ETH", "OVERNIGHT", "SINGLE_SESSION_EQUITIES"],
+      "description": "Flag used to mark single-session equities snapshots"
+    },
+    "drawdown_daily": { "type": "number" },
+    "drawdown_daily_percent": { "type": "number" },
+    "drawdown_trailing": { "type": "number" },
+    "drawdown_trailing_percent": { "type": "number" },
+    "raw_masked_json": { "type": "object" }
+  },
+  "required": ["user_email", "timestamp"],
+  "indexes": [
+    {
+      "fields": ["provider", "connection_id", "timestamp"],
+      "unique": true,
+      "description": "Idempotent upserts: HybridCopy snapshots key on (provider, connection_id, timestamp)"
+    }
+  ],
+  "rls": {
+    "create": {},
+    "read": { "user_email": "{{user.email}}" },
+    "update": { "user_email": "{{user.email}}" },
+    "delete": { "user_email": "{{user.email}}" }
+  }
+}

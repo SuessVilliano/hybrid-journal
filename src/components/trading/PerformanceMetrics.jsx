@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { getProvider, getSymbolClass } from '@/lib/providers';
 
 export default function PerformanceMetrics({ trades, detailed = false }) {
   const metrics = useMemo(() => {
@@ -13,6 +14,19 @@ export default function PerformanceMetrics({ trades, detailed = false }) {
       if (t.pnl > 0) acc[platform].wins++;
       else if (t.pnl < 0) acc[platform].losses++;
       acc[platform].pnl += t.pnl || 0;
+      return acc;
+    }, {});
+
+    // By Provider × symbol_class — keeps futures point-value math separate
+    // from equities share math.
+    const byProviderClass = trades.reduce((acc, t) => {
+      const provider = getProvider(t)?.label || t.platform || 'Manual';
+      const symbolClass = getSymbolClass(t);
+      const key = `${provider} · ${symbolClass}`;
+      if (!acc[key]) acc[key] = { wins: 0, losses: 0, pnl: 0, provider, symbolClass };
+      if (t.pnl > 0) acc[key].wins++;
+      else if (t.pnl < 0) acc[key].losses++;
+      acc[key].pnl += t.pnl || 0;
       return acc;
     }, {});
 
@@ -49,6 +63,11 @@ export default function PerformanceMetrics({ trades, detailed = false }) {
       .sort((a, b) => b.pnl - a.pnl);
 
     return {
+      byProviderClass: Object.entries(byProviderClass).map(([name, data]) => ({
+        name,
+        ...data,
+        winRate: data.wins + data.losses > 0 ? (data.wins / (data.wins + data.losses) * 100) : 0
+      })),
       byPlatform: Object.entries(byPlatform).map(([name, data]) => ({
         name,
         ...data,
@@ -77,18 +96,22 @@ export default function PerformanceMetrics({ trades, detailed = false }) {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Performance by Platform */}
+      {/* Performance by Provider × Asset Class */}
       <Card>
         <CardHeader>
-          <CardTitle>Performance by Platform</CardTitle>
+          <CardTitle>Performance by Provider × Asset Class</CardTitle>
+          <p className="text-xs text-slate-500">
+            Futures (point-value math) and equities (share math) are kept in
+            separate buckets so $/point figures aren't mixed.
+          </p>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={metrics.byPlatform}>
+            <BarChart data={metrics.byProviderClass}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="name" stroke="#64748b" style={{ fontSize: '12px' }} />
+              <XAxis dataKey="name" stroke="#64748b" style={{ fontSize: '11px' }} interval={0} angle={-12} textAnchor="end" height={60} />
               <YAxis stroke="#64748b" style={{ fontSize: '12px' }} />
-              <Tooltip 
+              <Tooltip
                 contentStyle={{
                   backgroundColor: 'white',
                   border: '1px solid #e2e8f0',

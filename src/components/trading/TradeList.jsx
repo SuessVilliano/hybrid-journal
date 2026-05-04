@@ -7,6 +7,7 @@ import { Pencil, Trash2, TrendingUp, TrendingDown } from 'lucide-react';
 import { format } from 'date-fns';
 import PullToRefresh from '@/components/mobile/PullToRefresh';
 import { useQueryClient } from '@tanstack/react-query';
+import ProviderChip from '@/components/journal/ProviderChip';
 
 export default function TradeList({ trades, onEdit, onDelete, selectedTrades = [], onSelectTrade, onSelectAll, bulkMode }) {
   const queryClient = useQueryClient();
@@ -59,7 +60,10 @@ export default function TradeList({ trades, onEdit, onDelete, selectedTrades = [
                   </div>
                 )}
                 <div>
-                  <div className={`font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>{trade.symbol}</div>
+                  <div className={`font-bold flex items-center gap-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                    {trade.symbol}
+                    <ProviderChip trade={trade} size="xs" />
+                  </div>
                   <div className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>{trade.platform}</div>
                 </div>
               </div>

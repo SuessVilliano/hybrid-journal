@@ -5,11 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import {
   Link2, Copy, CheckCircle2, Clock, AlertCircle, Trash2,
-  RefreshCw, Activity, ArrowRight, Shield, Zap
+  RefreshCw, Activity, ArrowRight, Shield, Zap, Bell, FlaskConical, Plug
 } from 'lucide-react';
 import { toast } from 'sonner';
+import ProviderChip from '@/components/journal/ProviderChip';
+import { HYBRIDCOPY_PROVIDERS } from '@/lib/providers';
 
 export default function HybridCopySettings() {
   const [linkToken, setLinkToken] = useState(null);
@@ -17,8 +20,70 @@ export default function HybridCopySettings() {
   const [generating, setGenerating] = useState(false);
   const [diagnostics, setDiagnostics] = useState(null);
   const [loadingDiagnostics, setLoadingDiagnostics] = useState(false);
+  const [testResult, setTestResult] = useState(null);
+  const [testing, setTesting] = useState(false);
 
   const queryClient = useQueryClient();
+
+  const { data: preferences = null } = useQuery({
+    queryKey: ['userPreferences'],
+    queryFn: async () => {
+      const all = await base44.entities.UserPreference.list().catch(() => []);
+      return all[0] || null;
+    }
+  });
+
+  const { data: connectionData, isLoading: loadingConnections } = useQuery({
+    queryKey: ['hybridCopyConnections'],
+    queryFn: async () => {
+      const r = await base44.functions.invoke('listHybridCopyConnections', {});
+      return r.data;
+    }
+  });
+
+  const updatePrefMutation = useMutation({
+    mutationFn: async (patch) => {
+      if (preferences?.id) {
+        return base44.entities.UserPreference.update(preferences.id, patch);
+      }
+      return base44.entities.UserPreference.create(patch);
+    },
+    onSuccess: () => queryClient.invalidateQueries(['userPreferences'])
+  });
+
+  const toggleConnectionMutation = useMutation({
+    mutationFn: async ({ provider, account_external_id, sync_enabled }) => {
+      const r = await base44.functions.invoke('connectHybridCopy', {
+        action: 'toggle',
+        provider,
+        account_external_id,
+        sync_enabled
+      });
+      return r.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['hybridCopyConnections']);
+      toast.success('Sync preference updated');
+    },
+    onError: (e) => toast.error('Update failed: ' + e.message)
+  });
+
+  const runTestSync = async () => {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const r = await base44.functions.invoke('testHybridCopySync', {});
+      setTestResult(r.data);
+      toast.success('Test sync completed');
+    } catch (err) {
+      toast.error('Test sync failed: ' + err.message);
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const autoSyncEnabled = preferences?.auto_sync_hybridcopy ?? true;
+  const dailyReportEnabled = preferences?.daily_hybridcopy_report ?? true;
 
   const { data: connectedApps = [], isLoading: loadingApps } = useQuery({
     queryKey: ['connectedApps'],
@@ -307,6 +372,194 @@ export default function HybridCopySettings() {
                 ))}
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Provider Connections (toggle-per-connection) */}
+        <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white'}>
+          <CardHeader>
+            <CardTitle className={`flex items-center gap-2 ${darkMode ? 'text-white' : ''}`}>
+              <Plug className="h-5 w-5 text-cyan-500" />
+              HybridCopy Provider Connections
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loadingConnections ? (
+              <div className="flex items-center justify-center py-6">
+                <RefreshCw className="h-5 w-5 animate-spin text-cyan-500" />
+              </div>
+            ) : !connectionData?.linked ? (
+              <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                Generate a link token above to fetch your HybridCopy connections.
+              </p>
+            ) : (connectionData.connections || []).length === 0 ? (
+              <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                No HybridCopy provider connections yet. Add one in HybridCopy and it
+                will appear here.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {connectionData.connections.map((c) => (
+                  <div
+                    key={`${c.provider}-${c.account_external_id}`}
+                    className={`flex items-center justify-between p-3 rounded-lg border ${
+                      darkMode ? 'border-slate-700 bg-slate-900/40' : 'border-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <ProviderChip
+                        trade={{ provider: c.provider }}
+                        size="sm"
+                        withLabel
+                      />
+                      <div>
+                        <div className={`font-medium ${darkMode ? 'text-white' : ''}`}>
+                          {c.account_name}
+                        </div>
+                        <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                          {c.last_sync
+                            ? `Last sync: ${new Date(c.last_sync).toLocaleString()}${c.stale ? ' · stale' : ''}`
+                            : 'Never synced'}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                        Sync
+                      </span>
+                      <Switch
+                        checked={!!c.sync_enabled}
+                        onCheckedChange={(v) =>
+                          toggleConnectionMutation.mutate({
+                            provider: c.provider,
+                            account_external_id: c.account_external_id,
+                            sync_enabled: v
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Auto-sync + reports */}
+        <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white'}>
+          <CardHeader>
+            <CardTitle className={`flex items-center gap-2 ${darkMode ? 'text-white' : ''}`}>
+              <Bell className="h-5 w-5 text-cyan-500" />
+              Automation
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className={`font-medium ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  Auto-sync from HybridCopy
+                </div>
+                <div className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  On login, refresh any provider data older than 15 minutes.
+                </div>
+              </div>
+              <Switch
+                checked={autoSyncEnabled}
+                onCheckedChange={(v) =>
+                  updatePrefMutation.mutate({ auto_sync_hybridcopy: v })
+                }
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className={`font-medium ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  Daily HybridCopy P&amp;L report
+                </div>
+                <div className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  Email + in-app notification with per-provider P&amp;L every day.
+                </div>
+              </div>
+              <Switch
+                checked={dailyReportEnabled}
+                onCheckedChange={(v) =>
+                  updatePrefMutation.mutate({ daily_hybridcopy_report: v })
+                }
+              />
+            </div>
+            <div className={`pt-3 border-t ${darkMode ? 'border-slate-800' : 'border-slate-200'}`}>
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  variant="outline"
+                  onClick={runTestSync}
+                  disabled={testing}
+                  className={darkMode ? 'border-cyan-500/30 hover:bg-cyan-500/10' : ''}
+                >
+                  {testing ? (
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <FlaskConical className="h-4 w-4 mr-2" />
+                  )}
+                  Test HybridCopy Sync
+                </Button>
+                <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  Triggers a one-time pull from HybridCopy and reports row counts per
+                  provider.
+                </p>
+              </div>
+              {testResult && (
+                <div
+                  className={`mt-3 rounded-lg p-3 text-sm ${
+                    darkMode ? 'bg-slate-900' : 'bg-slate-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge
+                      variant="outline"
+                      className={testResult.ok ? 'border-green-500 text-green-500' : 'border-yellow-500 text-yellow-500'}
+                    >
+                      {testResult.ok ? 'OK' : 'Partial'}
+                    </Badge>
+                    <span className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                      {new Date(testResult.tested_at).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {Object.entries(testResult.providerCounts || {}).map(([provider, c]) => (
+                      <div
+                        key={provider}
+                        className={`rounded p-2 ${darkMode ? 'bg-slate-800' : 'bg-white border border-slate-200'}`}
+                      >
+                        <ProviderChip trade={{ provider }} size="xs" withLabel />
+                        <div className="mt-1 text-xs">
+                          <span className={darkMode ? 'text-slate-300' : 'text-slate-700'}>
+                            {c.trades} trades · {c.snapshots} snapshots
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {(testResult.errors || []).length > 0 && (
+                    <ul className="mt-2 text-xs text-red-500 list-disc list-inside">
+                      {testResult.errors.map((e, i) => (
+                        <li key={i}>{e}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className={`text-xs flex items-center gap-2 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              <span>Supported HybridCopy platforms:</span>
+              <div className="flex gap-1 flex-wrap">
+                {HYBRIDCOPY_PROVIDERS.map((p) => (
+                  <ProviderChip
+                    key={p.key}
+                    trade={{ provider: p.key }}
+                    size="xs"
+                  />
+                ))}
+              </div>
+            </div>
           </CardContent>
         </Card>
 

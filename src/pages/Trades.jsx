@@ -166,6 +166,10 @@ export default function Trades() {
     if (filters.platform && trade.platform !== filters.platform) return false;
     if (filters.instrument_type && trade.instrument_type !== filters.instrument_type) return false;
     if (filters.side && trade.side !== filters.side) return false;
+    if (filters.provider) {
+      const tradeProvider = (trade.provider || trade.source || '').toString().toUpperCase();
+      if (tradeProvider !== filters.provider) return false;
+    }
     
     // Filter by tags - trade must have all selected tags
     if (filters.tags && filters.tags.length > 0) {

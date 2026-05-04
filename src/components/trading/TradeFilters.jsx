@@ -3,6 +3,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Filter, X, Tag } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { HYBRIDCOPY_PROVIDERS } from '@/lib/providers';
 
 export default function TradeFilters({ filters, onFilterChange, availableTags = [] }) {
   const [tagInput, setTagInput] = useState('');
@@ -24,8 +25,8 @@ export default function TradeFilters({ filters, onFilterChange, availableTags = 
       <div className="flex items-center gap-3">
         <Filter className="h-4 w-4 text-slate-400" />
       
-        <Select 
-          value={filters.platform || 'all'} 
+        <Select
+          value={filters.platform || 'all'}
           onValueChange={(val) => onFilterChange({...filters, platform: val === 'all' ? null : val})}
         >
           <SelectTrigger className="w-36">
@@ -40,6 +41,23 @@ export default function TradeFilters({ filters, onFilterChange, availableTags = 
             <SelectItem value="MT4">MT4</SelectItem>
             <SelectItem value="MT5">MT5</SelectItem>
             <SelectItem value="Binance">Binance</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={filters.provider || 'all'}
+          onValueChange={(val) => onFilterChange({...filters, provider: val === 'all' ? null : val})}
+        >
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder="Provider" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Providers</SelectItem>
+            {HYBRIDCOPY_PROVIDERS.map((p) => (
+              <SelectItem key={p.key} value={p.key}>
+                {p.short} · {p.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
 

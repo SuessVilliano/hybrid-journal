@@ -1,13 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sparkles, TrendingUp, AlertTriangle, Heart, Target, Loader2 } from 'lucide-react';
+import { Sparkles, TrendingUp, AlertTriangle, Heart, Target, Loader2, Layers } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import ReactMarkdown from 'react-markdown';
+import ProviderChip from '@/components/journal/ProviderChip';
 
 export default function AIInsightsPanel({ trades }) {
   const [insights, setInsights] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [crossPlatform, setCrossPlatform] = useState(null);
+  const [crossPlatformLoading, setCrossPlatformLoading] = useState(false);
+
+  const loadCrossPlatform = async () => {
+    setCrossPlatformLoading(true);
+    try {
+      const resp = await base44.functions.invoke('aiCompareProviders', {});
+      setCrossPlatform(resp.data);
+    } catch (err) {
+      console.error('aiCompareProviders failed:', err);
+    } finally {
+      setCrossPlatformLoading(false);
+    }
+  };
 
   const generateInsights = async () => {
     setLoading(true);
@@ -55,6 +70,10 @@ Use markdown formatting with headers, bullet points, and emphasis. Be direct and
     }
   }, [trades]);
 
+  useEffect(() => {
+    loadCrossPlatform();
+  }, []);
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -68,6 +87,56 @@ Use markdown formatting with headers, bullet points, and emphasis. Be direct and
         </Button>
       </CardHeader>
       <CardContent>
+        {/* Cross-platform comparison (HybridCopy providers) */}
+        {(crossPlatformLoading || crossPlatform?.summaries?.length > 0) && (
+          <div className="mb-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Layers className="h-4 w-4 text-cyan-600" />
+              <h3 className="text-sm font-semibold text-slate-900">
+                Cross-Platform Performance (MTD)
+              </h3>
+            </div>
+            {crossPlatformLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+            ) : (
+              <>
+                {crossPlatform?.narrative && (
+                  <p className="text-sm text-slate-700 mb-3 whitespace-pre-line">
+                    {crossPlatform.narrative}
+                  </p>
+                )}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {crossPlatform.summaries.map((s, i) => (
+                    <div
+                      key={`${s.provider}-${s.symbol_class}-${i}`}
+                      className="rounded-md bg-white p-2 border border-slate-200"
+                    >
+                      <ProviderChip
+                        trade={{ provider: s.provider.toUpperCase().replace(/\s+/g, '_') }}
+                        size="xs"
+                      />
+                      <div className="mt-1 text-xs text-slate-500">{s.symbol_class}</div>
+                      <div
+                        className={`text-sm font-bold ${
+                          (s.mtd_pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600'
+                        }`}
+                      >
+                        {(s.mtd_pnl || 0) >= 0 ? '+' : ''}${(s.mtd_pnl || 0).toFixed(2)}
+                        {s.mtd_pct != null && (
+                          <span className="ml-1 text-[10px] font-normal text-slate-500">
+                            ({s.mtd_pct >= 0 ? '+' : ''}{s.mtd_pct.toFixed(1)}%)
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-slate-400">{s.trades} trades</div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
         {loading && !insights ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-purple-600" />

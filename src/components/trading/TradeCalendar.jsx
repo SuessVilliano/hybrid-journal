@@ -10,6 +10,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import ProviderChip from '@/components/journal/ProviderChip';
+import { getProvider } from '@/lib/providers';
 
 export default function TradeCalendar({ trades }) {
   const [selectedDate, setSelectedDate] = useState(null);
@@ -155,8 +157,9 @@ export default function TradeCalendar({ trades }) {
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className={`font-medium ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                      <div className={`font-medium flex items-center gap-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                         {trade.symbol}
+                        <ProviderChip trade={trade} size="xs" />
                       </div>
                       <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
                         {format(new Date(trade.entry_date), 'h:mm a')}
@@ -263,6 +266,14 @@ export default function TradeCalendar({ trades }) {
                     </div>
                     <div className={`text-xs font-bold ${day.pnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                       {day.pnl >= 0 ? '+' : ''}${day.pnl.toFixed(0)}
+                    </div>
+                    <div className="flex flex-wrap gap-0.5">
+                      {Array.from(new Set(day.trades.map((t) => getProvider(t)?.key).filter(Boolean)))
+                        .slice(0, 3)
+                        .map((key) => {
+                          const sample = day.trades.find((t) => getProvider(t)?.key === key);
+                          return <ProviderChip key={key} trade={sample} size="xs" />;
+                        })}
                     </div>
                   </div>
                 )}

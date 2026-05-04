@@ -1,6 +1,7 @@
 import React from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { format } from 'date-fns';
+import ProviderChip from '@/components/journal/ProviderChip';
 
 export default function RecentTrades({ trades }) {
   if (!trades || trades.length === 0) {
@@ -22,7 +23,10 @@ export default function RecentTrades({ trades }) {
               </div>
             )}
             <div>
-              <div className="font-medium text-slate-900">{trade.symbol}</div>
+              <div className="font-medium text-slate-900 flex items-center gap-2">
+                {trade.symbol}
+                <ProviderChip trade={trade} size="xs" />
+              </div>
               <div className="text-xs text-slate-500">
                 {format(new Date(trade.entry_date), 'MMM dd, HH:mm')}
               </div>
