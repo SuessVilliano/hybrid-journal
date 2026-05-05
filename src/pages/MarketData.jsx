@@ -70,11 +70,14 @@ export default function MarketData() {
 
   const platforms = [
     { id: 'dxtrade', name: 'DX Trade', url: 'https://trade.gooeytrade.com/', color: 'from-orange-500 to-red-500' },
+    { id: 'dxtrade-futures', name: 'DX Trade Futures', url: 'https://trade.gooeytrade.com/', color: 'from-red-600 to-orange-700' },
     { id: 'matchtrader', name: 'Match Trader', url: 'https://mtr.gooeytrade.com/login', color: 'from-cyan-500 to-blue-500' },
     { id: 'ctrader', name: 'cTrader', url: 'https://app.gooeytrade.com/', color: 'from-purple-500 to-pink-500' },
+    { id: 'gooeypro', name: 'GooeyPro', url: 'https://gooeypro.gooeytrade.com/login', color: 'from-yellow-500 to-orange-500' },
     { id: 'rithmic', name: 'Rithmic', url: 'https://rtraderpro.rithmic.com/rtraderpro-web/', color: 'from-blue-500 to-indigo-500' },
     { id: 'tradovate', name: 'Tradovate', url: 'https://trader.tradovate.com/', color: 'from-green-500 to-teal-500' },
     { id: 'tradelocker', name: 'TradeLocker', url: 'https://demo.tradelocker.com/', color: 'from-violet-500 to-purple-500' },
+    { id: 'volumetrica', name: 'Volumetrica', url: 'https://my.deepcharts.com/identity/account/login', color: 'from-teal-500 to-cyan-600' },
   ];
 
   const addSymbol = () => {
