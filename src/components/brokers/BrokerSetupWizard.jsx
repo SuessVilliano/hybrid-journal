@@ -34,6 +34,7 @@ export default function BrokerSetupWizard({ isOpen, onClose, onComplete }) {
     { id: 'MT4', name: 'MetaTrader 4', docs: 'https://www.mql5.com/en/docs', modes: ['WEBHOOK_PUSH', 'STATEMENT_INGEST'] },
     { id: 'MT5', name: 'MetaTrader 5', docs: 'https://www.mql5.com/en/docs', modes: ['WEBHOOK_PUSH', 'STATEMENT_INGEST'] },
     { id: 'Tradovate', name: 'Tradovate', docs: 'https://tradovate.github.io/api/', modes: ['READONLY_API', 'STATEMENT_INGEST'] },
+    { id: 'CrossTrade', name: 'NinjaTrader (via CrossTrade)', docs: 'https://crosstrade.io/', modes: ['READONLY_API', 'STATEMENT_INGEST'] },
     { id: 'TradeLocker', name: 'TradeLocker', docs: 'https://tradelocker.com/api', modes: ['READONLY_API', 'STATEMENT_INGEST'] },
     { id: 'Alpaca', name: 'Alpaca', docs: 'https://docs.alpaca.markets/', modes: ['READONLY_API', 'STATEMENT_INGEST'] },
     { id: 'OANDA', name: 'OANDA', docs: 'https://developer.oanda.com/', modes: ['READONLY_API', 'STATEMENT_INGEST'] },
@@ -227,6 +228,18 @@ export default function BrokerSetupWizard({ isOpen, onClose, onComplete }) {
           'Save for upload'
         ],
         fields: ['account_number']
+      }
+    },
+    'CrossTrade': {
+      'READONLY_API': {
+        steps: [
+          'Visit https://app.crosstrade.io',
+          'Go to My Account',
+          'Copy your REST API token',
+          'Paste the token below as the API Key',
+          'Note: NinjaTrader 8 must be running with the CrossTrade add-on installed'
+        ],
+        fields: ['api_key']
       }
     },
     'TradeLocker': {

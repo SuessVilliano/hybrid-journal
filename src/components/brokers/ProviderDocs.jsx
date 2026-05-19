@@ -195,6 +195,22 @@ export default function ProviderDocs({ provider, mode }) {
         ]
       }
     },
+    'CrossTrade': {
+      'READONLY_API': {
+        title: 'NinjaTrader 8 via CrossTrade',
+        description: 'Auto-sync NinjaTrader 8 (Tradovate / Rithmic) futures trades using a CrossTrade API token',
+        links: [
+          { label: 'CrossTrade Website', url: 'https://crosstrade.io/' },
+          { label: 'Get API Token', url: 'https://app.crosstrade.io/' }
+        ],
+        notes: [
+          'Requires a CrossTrade Pro+ subscription with the NinjaTrader 8 add-on installed',
+          'Copy your REST API token from app.crosstrade.io → My Account',
+          'NinjaTrader 8 must be running for trades to sync',
+          'Best for: NinjaTrader 8 futures traders wanting automatic sync'
+        ]
+      }
+    },
     'TradeLocker': {
       'READONLY_API': {
         title: 'TradeLocker API',

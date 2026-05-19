@@ -115,7 +115,7 @@ export default function Landing() {
   const faqs = [
     { q: 'Do I need a credit card to start?', a: 'No. The Free plan requires zero payment info. Upgrade only when you\'re ready.' },
     { q: 'Can I cancel anytime?', a: 'Yes. Cancel with one click from your profile. No questions asked, no penalties.' },
-    { q: 'Does it work with my broker?', a: 'We support MT4, MT5, cTrader, DXTrade, Tradovate, Rithmic, Kraken, Binance, and NinjaTrader (via statement import). Manual CSV import works for everything else.' },
+    { q: 'Does it work with my broker?', a: 'We support MT4, MT5, cTrader, DXTrade, Tradovate, Rithmic, Kraken, Binance, and NinjaTrader (via statement import or real-time sync with CrossTrade). Manual CSV import works for everything else.' },
     { q: 'What is the Hybrid Score™?', a: 'It\'s a patent-pending composite score that measures trading consistency across win rate, risk management, rule adherence, and emotional discipline — not just P&L.' },
     { q: 'Is there a yearly discount?', a: 'Yes! Paying yearly saves you $35/year on Pro and $59/year on Team. That\'s like getting more than a month free.' }
   ];

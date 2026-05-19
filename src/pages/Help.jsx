@@ -55,7 +55,7 @@ export default function Help() {
     },
     {
       q: 'How do I connect my trading account?',
-      a: 'Go to Accounts page, click "Connect Broker", and choose your broker platform. Follow the 3-step wizard: (1) Select platform, (2) Choose connection method (API/Webhook/Statement), (3) Enter credentials or upload statements. Supports cTrader, DXTrade, MT4/MT5, Tradovate, and more.'
+      a: 'Go to Accounts page, click "Connect Broker", and choose your broker platform. Follow the 3-step wizard: (1) Select platform, (2) Choose connection method (API/Webhook/Statement), (3) Enter credentials or upload statements. Supports cTrader, DXTrade, MT4/MT5, Tradovate, NinjaTrader (via CrossTrade), and more.'
     },
     {
       q: 'What are the different connection methods?',
