@@ -179,6 +179,59 @@ Deno.serve(async (req) => {
                     }
                     break;
 
+                case 'CrossTrade':
+                case 'crosstrade':
+                    // CrossTrade uses a single Bearer token (from app.crosstrade.io -> My Account),
+                    // passed here in `apiKey`. Validate by listing the NinjaTrader 8 accounts.
+                    const ctBase = (server && server.startsWith('http'))
+                        ? server.replace(/\/$/, '')
+                        : 'https://app.crosstrade.io/v1/api';
+
+                    console.log(`[CrossTrade] Validating token against ${ctBase}/accounts`);
+
+                    const ctResponse = await fetch(`${ctBase}/accounts`, {
+                        headers: {
+                            'Authorization': `Bearer ${apiKey}`,
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    if (ctResponse.ok) {
+                        const ctData = await ctResponse.json().catch(() => ({}));
+                        const accounts = Array.isArray(ctData?.data)
+                            ? ctData.data
+                            : (ctData?.data?.accounts || ctData?.accounts || []);
+                        validationResult = {
+                            valid: true,
+                            message: `CrossTrade token validated — ${accounts.length} NinjaTrader account(s) found.`,
+                            details: {
+                                accounts: accounts.length,
+                                accountNames: accounts
+                                    .map((a: any) => a?.name || a?.account || a)
+                                    .slice(0, 10)
+                            }
+                        };
+                    } else if (ctResponse.status === 408) {
+                        // Token is valid, but NinjaTrader 8 / the add-on isn't running right now.
+                        validationResult = {
+                            valid: true,
+                            message: 'CrossTrade token is valid, but NinjaTrader 8 is not currently connected. Trades will sync once NinjaTrader is running.',
+                            details: { ninjatraderConnected: false }
+                        };
+                    } else if (ctResponse.status === 401) {
+                        validationResult = {
+                            valid: false,
+                            message: 'Invalid or expired CrossTrade token. Copy a fresh token from app.crosstrade.io -> My Account.'
+                        };
+                    } else {
+                        const ctErr = await ctResponse.text();
+                        validationResult = {
+                            valid: false,
+                            message: `CrossTrade validation failed (${ctResponse.status}): ${ctErr.slice(0, 200)}`
+                        };
+                    }
+                    break;
+
                 default:
                     // For other providers, do basic format validation
                     validationResult = {

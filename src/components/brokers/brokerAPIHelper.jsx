@@ -79,10 +79,20 @@ export const SUPPORTED_BROKERS = [
     requiresCredentials: false,
     fields: [],
     importOnly: true,
-    instructions: 'NinjaTrader does not support a direct cloud API. Export your trade history: Control Center > New > Export > NinjaTrader Performance. Then use the Import feature on the Trades page to upload the CSV/Excel file.'
+    instructions: 'NinjaTrader does not support a direct cloud API. Export your trade history: Control Center > New > Export > NinjaTrader Performance. Then use the Import feature on the Trades page to upload the CSV/Excel file. For automatic sync, connect "NinjaTrader (via CrossTrade)" below instead.'
   },
-  { 
-    id: 'tradelocker', 
+  {
+    id: 'crosstrade',
+    name: 'NinjaTrader (via CrossTrade)',
+    type: 'futures',
+    requiresCredentials: true,
+    fields: ['api_key'],
+    supportsAutoSync: true,
+    syncFunction: 'syncCrossTrade',
+    instructions: 'Automatic NinjaTrader 8 futures sync (Tradovate / Rithmic) via CrossTrade. Requires a CrossTrade Pro+ subscription with the CrossTrade NT8 add-on installed. Paste your API token from app.crosstrade.io > My Account into API Key. NinjaTrader 8 must be running for trades to sync.'
+  },
+  {
+    id: 'tradelocker',
     name: 'TradeLocker', 
     type: 'multi', 
     requiresCredentials: true,
@@ -279,6 +289,11 @@ export async function syncBrokerTrades(brokerConnection, syncType = 'manual') {
     if (brokerConnection.broker_id === 'dxtrade' ||
         brokerConnection.connection_type === 'dxtrade_login') {
       functionName = 'syncDXTrade';
+    }
+
+    // CrossTrade (NinjaTrader 8 futures bridge) uses its own dedicated sync function
+    if (brokerConnection.broker_id === 'crosstrade') {
+      functionName = 'syncCrossTrade';
     }
 
     console.log(`[syncBrokerTrades] Using ${functionName} for ${brokerConnection.broker_name}`);
@@ -485,6 +500,7 @@ function getBrokerInstrumentType(broker_id) {
     kraken: 'Crypto',
     tradovate: 'Futures',
     ninjatrader: 'Futures',
+    crosstrade: 'Futures',
     tradelocker: 'Forex',
     interactive: 'Stocks'
   };
