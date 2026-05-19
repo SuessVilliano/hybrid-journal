@@ -89,6 +89,18 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
         } else {
           setValidationResult({ valid: false, message: response.data.message || 'Tradovate login failed. Check your credentials.' });
         }
+      } else if (formData.broker_id === 'crosstrade') {
+        // CrossTrade: validate the Bearer token against the real backend function
+        const response = await base44.functions.invoke('validateCredentials', {
+          provider: 'CrossTrade',
+          apiKey: formData.api_key,
+          server: formData.server
+        });
+        if (response.data.valid) {
+          setValidationResult({ valid: true, message: response.data.message || 'CrossTrade connected! Auto-sync is ready.', account_info: response.data.details });
+        } else {
+          setValidationResult({ valid: false, message: response.data.message || 'CrossTrade validation failed. Check your API token.' });
+        }
       } else {
         const result = await validateBrokerCredentials(formData.broker_id, {
           api_key: formData.api_key,
@@ -119,6 +131,8 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
     } else if (isNinjaTrader || formData.connection_type === 'import_only') {
       submitData.connection_type = 'import_only';
       submitData.status = 'manual';
+    } else if (formData.broker_id === 'crosstrade') {
+      submitData.status = validationResult?.valid ? 'connected' : 'pending';
     } else {
       submitData.status = formData.connection_type === 'credentials' ? 'manual' : (validationResult?.valid ? 'connected' : 'pending');
     }
