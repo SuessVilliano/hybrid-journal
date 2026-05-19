@@ -352,11 +352,17 @@ export default function BrokerSetupWizard({ isOpen, onClose, onComplete }) {
 
       const connection = await base44.entities.BrokerConnection.create({
         provider,
+        // broker_id is the lowercase key the sync router + sync functions match on
+        broker_id: provider.toLowerCase(),
+        broker_name: selectedProvider?.name || provider,
         mode,
         display_name: formData.display_name || `${provider} - ${formData.account_number}`,
         account_number: formData.account_number,
         status: mode === 'STATEMENT_INGEST' ? 'connected' : 'pending',
         webhook_secret: webhookSecret,
+        // persist credentials so the sync functions can authenticate
+        api_key: formData.api_key || null,
+        api_secret: formData.api_secret || null,
         settings_json: {
           server: formData.server,
           validated: validationResult?.success || false

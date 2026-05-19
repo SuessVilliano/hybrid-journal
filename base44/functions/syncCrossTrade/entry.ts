@@ -230,7 +230,10 @@ Deno.serve(async (req) => {
         if (connection.created_by !== user.email) {
             return Response.json({ error: 'Unauthorized' }, { status: 403 });
         }
-        if (connection.broker_id !== 'crosstrade') {
+        // Accept either field: brokerAPIHelper uses `broker_id` (lowercase),
+        // the setup wizard uses `provider` (PascalCase) — normalize both.
+        const brokerKind = String(connection.broker_id || connection.provider || '').toLowerCase();
+        if (brokerKind !== 'crosstrade') {
             return Response.json({ error: 'Not a CrossTrade connection' }, { status: 400 });
         }
 
