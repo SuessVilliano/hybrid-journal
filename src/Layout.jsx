@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { base44 } from '@/api/base44Client';
-import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText, Menu, X, Wallet, Sun, Moon, Home, Users, User, Brain, GripVertical, Star, Clock, List, Bell, HelpCircle, UserCheck, Image as ImageIcon, Trophy, Filter } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText, Menu, X, Wallet, Sun, Moon, Home, Users, User, Brain, GripVertical, Star, Clock, List, Bell, HelpCircle, UserCheck, Image as ImageIcon, Trophy, Filter, Repeat } from 'lucide-react';
 import FloatingAIAssistant from '@/components/ai/FloatingAIAssistant';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import MobileHeader from '@/components/layout/MobileHeader';
@@ -187,6 +187,7 @@ export default function Layout({ children, currentPageName }) {
     { id: 'calculators', name: 'Calculators', page: 'Calculators', icon: Shield },
     { id: 'strategies', name: 'Strategies & Automation', page: 'Strategies', icon: Layers },
     { id: 'broker', name: 'Broker Sync', page: 'BrokerConnections', icon: LinkIcon, adminOnly: true },
+    { id: 'crosstrade', name: 'CrossTrade Copy', page: 'CrossTradeSettings', icon: Repeat },
     { id: 'backtesting', name: 'Backtesting', page: 'Backtesting', icon: Play, adminOnly: true },
     { id: 'imports', name: 'Imports', page: 'Imports', icon: Upload },
     { id: 'community', name: 'Community', page: 'SocialFeed', icon: Users },

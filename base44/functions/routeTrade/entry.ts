@@ -144,6 +144,9 @@ Provide a JSON response with:
         case 'copygram':
           execution_result = await routeToCopygram(signal, base44);
           break;
+        case 'crosstrade':
+          execution_result = await routeToCrossTrade(signal, base44, user);
+          break;
         case 'direct_broker':
           // Future: Route to direct broker API
           execution_result = { error: 'Direct broker routing not yet implemented' };
@@ -235,6 +238,90 @@ async function routeToCopygram(signal, base44) {
       success: false,
       error: error.message,
       target: 'copygram'
+    };
+  }
+}
+
+/**
+ * Route a trade to CrossTrade (the copier alternative to HybridCopy).
+ *
+ * Places an order on the trader's active CrossTrade connection via the
+ * crosstradeAPI gateway. The order payload follows CrossTrade's v1 order
+ * schema — adjust buildCrossTradeOrder() if CrossTrade uses other field names.
+ */
+async function routeToCrossTrade(signal, base44, user) {
+  try {
+    let connections = [];
+    try {
+      connections = await base44.entities.CrossTradeConnection.filter({
+        created_by: user.email,
+        status: 'active'
+      });
+    } catch {
+      connections = [];
+    }
+
+    if (connections.length === 0) {
+      return {
+        success: false,
+        error: 'No active CrossTrade connection found for this trader',
+        target: 'crosstrade'
+      };
+    }
+
+    // Prefer a connection explicitly enabled for routing.
+    const connection = connections.find(c => c.route_enabled) || connections[0];
+
+    const firstAccount = Array.isArray(connection.accounts) && connection.accounts[0]
+      ? (typeof connection.accounts[0] === 'string'
+          ? connection.accounts[0]
+          : connection.accounts[0].id)
+      : null;
+    const account = connection.default_account || firstAccount;
+
+    if (!account) {
+      return {
+        success: false,
+        error: 'CrossTrade connection has no account configured',
+        target: 'crosstrade'
+      };
+    }
+
+    const rawAction = String(signal.action || '').toLowerCase();
+    const order = {
+      instrument: signal.symbol,
+      action: rawAction.includes('sell') || rawAction.includes('short') ? 'Sell' : 'Buy',
+      qty: signal.quantity || signal.qty || 1,
+      order_type: signal.price ? 'Limit' : 'Market',
+      tif: 'Day'
+    };
+    if (signal.price) order.limit_price = signal.price;
+    if (signal.stop_loss) order.stop_loss = signal.stop_loss;
+    if (signal.take_profit) order.take_profit = signal.take_profit;
+
+    const response = await base44.functions.invoke('crosstradeAPI', {
+      action: 'placeOrder',
+      connectionId: connection.id,
+      account,
+      order
+    });
+
+    const data = response.data || {};
+
+    return {
+      success: !!data.ok,
+      status: data.status,
+      response: data.data,
+      target: 'crosstrade',
+      account,
+      payload_sent: order
+    };
+
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message,
+      target: 'crosstrade'
     };
   }
 }

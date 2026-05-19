@@ -55,6 +55,7 @@ import Automation from './pages/Automation';
 import Backtesting from './pages/Backtesting';
 import BrokerConnections from './pages/BrokerConnections';
 import Calculators from './pages/Calculators';
+import CrossTradeSettings from './pages/CrossTradeSettings';
 import DailyPlanning from './pages/DailyPlanning';
 import Dashboard from './pages/Dashboard';
 import Goals from './pages/Goals';
@@ -96,6 +97,7 @@ export const PAGES = {
     "Backtesting": Backtesting,
     "BrokerConnections": BrokerConnections,
     "Calculators": Calculators,
+    "CrossTradeSettings": CrossTradeSettings,
     "DailyPlanning": DailyPlanning,
     "Dashboard": Dashboard,
     "Goals": Goals,
