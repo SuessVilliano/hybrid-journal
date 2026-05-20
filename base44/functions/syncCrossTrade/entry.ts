@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { decryptSecret } from './helpers/secrets.js';
 
 /**
  * syncCrossTrade — Pull NinjaTrader 8 futures executions from a trader's
@@ -237,7 +238,8 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'Not a CrossTrade connection' }, { status: 400 });
         }
 
-        const token = connection.api_key || connection.api_secret;
+        // Decrypt the at-rest secret (legacy plaintext values pass through unchanged).
+        const token = await decryptSecret(connection.api_key || connection.api_secret || '');
         if (!token) {
             return Response.json({ error: 'CrossTrade connection has no API token' }, { status: 400 });
         }

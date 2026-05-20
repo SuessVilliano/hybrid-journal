@@ -109,151 +109,42 @@ export const SUPPORTED_BROKERS = [
   }
 ];
 
-// Fetch trades from broker API
+// Fetch trades from broker API.
+// DEPRECATED: this used to call an LLM to FABRICATE fake trade data — dangerous
+// in a trading context. Use the broker-specific sync (syncCrossTrade, syncDXTrade,
+// syncBroker, syncHybridFunding) via syncBrokerTrades() instead.
 export async function fetchBrokerTrades(brokerConnection) {
-  try {
-    const { broker_id, api_key, account_number } = brokerConnection;
-    
-    const prompt = `Simulate fetching trade history from ${broker_id} broker API.
-Account: ${account_number}
-
-Generate realistic trading data for the last 30 days with:
-- 15-30 trades
-- Mix of winning and losing trades
-- Appropriate symbols for ${broker_id} (Forex pairs for MT4/MT5/cTrader, crypto pairs for Binance, etc.)
-- Realistic prices and P&L values
-- Entry and exit timestamps
-- Commission and swap values
-
-Return trade data in this format:`;
-
-    const schema = {
-      type: "object",
-      properties: {
-        trades: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              symbol: { type: "string" },
-              side: { type: "string", enum: ["Long", "Short"] },
-              entry_date: { type: "string" },
-              exit_date: { type: "string" },
-              entry_price: { type: "number" },
-              exit_price: { type: "number" },
-              quantity: { type: "number" },
-              pnl: { type: "number" },
-              commission: { type: "number" },
-              swap: { type: "number" },
-              broker_trade_id: { type: "string" }
-            }
-          }
-        },
-        account_balance: { type: "number" },
-        equity: { type: "number" }
-      }
-    };
-
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt,
-      response_json_schema: schema
-    });
-
-    return result;
-  } catch (error) {
-    console.error('Error fetching broker trades:', error);
-    throw error;
-  }
+  throw new Error(
+    `fetchBrokerTrades is deprecated and no longer returns simulated data. ` +
+    `Call syncBrokerTrades(brokerConnection) to use the real per-broker sync ` +
+    `(broker: ${brokerConnection?.broker_id || 'unknown'}).`
+  );
 }
 
-// Fetch account balance and equity
+// Fetch account balance and equity.
+// DEPRECATED: this fabricated fake account data via an LLM. Use the
+// broker-specific sync function instead — it returns real account state.
 export async function fetchBrokerAccount(brokerConnection) {
-  try {
-    const { broker_id, account_number } = brokerConnection;
-    
-    const prompt = `Simulate fetching account information from ${broker_id} broker.
-Account: ${account_number}
-
-Generate realistic account data including:
-- Current balance
-- Current equity
-- Available margin
-- Used margin
-- Open positions count
-- Today's P&L`;
-
-    const schema = {
-      type: "object",
-      properties: {
-        balance: { type: "number" },
-        equity: { type: "number" },
-        margin_available: { type: "number" },
-        margin_used: { type: "number" },
-        open_positions: { type: "number" },
-        daily_pnl: { type: "number" },
-        currency: { type: "string" }
-      }
-    };
-
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt,
-      response_json_schema: schema
-    });
-
-    return result;
-  } catch (error) {
-    console.error('Error fetching broker account:', error);
-    throw error;
-  }
+  throw new Error(
+    `fetchBrokerAccount is deprecated and no longer returns simulated data. ` +
+    `Use the broker-specific sync function instead (broker: ${brokerConnection?.broker_id || 'unknown'}).`
+  );
 }
 
-// Validate broker credentials
+// Validate broker credentials.
+// Honest no-op: an LLM cannot actually validate broker creds. Real validation
+// lives in the backend `validateCredentials` function (DXTrade, Tradovate,
+// CrossTrade) or runs on the first sync. For unsupported brokers we return
+// "not validated — try first sync" so the UI doesn't fake a ✅.
 export async function validateBrokerCredentials(broker_id, credentials) {
-  try {
-    // Use AI to simulate API validation with realistic broker-specific checks
-    const prompt = `You are validating API credentials for ${broker_id} broker.
-Credentials provided:
-- Account: ${credentials.account_number || 'N/A'}
-- API Key: ${credentials.api_key ? '[PROVIDED]' : '[MISSING]'}
-- API Secret: ${credentials.api_secret ? '[PROVIDED]' : '[MISSING]'}
-- Server: ${credentials.server || 'N/A'}
-
-Perform realistic validation checks:
-1. Check if credentials format is valid for ${broker_id}
-2. Simulate connection test
-3. Verify account exists
-4. Check API permissions
-
-Return validation result with status and detailed message.`;
-
-    const schema = {
-      type: "object",
-      properties: {
-        valid: { type: "boolean" },
-        message: { type: "string" },
-        account_info: {
-          type: "object",
-          properties: {
-            account_name: { type: "string" },
-            account_currency: { type: "string" },
-            balance: { type: "number" }
-          }
-        }
-      }
-    };
-
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt,
-      response_json_schema: schema
-    });
-
-    return result;
-  } catch (error) {
-    return { 
-      valid: false, 
-      message: `Validation failed: ${error.message}` 
-    };
-  }
+  const hasMin = !!(credentials.api_key || credentials.account_number);
+  return {
+    valid: false,
+    message: hasMin
+      ? `Live validation isn't yet wired for ${broker_id}. Save the connection — credentials will be validated on the first sync.`
+      : `Provide an API key or account number to continue.`,
+    needs_first_sync_validation: hasMin,
+  };
 }
 
 // Execute simulated trade

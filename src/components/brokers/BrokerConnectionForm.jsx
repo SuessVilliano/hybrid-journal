@@ -117,7 +117,7 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const submitData = { ...formData };
@@ -136,6 +136,22 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
     } else {
       submitData.status = formData.connection_type === 'credentials' ? 'manual' : (validationResult?.valid ? 'connected' : 'pending');
     }
+
+    // Encrypt API credentials server-side before persisting (no-op fallback
+    // if SECRET_VAULT_KEY isn't set yet — see base44/functions/helpers/secrets).
+    if (submitData.api_key || submitData.api_secret) {
+      try {
+        const enc = await base44.functions.invoke('encryptBrokerKey', {
+          api_key: submitData.api_key,
+          api_secret: submitData.api_secret,
+        });
+        if (enc?.data?.api_key) submitData.api_key = enc.data.api_key;
+        if (enc?.data?.api_secret) submitData.api_secret = enc.data.api_secret;
+      } catch (e) {
+        console.warn('[BrokerConnectionForm] secret encryption failed, persisting raw:', e?.message);
+      }
+    }
+
     onSubmit(submitData);
   };
 

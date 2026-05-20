@@ -346,9 +346,28 @@ export default function BrokerSetupWizard({ isOpen, onClose, onComplete }) {
 
   const handleComplete = async () => {
     try {
-      const webhookSecret = mode === 'WEBHOOK_PUSH' 
+      const webhookSecret = mode === 'WEBHOOK_PUSH'
         ? formData.webhook_secret || Math.random().toString(36).substring(2, 15)
         : null;
+
+      // Encrypt API credentials server-side before persisting (no-op fallback
+      // if SECRET_VAULT_KEY isn't set yet — see base44/functions/helpers/secrets).
+      let encryptedKey = formData.api_key || null;
+      let encryptedSecret = formData.api_secret || null;
+      let encryptedAtRest = false;
+      if (encryptedKey || encryptedSecret) {
+        try {
+          const enc = await base44.functions.invoke('encryptBrokerKey', {
+            api_key: encryptedKey,
+            api_secret: encryptedSecret,
+          });
+          if (enc?.data?.api_key) encryptedKey = enc.data.api_key;
+          if (enc?.data?.api_secret) encryptedSecret = enc.data.api_secret;
+          encryptedAtRest = !!enc?.data?.encrypted_at_rest;
+        } catch (e) {
+          console.warn('[BrokerSetupWizard] secret encryption failed, persisting raw:', e?.message);
+        }
+      }
 
       const connection = await base44.entities.BrokerConnection.create({
         provider,
@@ -360,14 +379,15 @@ export default function BrokerSetupWizard({ isOpen, onClose, onComplete }) {
         account_number: formData.account_number,
         status: mode === 'STATEMENT_INGEST' ? 'connected' : 'pending',
         webhook_secret: webhookSecret,
-        // persist credentials so the sync functions can authenticate
-        api_key: formData.api_key || null,
-        api_secret: formData.api_secret || null,
+        // Encrypted at rest when SECRET_VAULT_KEY is configured; plaintext otherwise.
+        api_key: encryptedKey,
+        api_secret: encryptedSecret,
         settings_json: {
           server: formData.server,
-          validated: validationResult?.success || false
+          validated: validationResult?.success || false,
+          encrypted_at_rest: encryptedAtRest,
         },
-        secret_ref: formData.api_key ? `encrypted_${Date.now()}` : null
+        secret_ref: null
       });
 
       toast.success('Connection created successfully!');
