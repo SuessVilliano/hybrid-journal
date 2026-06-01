@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -141,14 +141,16 @@ Entry: "${newEntry.content}"`,
 
   const filteredEntries = entries.filter(entry => {
     const matchesSearch = searchQuery === '' || 
-      entry.content.toLowerCase().includes(searchQuery.toLowerCase());
+      (entry.content || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesMood = filterMood === 'all' || 
       entry.mood_tags?.includes(filterMood);
     return matchesSearch && matchesMood;
   });
 
   const groupedEntries = filteredEntries.reduce((acc, entry) => {
-    const date = format(new Date(entry.date), 'yyyy-MM-dd');
+    // Use UTC date string directly to avoid timezone-shift grouping errors
+    const rawDate = entry.date || entry.created_date || new Date().toISOString();
+    const date = rawDate.slice(0, 10); // "yyyy-MM-dd" from ISO string, no timezone shift
     if (!acc[date]) acc[date] = [];
     acc[date].push(entry);
     return acc;
@@ -334,7 +336,7 @@ Entry: "${newEntry.content}"`,
                 <div className="flex items-center gap-3 mb-4">
                   <Calendar className={`h-4 w-4 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`} />
                   <h3 className={`font-bold ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
-                    {format(new Date(date), 'EEEE, MMMM d, yyyy')}
+                    {format(new Date(date + 'T12:00:00'), 'EEEE, MMMM d, yyyy')}
                   </h3>
                 </div>
                 <div className="space-y-4">

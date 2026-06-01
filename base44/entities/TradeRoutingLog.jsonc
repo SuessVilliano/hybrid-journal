@@ -1,0 +1,91 @@
+{
+  "name": "TradeRoutingLog",
+  "type": "object",
+  "properties": {
+    "signal_id": {
+      "type": "string",
+      "description": "Reference to the Signal entity"
+    },
+    "approved": {
+      "type": "boolean",
+      "description": "Whether the trade was approved for execution"
+    },
+    "approval_reason": {
+      "type": "string",
+      "description": "AI-generated reason for approval/rejection"
+    },
+    "risk_warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of risk warnings identified"
+    },
+    "ai_confidence": {
+      "type": "number",
+      "description": "AI confidence score (0-100)"
+    },
+    "risk_score": {
+      "type": "number",
+      "description": "Risk assessment score (0-100)"
+    },
+    "execution_target": {
+      "type": "string",
+      "enum": [
+        "copygram",
+        "direct_broker",
+        "custom_bridge",
+        "none"
+      ],
+      "description": "Where the trade was routed"
+    },
+    "execution_status": {
+      "type": "string",
+      "enum": [
+        "success",
+        "failed",
+        "rejected",
+        "pending"
+      ],
+      "description": "Outcome of the routing attempt"
+    },
+    "execution_response": {
+      "type": "object",
+      "description": "Response from the execution endpoint"
+    },
+    "payload_sent": {
+      "type": "object",
+      "description": "Actual payload sent to execution endpoint"
+    },
+    "todays_pnl_at_routing": {
+      "type": "number",
+      "description": "User's P&L at the time of routing decision"
+    },
+    "prop_firm_active": {
+      "type": "boolean",
+      "description": "Whether a prop firm account was active"
+    },
+    "override_approval": {
+      "type": "boolean",
+      "description": "Whether approval was manually overridden"
+    }
+  },
+  "required": [
+    "signal_id",
+    "approved",
+    "execution_target",
+    "execution_status"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

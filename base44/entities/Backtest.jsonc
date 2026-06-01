@@ -1,0 +1,137 @@
+{
+  "name": "Backtest",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Backtest name"
+    },
+    "strategy_name": {
+      "type": "string",
+      "description": "Strategy being tested"
+    },
+    "symbol": {
+      "type": "string",
+      "description": "Instrument tested"
+    },
+    "timeframe": {
+      "type": "string",
+      "enum": [
+        "1m",
+        "5m",
+        "15m",
+        "1h",
+        "4h",
+        "1d"
+      ],
+      "description": "Timeframe used"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Backtest start date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Backtest end date"
+    },
+    "initial_capital": {
+      "type": "number",
+      "description": "Starting capital"
+    },
+    "final_equity": {
+      "type": "number",
+      "description": "Ending equity"
+    },
+    "total_return": {
+      "type": "number",
+      "description": "Total return %"
+    },
+    "total_trades": {
+      "type": "number",
+      "description": "Number of trades"
+    },
+    "winning_trades": {
+      "type": "number",
+      "description": "Winning trades count"
+    },
+    "losing_trades": {
+      "type": "number",
+      "description": "Losing trades count"
+    },
+    "win_rate": {
+      "type": "number",
+      "description": "Win rate %"
+    },
+    "profit_factor": {
+      "type": "number",
+      "description": "Profit factor"
+    },
+    "max_drawdown": {
+      "type": "number",
+      "description": "Maximum drawdown %"
+    },
+    "sharpe_ratio": {
+      "type": "number",
+      "description": "Sharpe ratio"
+    },
+    "avg_win": {
+      "type": "number",
+      "description": "Average winning trade"
+    },
+    "avg_loss": {
+      "type": "number",
+      "description": "Average losing trade"
+    },
+    "largest_win": {
+      "type": "number",
+      "description": "Largest winning trade"
+    },
+    "largest_loss": {
+      "type": "number",
+      "description": "Largest losing trade"
+    },
+    "equity_curve": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "Equity curve data points"
+    },
+    "entry_rules": {
+      "type": "string",
+      "description": "Entry logic used"
+    },
+    "exit_rules": {
+      "type": "string",
+      "description": "Exit logic used"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Backtest notes"
+    }
+  },
+  "required": [
+    "name",
+    "symbol",
+    "initial_capital"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    },
+    "write": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

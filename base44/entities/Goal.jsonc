@@ -1,0 +1,81 @@
+{
+  "name": "Goal",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Goal title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Goal description"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "Profit Target",
+        "Win Rate",
+        "Risk Management",
+        "Consistency",
+        "Skill Development",
+        "Other"
+      ],
+      "description": "Goal type"
+    },
+    "target_value": {
+      "type": "number",
+      "description": "Target value"
+    },
+    "current_value": {
+      "type": "number",
+      "description": "Current value"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Start date"
+    },
+    "target_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Target completion date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Not Started",
+        "In Progress",
+        "Achieved",
+        "Abandoned"
+      ],
+      "description": "Goal status"
+    },
+    "action_steps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Action steps"
+    },
+    "progress_notes": {
+      "type": "string",
+      "description": "Progress notes"
+    }
+  },
+  "required": [
+    "title",
+    "type"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "name": "Strategy",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Strategy name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Strategy description"
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Trading rules"
+    },
+    "entry_criteria": {
+      "type": "string",
+      "description": "Entry criteria"
+    },
+    "exit_criteria": {
+      "type": "string",
+      "description": "Exit criteria"
+    },
+    "risk_management": {
+      "type": "string",
+      "description": "Risk management rules"
+    },
+    "instruments": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Applicable instruments"
+    },
+    "timeframes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Timeframes used"
+    },
+    "win_rate_target": {
+      "type": "number",
+      "description": "Target win rate %"
+    },
+    "risk_reward_target": {
+      "type": "number",
+      "description": "Target R:R ratio"
+    },
+    "active": {
+      "type": "boolean",
+      "description": "Is strategy currently active"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

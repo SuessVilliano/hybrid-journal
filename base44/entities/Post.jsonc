@@ -1,0 +1,72 @@
+{
+  "name": "Post",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Post title"
+    },
+    "content": {
+      "type": "string",
+      "description": "Post content"
+    },
+    "post_type": {
+      "type": "string",
+      "enum": [
+        "Idea",
+        "Analysis",
+        "Strategy",
+        "Question",
+        "Achievement"
+      ],
+      "default": "Idea",
+      "description": "Type of post"
+    },
+    "symbols": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Related symbols"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Post tags"
+    },
+    "image_url": {
+      "type": "string",
+      "description": "Chart or image URL"
+    },
+    "likes_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of likes"
+    },
+    "comments_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of comments"
+    },
+    "trader_profile_id": {
+      "type": "string",
+      "description": "Author's trader profile ID"
+    }
+  },
+  "required": [
+    "content",
+    "post_type"
+  ],
+  "rls": {
+    "create": {},
+    "read": {},
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

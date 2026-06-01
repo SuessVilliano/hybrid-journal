@@ -1,0 +1,52 @@
+{
+  "name": "CustomAudioAlert",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "User-defined name for this alert sound"
+    },
+    "audio_url": {
+      "type": "string",
+      "description": "URL to the audio file"
+    },
+    "notification_types": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "signal_new",
+          "trade_alert",
+          "goal_achieved",
+          "risk_warning",
+          "plan_reminder",
+          "access_granted",
+          "message",
+          "general"
+        ]
+      },
+      "description": "Which notification types use this sound"
+    },
+    "is_default": {
+      "type": "boolean",
+      "default": false,
+      "description": "Use as default for all notifications"
+    }
+  },
+  "required": [
+    "name",
+    "audio_url"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

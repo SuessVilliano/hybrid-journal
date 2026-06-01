@@ -1,0 +1,69 @@
+{
+  "name": "Import",
+  "type": "object",
+  "properties": {
+    "filename": {
+      "type": "string",
+      "description": "Original filename"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "Uploaded file URL"
+    },
+    "platform": {
+      "type": "string",
+      "description": "Platform source"
+    },
+    "import_type": {
+      "type": "string",
+      "enum": [
+        "CSV",
+        "Excel",
+        "PDF",
+        "MT4 Statement",
+        "MT5 Statement",
+        "Manual"
+      ],
+      "description": "Type of import"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Pending",
+        "Processing",
+        "Completed",
+        "Failed"
+      ],
+      "description": "Import status"
+    },
+    "trades_imported": {
+      "type": "number",
+      "description": "Number of trades imported"
+    },
+    "error_message": {
+      "type": "string",
+      "description": "Error message if failed"
+    },
+    "import_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Import timestamp"
+    }
+  },
+  "required": [
+    "filename",
+    "import_type"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

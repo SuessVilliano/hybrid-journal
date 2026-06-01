@@ -1,0 +1,46 @@
+{
+  "name": "AppLinkToken",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "User ID who generated this token"
+    },
+    "token": {
+      "type": "string",
+      "description": "Unique token string (UUID)"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Token expiration (15 minutes from creation)"
+    },
+    "used_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When token was used (null if unused)"
+    },
+    "target_app": {
+      "type": "string",
+      "default": "iCopyTrade",
+      "description": "App this token is for"
+    }
+  },
+  "required": [
+    "user_id",
+    "token",
+    "expires_at"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "user_id": "{{user.id}}"
+    },
+    "update": {
+      "user_id": "{{user.id}}"
+    },
+    "delete": {
+      "user_id": "{{user.id}}"
+    }
+  }
+}

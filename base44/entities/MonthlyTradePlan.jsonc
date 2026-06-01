@@ -1,0 +1,207 @@
+{
+  "name": "MonthlyTradePlan",
+  "type": "object",
+  "properties": {
+    "month": {
+      "type": "string",
+      "description": "Month in YYYY-MM format"
+    },
+    "month_start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "First day of the month"
+    },
+    "month_end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Last day of the month"
+    },
+    "account_id": {
+      "type": "string",
+      "description": "Linked trading account for this plan"
+    },
+    "plan_text": {
+      "type": "string",
+      "description": "Overall monthly plan and vision"
+    },
+    "voice_transcript": {
+      "type": "string",
+      "description": "Original voice transcript if voice input was used"
+    },
+    "chart_screenshots": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "URLs of uploaded chart screenshots"
+    },
+    "big_picture_thesis": {
+      "type": "string",
+      "description": "Macro market thesis for the month"
+    },
+    "monthly_goals": {
+      "type": "object",
+      "properties": {
+        "profit_target": {
+          "type": "number"
+        },
+        "max_drawdown": {
+          "type": "number"
+        },
+        "min_win_rate": {
+          "type": "number"
+        },
+        "max_trades": {
+          "type": "number"
+        },
+        "skill_development_goals": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "consistency_target": {
+          "type": "string"
+        }
+      },
+      "description": "Monthly performance and development goals"
+    },
+    "strategy_focus": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Main strategies to focus on this month"
+    },
+    "instruments_universe": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Universe of instruments to trade this month"
+    },
+    "key_market_drivers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Key macro drivers and themes for the month"
+    },
+    "challenges_to_overcome": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Personal trading challenges to work on"
+    },
+    "learning_objectives": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "What to learn/improve this month"
+    },
+    "monthly_milestones": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "milestone": {
+            "type": "string"
+          },
+          "target_date": {
+            "type": "string"
+          },
+          "completed": {
+            "type": "boolean"
+          }
+        }
+      },
+      "description": "Key milestones to achieve"
+    },
+    "risk_parameters": {
+      "type": "object",
+      "properties": {
+        "max_daily_loss": {
+          "type": "number"
+        },
+        "max_weekly_loss": {
+          "type": "number"
+        },
+        "max_position_size": {
+          "type": "number"
+        },
+        "risk_per_trade": {
+          "type": "number"
+        }
+      },
+      "description": "Monthly risk management parameters"
+    },
+    "ai_summary": {
+      "type": "string",
+      "description": "AI-generated summary of the monthly plan"
+    },
+    "execution_tracking": {
+      "type": "object",
+      "properties": {
+        "current_pnl": {
+          "type": "number"
+        },
+        "trades_taken": {
+          "type": "number"
+        },
+        "win_rate": {
+          "type": "number"
+        },
+        "goal_progress_percent": {
+          "type": "number"
+        },
+        "on_track": {
+          "type": "boolean"
+        },
+        "major_pivots": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "lessons_learned": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Monthly execution tracking"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "planned",
+        "in_progress",
+        "completed",
+        "reviewed"
+      ],
+      "default": "planned",
+      "description": "Status of the monthly plan"
+    }
+  },
+  "required": [
+    "month",
+    "month_start_date",
+    "month_end_date",
+    "plan_text"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

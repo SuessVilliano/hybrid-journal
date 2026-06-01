@@ -1,0 +1,124 @@
+{
+  "name": "CopyParameters",
+  "type": "object",
+  "properties": {
+    "source_connection_id": {
+      "type": "string",
+      "description": "Source connection to copy from"
+    },
+    "target_connection_id": {
+      "type": "string",
+      "description": "Target connection to copy to"
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable/disable copying"
+    },
+    "risk_multiplier": {
+      "type": "number",
+      "default": 1.0,
+      "description": "Multiply position size by this factor (0.5 = half size, 2.0 = double)"
+    },
+    "max_position_size": {
+      "type": "number",
+      "description": "Maximum position size in lots/contracts"
+    },
+    "max_daily_trades": {
+      "type": "number",
+      "description": "Maximum trades to copy per day"
+    },
+    "symbol_mapping": {
+      "type": "object",
+      "description": "Map source symbols to target symbols (e.g., {'EURUSD': 'EUR/USD', 'NQ': 'NQH25'})"
+    },
+    "allowed_symbols": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Only copy trades for these symbols (empty = all)"
+    },
+    "blocked_symbols": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Never copy trades for these symbols"
+    },
+    "copy_stop_loss": {
+      "type": "boolean",
+      "default": true,
+      "description": "Copy stop loss from source"
+    },
+    "copy_take_profit": {
+      "type": "boolean",
+      "default": true,
+      "description": "Copy take profit from source"
+    },
+    "adjust_sl_offset_pips": {
+      "type": "number",
+      "default": 0,
+      "description": "Adjust stop loss by this many pips (+/- from source)"
+    },
+    "adjust_tp_offset_pips": {
+      "type": "number",
+      "default": 0,
+      "description": "Adjust take profit by this many pips (+/- from source)"
+    },
+    "max_slippage_pips": {
+      "type": "number",
+      "default": 5,
+      "description": "Maximum allowed slippage in pips"
+    },
+    "require_confirmation": {
+      "type": "boolean",
+      "default": false,
+      "description": "Require manual confirmation before copying"
+    },
+    "copy_only_during_sessions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "Asian",
+          "London",
+          "New York",
+          "After Hours"
+        ]
+      },
+      "description": "Only copy during these sessions (empty = all)"
+    },
+    "max_correlation_coefficient": {
+      "type": "number",
+      "default": 0.8,
+      "description": "Max correlation between open positions to avoid over-exposure"
+    },
+    "last_copy_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last time a trade was copied"
+    },
+    "trades_copied_today": {
+      "type": "number",
+      "default": 0,
+      "description": "Count of trades copied today (resets daily)"
+    }
+  },
+  "required": [
+    "source_connection_id",
+    "target_connection_id"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

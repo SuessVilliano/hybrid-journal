@@ -1,0 +1,99 @@
+{
+  "name": "TradingSession",
+  "type": "object",
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Session date"
+    },
+    "start_time": {
+      "type": "string",
+      "format": "time",
+      "description": "Session start time"
+    },
+    "end_time": {
+      "type": "string",
+      "format": "time",
+      "description": "Session end time"
+    },
+    "starting_balance": {
+      "type": "number",
+      "description": "Starting balance"
+    },
+    "ending_balance": {
+      "type": "number",
+      "description": "Ending balance"
+    },
+    "total_trades": {
+      "type": "number",
+      "description": "Number of trades"
+    },
+    "winning_trades": {
+      "type": "number",
+      "description": "Number of winning trades"
+    },
+    "losing_trades": {
+      "type": "number",
+      "description": "Number of losing trades"
+    },
+    "gross_profit": {
+      "type": "number",
+      "description": "Total profit"
+    },
+    "gross_loss": {
+      "type": "number",
+      "description": "Total loss"
+    },
+    "net_pnl": {
+      "type": "number",
+      "description": "Net P&L"
+    },
+    "largest_win": {
+      "type": "number",
+      "description": "Largest winning trade"
+    },
+    "largest_loss": {
+      "type": "number",
+      "description": "Largest losing trade"
+    },
+    "emotional_state": {
+      "type": "string",
+      "description": "Overall emotional state"
+    },
+    "session_notes": {
+      "type": "string",
+      "description": "Session summary notes"
+    },
+    "lessons_learned": {
+      "type": "string",
+      "description": "Key lessons"
+    },
+    "mistakes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Mistakes made"
+    },
+    "followed_plan": {
+      "type": "boolean",
+      "description": "Followed trading plan?"
+    }
+  },
+  "required": [
+    "date"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

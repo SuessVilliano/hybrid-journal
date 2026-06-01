@@ -1,0 +1,229 @@
+{
+  "name": "DailyTradePlan",
+  "type": "object",
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Trading day for this plan"
+    },
+    "account_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Linked trading accounts for this plan"
+    },
+    "plan_text": {
+      "type": "string",
+      "description": "User's written or voice-transcribed plan"
+    },
+    "voice_transcript": {
+      "type": "string",
+      "description": "Original voice transcript if voice input was used"
+    },
+    "chart_screenshots": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "URLs of uploaded chart screenshots from TradingView"
+    },
+    "checklist_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "item": {
+            "type": "string"
+          },
+          "completed": {
+            "type": "boolean"
+          }
+        }
+      },
+      "description": "Pre-market checklist items"
+    },
+    "trading_rules": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Rules I will follow today"
+    },
+    "markets_to_watch": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Symbols or markets to focus on"
+    },
+    "setup_grades": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "grade": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "criteria": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Setup quality grades (A, B, C) with criteria for each"
+    },
+    "max_trades": {
+      "type": "number",
+      "description": "Maximum trades planned for today"
+    },
+    "max_risk": {
+      "type": "number",
+      "description": "Maximum risk/loss acceptable today"
+    },
+    "max_risk_percent_per_trade": {
+      "type": "number",
+      "description": "Percentage of account balance to risk per trade"
+    },
+    "instrument_type_planned": {
+      "type": "string",
+      "enum": [
+        "Futures",
+        "Forex",
+        "Crypto",
+        "Stocks",
+        "Options"
+      ],
+      "description": "Primary instrument type for today"
+    },
+    "timeframes_planned": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Timeframes planned to trade (e.g., 5m, 15m, 1h)"
+    },
+    "max_daily_loss": {
+      "type": "number",
+      "description": "Maximum daily loss limit (for prop firms)"
+    },
+    "max_daily_loss_percent": {
+      "type": "number",
+      "description": "Maximum daily loss as percentage"
+    },
+    "trailing_drawdown_percent": {
+      "type": "number",
+      "description": "Trailing drawdown limit (for prop firms)"
+    },
+    "target_entry_price": {
+      "type": "number",
+      "description": "Planned entry price for main trade idea"
+    },
+    "target_stop_loss": {
+      "type": "number",
+      "description": "Planned stop loss"
+    },
+    "target_take_profit": {
+      "type": "number",
+      "description": "Planned take profit"
+    },
+    "position_size_calculated": {
+      "type": "number",
+      "description": "Calculated position size (contracts/lots/units)"
+    },
+    "monetary_risk_calculated": {
+      "type": "number",
+      "description": "Calculated monetary risk for the trade"
+    },
+    "linked_strategy_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Strategy IDs I plan to use today"
+    },
+    "linked_goal_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Goal IDs I'm working toward today"
+    },
+    "linked_trade_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IDs of trades executed today that are linked to this plan"
+    },
+    "ai_summary": {
+      "type": "string",
+      "description": "AI-generated friendly summary of the plan"
+    },
+    "clarity_score": {
+      "type": "number",
+      "description": "AI-assessed clarity/completion score (0-100)"
+    },
+    "ai_suggestions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "AI suggestions to improve the plan"
+    },
+    "execution_analysis": {
+      "type": "object",
+      "properties": {
+        "trades_taken": {
+          "type": "number"
+        },
+        "rules_followed": {
+          "type": "number"
+        },
+        "rules_broken": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "alignment_score": {
+          "type": "number"
+        },
+        "insights": {
+          "type": "string"
+        }
+      },
+      "description": "Post-day analysis comparing plan vs execution"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "planned",
+        "in_progress",
+        "completed",
+        "reviewed"
+      ],
+      "default": "planned",
+      "description": "Status of the plan"
+    }
+  },
+  "required": [
+    "date",
+    "plan_text"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

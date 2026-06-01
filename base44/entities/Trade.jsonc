@@ -1,0 +1,336 @@
+{
+  "name": "Trade",
+  "type": "object",
+  "properties": {
+    "source": {
+      "type": "string",
+      "description": "Platform source (cTrader, MT5, DXTrade, Manual, etc.)"
+    },
+    "source_trade_id": {
+      "type": "string",
+      "description": "Unique trade ID from the source platform for deduplication"
+    },
+    "connection_id": {
+      "type": "string",
+      "description": "Reference to BrokerConnection if auto-synced"
+    },
+    "external_account_id": {
+      "type": "string",
+      "description": "Account ID from external system"
+    },
+    "account_id": {
+      "type": "string",
+      "description": "Linked trading account (internal)"
+    },
+    "symbol": {
+      "type": "string",
+      "description": "Trading symbol (e.g. EURUSD, NQ, BTCUSD)"
+    },
+    "platform": {
+      "type": "string",
+      "enum": [
+        "DXTrade",
+        "cTrader",
+        "MatchTrader",
+        "Rithmic",
+        "MT4",
+        "MT5",
+        "Tradovate",
+        "TradeLocker",
+        "NinjaTrader",
+        "ThinkorSwim",
+        "TradingView",
+        "Binance",
+        "Other"
+      ],
+      "description": "Trading platform used"
+    },
+    "instrument_type": {
+      "type": "string",
+      "enum": [
+        "Forex",
+        "Futures",
+        "Stocks",
+        "Options",
+        "Crypto",
+        "CFD"
+      ],
+      "description": "Type of instrument"
+    },
+    "side": {
+      "type": "string",
+      "enum": [
+        "Long",
+        "Short"
+      ],
+      "description": "Trade direction"
+    },
+    "entry_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Entry timestamp"
+    },
+    "exit_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Exit timestamp"
+    },
+    "entry_price": {
+      "type": "number",
+      "description": "Entry price"
+    },
+    "exit_price": {
+      "type": "number",
+      "description": "Exit price"
+    },
+    "quantity": {
+      "type": "number",
+      "description": "Position size (lots/contracts/shares)"
+    },
+    "stop_loss": {
+      "type": "number",
+      "description": "Stop loss price"
+    },
+    "take_profit": {
+      "type": "number",
+      "description": "Take profit price"
+    },
+    "commission": {
+      "type": "number",
+      "description": "Commission paid"
+    },
+    "swap": {
+      "type": "number",
+      "description": "Swap/overnight fees"
+    },
+    "pnl": {
+      "type": "number",
+      "description": "Profit/Loss in account currency"
+    },
+    "pnl_net": {
+      "type": "number",
+      "description": "Net P&L after fees and commissions"
+    },
+    "pnl_percent": {
+      "type": "number",
+      "description": "P&L as percentage of account"
+    },
+    "risk_reward_ratio": {
+      "type": "number",
+      "description": "R:R ratio"
+    },
+    "strategy": {
+      "type": "string",
+      "description": "Strategy used"
+    },
+    "setup": {
+      "type": "string",
+      "description": "Setup type (breakout, pullback, etc.)"
+    },
+    "setup_grade": {
+      "type": "string",
+      "description": "Setup quality grade from daily plan (A, B, C, etc.)"
+    },
+    "trade_setup": {
+      "type": "string",
+      "description": "Detailed description of trade setup conditions"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Custom tags"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Trade notes and analysis"
+    },
+    "pre_trade_plan": {
+      "type": "string",
+      "description": "Plan before entering"
+    },
+    "post_trade_review": {
+      "type": "string",
+      "description": "Review after exiting"
+    },
+    "emotion_before": {
+      "type": "string",
+      "enum": [
+        "Confident",
+        "Anxious",
+        "Excited",
+        "Fearful",
+        "Calm",
+        "Impatient",
+        "Disciplined",
+        "Impulsive"
+      ],
+      "description": "Emotional state before trade"
+    },
+    "emotion_during": {
+      "type": "string",
+      "enum": [
+        "Confident",
+        "Anxious",
+        "Excited",
+        "Fearful",
+        "Calm",
+        "Impatient",
+        "Disciplined",
+        "Impulsive"
+      ],
+      "description": "Emotional state during trade"
+    },
+    "emotion_after": {
+      "type": "string",
+      "enum": [
+        "Confident",
+        "Anxious",
+        "Excited",
+        "Fearful",
+        "Calm",
+        "Impatient",
+        "Disciplined",
+        "Impulsive",
+        "Regretful",
+        "Satisfied"
+      ],
+      "description": "Emotional state after trade"
+    },
+    "followed_rules": {
+      "type": "boolean",
+      "description": "Did you follow your rules?"
+    },
+    "mistakes_made": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Mistakes identified"
+    },
+    "chart_screenshot": {
+      "type": "string",
+      "description": "Chart screenshot URL"
+    },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Additional file attachments (screenshots, PDFs, etc.)"
+    },
+    "custom_fields": {
+      "type": "object",
+      "description": "User-defined custom fields (e.g., market_sentiment, news_impact)"
+    },
+    "session": {
+      "type": "string",
+      "enum": [
+        "Asian",
+        "London",
+        "New York",
+        "After Hours"
+      ],
+      "description": "Market session"
+    },
+    "market_condition": {
+      "type": "string",
+      "enum": [
+        "Trending",
+        "Ranging",
+        "Volatile",
+        "Quiet"
+      ],
+      "description": "Market condition"
+    },
+    "account_balance_before": {
+      "type": "number",
+      "description": "Account balance before trade"
+    },
+    "account_balance_after": {
+      "type": "number",
+      "description": "Account balance after trade"
+    },
+    "import_source": {
+      "type": "string",
+      "description": "Source of import (CSV, API, Webhook, Manual)"
+    },
+    "broker_connection_id": {
+      "type": "string",
+      "description": "ID of broker connection if synced via API"
+    },
+    "broker_trade_id": {
+      "type": "string",
+      "description": "Unique trade ID from broker for deduplication"
+    },
+    "linked_daily_plan_id": {
+      "type": "string",
+      "description": "ID of the daily plan this trade is linked to"
+    },
+    "trade_status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "closed",
+        "partial",
+        "rejected",
+        "cancelled"
+      ],
+      "default": "closed",
+      "description": "Current trade status"
+    },
+    "raw_payload": {
+      "type": "object",
+      "description": "Original raw data from source (masked/sanitized)"
+    },
+    "entry_regime": {
+      "type": "string",
+      "enum": [
+        "RISK-OFF",
+        "CAUTION",
+        "NEUTRAL",
+        "RISK-ON"
+      ],
+      "description": "Market regime at trade entry"
+    },
+    "entry_cause_score": {
+      "type": "number",
+      "description": "Composite cause score at entry (0-100)"
+    },
+    "entry_macro_score": {
+      "type": "number",
+      "description": "Macro pressure score at entry"
+    },
+    "entry_positioning_score": {
+      "type": "number",
+      "description": "Positioning risk score at entry"
+    },
+    "entry_catalyst_score": {
+      "type": "number",
+      "description": "Catalyst risk score at entry"
+    },
+    "market_context": {
+      "type": "string",
+      "description": "Summary of market conditions at entry"
+    }
+  },
+  "required": [
+    "symbol",
+    "side",
+    "entry_date",
+    "pnl"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

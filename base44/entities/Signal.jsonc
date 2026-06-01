@@ -1,0 +1,104 @@
+{
+  "name": "Signal",
+  "type": "object",
+  "properties": {
+    "provider": {
+      "type": "string",
+      "description": "Signal provider (TradingView, Telegram, Hybrid AI, Paradox, Solaris, etc.)"
+    },
+    "symbol": {
+      "type": "string",
+      "description": "Trading symbol"
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "BUY",
+        "SELL",
+        "CLOSE"
+      ],
+      "description": "Signal action"
+    },
+    "price": {
+      "type": "number",
+      "description": "Entry price"
+    },
+    "stop_loss": {
+      "type": "number",
+      "description": "Stop loss level"
+    },
+    "take_profit": {
+      "type": "number",
+      "description": "Primary take profit level (for backward compatibility)"
+    },
+    "take_profits": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "description": "Multiple take profit levels (TP1, TP2, TP3, etc.)"
+    },
+    "timeframe": {
+      "type": "string",
+      "description": "Timeframe (5m, 15m, 1h, etc.)"
+    },
+    "confidence": {
+      "type": "number",
+      "description": "Confidence score (0-100)"
+    },
+    "strategy": {
+      "type": "string",
+      "description": "Strategy name"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "new",
+        "viewed",
+        "executed",
+        "ignored"
+      ],
+      "default": "new",
+      "description": "Signal status"
+    },
+    "executed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When signal was executed"
+    },
+    "trade_id": {
+      "type": "string",
+      "description": "Linked trade ID if executed"
+    },
+    "raw_data": {
+      "type": "object",
+      "description": "Raw webhook payload"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user who owns this signal"
+    }
+  },
+  "required": [
+    "provider",
+    "symbol",
+    "action",
+    "user_email"
+  ],
+  "rls": {
+    "create": {},
+    "update": {
+      "user_email": "{{user.email}}"
+    },
+    "delete": {
+      "user_email": "{{user.email}}"
+    },
+    "write": {
+      "user_email": "{{user.email}}"
+    }
+  }
+}

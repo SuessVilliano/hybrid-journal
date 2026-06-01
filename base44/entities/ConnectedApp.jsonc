@@ -1,0 +1,66 @@
+{
+  "name": "ConnectedApp",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "User who owns this connection"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user (for easy filtering)"
+    },
+    "app_name": {
+      "type": "string",
+      "enum": [
+        "iCopyTrade",
+        "ThirdPartyBot",
+        "CustomIntegration"
+      ],
+      "default": "iCopyTrade",
+      "description": "Connected application name"
+    },
+    "signing_secret_ref": {
+      "type": "string",
+      "description": "Shared signing secret for HMAC verification"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "revoked",
+        "expired"
+      ],
+      "default": "active",
+      "description": "Connection status"
+    },
+    "last_event_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last time an event was received from this app"
+    },
+    "total_events_received": {
+      "type": "number",
+      "default": 0,
+      "description": "Count of events processed from this app"
+    }
+  },
+  "required": [
+    "user_id",
+    "user_email",
+    "app_name",
+    "signing_secret_ref"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "user_email": "{{user.email}}"
+    },
+    "update": {
+      "user_email": "{{user.email}}"
+    },
+    "delete": {
+      "user_email": "{{user.email}}"
+    }
+  }
+}

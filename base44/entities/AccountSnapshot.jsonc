@@ -1,0 +1,85 @@
+{
+  "name": "AccountSnapshot",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "User who owns this snapshot"
+    },
+    "connection_id": {
+      "type": "string",
+      "description": "Reference to BrokerConnection"
+    },
+    "external_account_id": {
+      "type": "string",
+      "description": "Account ID from external system"
+    },
+    "source": {
+      "type": "string",
+      "description": "Platform source (cTrader, MT5, etc.)"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Snapshot timestamp"
+    },
+    "balance": {
+      "type": "number",
+      "description": "Account balance"
+    },
+    "equity": {
+      "type": "number",
+      "description": "Account equity"
+    },
+    "margin_used": {
+      "type": "number",
+      "description": "Margin currently in use"
+    },
+    "margin_available": {
+      "type": "number",
+      "description": "Available margin"
+    },
+    "drawdown_daily": {
+      "type": "number",
+      "description": "Daily drawdown amount"
+    },
+    "drawdown_daily_percent": {
+      "type": "number",
+      "description": "Daily drawdown percentage"
+    },
+    "drawdown_trailing": {
+      "type": "number",
+      "description": "Trailing drawdown amount"
+    },
+    "drawdown_trailing_percent": {
+      "type": "number",
+      "description": "Trailing drawdown percentage"
+    },
+    "open_positions": {
+      "type": "number",
+      "description": "Number of open positions"
+    },
+    "raw_masked_json": {
+      "type": "object",
+      "description": "Raw snapshot data (masked/sanitized)"
+    }
+  },
+  "required": [
+    "user_email",
+    "connection_id",
+    "source",
+    "timestamp"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "user_email": "{{user.email}}"
+    },
+    "update": {
+      "user_email": "{{user.email}}"
+    },
+    "delete": {
+      "user_email": "{{user.email}}"
+    }
+  }
+}

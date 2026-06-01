@@ -1,0 +1,106 @@
+{
+  "name": "SignalRoutingRule",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Rule name (e.g., 'Auto-execute high confidence NQ signals')"
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this rule is active"
+    },
+    "priority": {
+      "type": "number",
+      "default": 0,
+      "description": "Rule priority (higher executes first)"
+    },
+    "conditions": {
+      "type": "object",
+      "properties": {
+        "symbols": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Match specific symbols (empty = all)"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "BUY",
+              "SELL",
+              "CLOSE"
+            ]
+          },
+          "description": "Match specific actions (empty = all)"
+        },
+        "providers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Match specific providers (empty = all)"
+        },
+        "min_confidence": {
+          "type": "number",
+          "description": "Minimum confidence threshold (0-100)"
+        },
+        "max_confidence": {
+          "type": "number",
+          "description": "Maximum confidence threshold (0-100)"
+        }
+      },
+      "description": "Conditions that must be met for this rule to trigger"
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "execute_trade",
+              "send_notification",
+              "create_journal_entry",
+              "webhook",
+              "api_call"
+            ],
+            "description": "Type of action to perform"
+          },
+          "config": {
+            "type": "object",
+            "description": "Action-specific configuration"
+          }
+        }
+      },
+      "description": "Actions to perform when conditions are met"
+    },
+    "stop_after_match": {
+      "type": "boolean",
+      "default": false,
+      "description": "Stop processing other rules if this one matches"
+    }
+  },
+  "required": [
+    "name",
+    "conditions",
+    "actions"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

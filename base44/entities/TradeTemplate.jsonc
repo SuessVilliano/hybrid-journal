@@ -1,0 +1,86 @@
+{
+  "name": "TradeTemplate",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Template name (e.g., Scalping, Swing Trading)"
+    },
+    "description": {
+      "type": "string",
+      "description": "Template description"
+    },
+    "icon": {
+      "type": "string",
+      "description": "Icon identifier for the template"
+    },
+    "trading_style": {
+      "type": "string",
+      "enum": [
+        "Scalping",
+        "Day Trading",
+        "Swing Trading",
+        "Options",
+        "Futures",
+        "Crypto",
+        "Forex"
+      ],
+      "description": "Trading style category"
+    },
+    "default_fields": {
+      "type": "object",
+      "description": "Default field values to pre-fill"
+    },
+    "analysis_prompts": {
+      "type": "object",
+      "properties": {
+        "pre_trade_plan": {
+          "type": "string",
+          "description": "Prompt for pre-trade planning"
+        },
+        "post_trade_review": {
+          "type": "string",
+          "description": "Prompt for post-trade review"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Prompt for trade notes"
+        }
+      },
+      "description": "Tailored prompts for trade analysis"
+    },
+    "suggested_tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Suggested tags for this template"
+    },
+    "is_default": {
+      "type": "boolean",
+      "default": false,
+      "description": "Is this a system default template"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Is template active"
+    }
+  },
+  "required": [
+    "name",
+    "trading_style"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

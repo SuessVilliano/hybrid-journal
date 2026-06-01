@@ -1,0 +1,111 @@
+{
+  "name": "MarketSnapshot",
+  "type": "object",
+  "properties": {
+    "regime": {
+      "type": "string",
+      "enum": [
+        "RISK-OFF",
+        "CAUTION",
+        "NEUTRAL",
+        "RISK-ON"
+      ],
+      "description": "Current market regime"
+    },
+    "composite_score": {
+      "type": "number",
+      "description": "Overall cause score (0-100)"
+    },
+    "macro_score": {
+      "type": "number",
+      "description": "Macro economic pressure score"
+    },
+    "positioning_score": {
+      "type": "number",
+      "description": "Market positioning risk score"
+    },
+    "catalyst_score": {
+      "type": "number",
+      "description": "Near-term catalyst risk score"
+    },
+    "sector_score": {
+      "type": "number",
+      "description": "Sector sensitivity score"
+    },
+    "primary_causes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Main drivers of current market movement"
+    },
+    "confirmation_signals": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Signals that would confirm the current analysis"
+    },
+    "invalidation_signals": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Signals that would invalidate the analysis"
+    },
+    "key_levels": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Key price levels to watch"
+    },
+    "next_catalysts": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "Upcoming economic events and catalysts"
+    },
+    "macro_data": {
+      "type": "object",
+      "properties": {
+        "yield_10y": {
+          "type": "number"
+        },
+        "yield_2y": {
+          "type": "number"
+        },
+        "dxy": {
+          "type": "number"
+        },
+        "vix": {
+          "type": "number"
+        },
+        "fed_balance_sheet": {
+          "type": "number"
+        }
+      },
+      "description": "Raw macro data points"
+    },
+    "positioning_data": {
+      "type": "object",
+      "properties": {
+        "es_net_position": {
+          "type": "number"
+        },
+        "dealer_gamma": {
+          "type": "string"
+        },
+        "put_call_ratio": {
+          "type": "number"
+        }
+      },
+      "description": "Positioning metrics"
+    }
+  },
+  "required": [
+    "regime",
+    "composite_score"
+  ]
+}

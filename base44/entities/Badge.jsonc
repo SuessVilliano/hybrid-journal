@@ -1,0 +1,63 @@
+{
+  "name": "Badge",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "User who earned this badge"
+    },
+    "badge_id": {
+      "type": "string",
+      "description": "Badge identifier"
+    },
+    "badge_name": {
+      "type": "string",
+      "description": "Display name"
+    },
+    "badge_description": {
+      "type": "string",
+      "description": "What this badge is for"
+    },
+    "badge_icon": {
+      "type": "string",
+      "description": "Icon identifier"
+    },
+    "badge_tier": {
+      "type": "string",
+      "enum": [
+        "bronze",
+        "silver",
+        "gold",
+        "platinum",
+        "legendary"
+      ],
+      "description": "Badge tier/rarity"
+    },
+    "earned_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When badge was earned"
+    },
+    "points_awarded": {
+      "type": "number",
+      "description": "Points given for earning this badge"
+    }
+  },
+  "required": [
+    "user_email",
+    "badge_id",
+    "badge_name"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "user_email": "{{user.email}}"
+    },
+    "update": {
+      "user_email": "{{user.email}}"
+    },
+    "delete": {
+      "user_email": "{{user.email}}"
+    }
+  }
+}

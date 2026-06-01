@@ -1,0 +1,54 @@
+{
+  "name": "ShareSettings",
+  "type": "object",
+  "properties": {
+    "share_token": {
+      "type": "string",
+      "description": "Unique token for public access"
+    },
+    "is_public": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable public sharing"
+    },
+    "shared_metrics": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Which metrics to share (total_pnl, win_rate, trades, etc)"
+    },
+    "hide_dollar_amounts": {
+      "type": "boolean",
+      "default": false,
+      "description": "Show percentages only, hide dollar amounts"
+    },
+    "show_individual_trades": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show detailed trade list"
+    },
+    "custom_title": {
+      "type": "string",
+      "description": "Custom title for shared page"
+    },
+    "last_updated": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last update timestamp"
+    }
+  },
+  "required": [
+    "share_token"
+  ],
+  "rls": {
+    "create": {},
+    "read": {},
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

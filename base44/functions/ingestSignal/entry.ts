@@ -214,38 +214,8 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Signal ingestion error:', error);
-    
-    // Try to log the error if we can determine the user
-    try {
-      const url = new URL(req.url);
-      const token = url.searchParams.get('token');
-      if (token) {
-        const base44 = createClientFromRequest(req);
-        const users = await base44.asServiceRole.entities.User.filter({ webhook_token: token });
-        if (users && users.length > 0) {
-          const user = users[0];
-          await base44.asServiceRole.entities.SyncLog.create({
-            sync_type: 'webhook_signal',
-            status: 'failed',
-            records_synced: 0,
-            error_message: error.message,
-            details: JSON.stringify({
-              error_stack: error.stack,
-              user_email: user.email,
-              webhook_token: token,
-              timestamp: new Date().toISOString()
-            }),
-            user_email: user.email
-          });
-        }
-      }
-    } catch (logError) {
-      console.error('Failed to log error:', logError);
-    }
-    
     return Response.json({ 
-      error: error.message,
-      stack: error.stack 
+      error: error.message 
     }, { status: 500 });
   }
 });

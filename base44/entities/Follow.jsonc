@@ -1,0 +1,35 @@
+{
+  "name": "Follow",
+  "type": "object",
+  "properties": {
+    "follower_profile_id": {
+      "type": "string",
+      "description": "Profile ID of the follower"
+    },
+    "following_profile_id": {
+      "type": "string",
+      "description": "Profile ID being followed"
+    }
+  },
+  "required": [
+    "follower_profile_id",
+    "following_profile_id"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    },
+    "write": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

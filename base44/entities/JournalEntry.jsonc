@@ -1,0 +1,96 @@
+{
+  "name": "JournalEntry",
+  "type": "object",
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Date and time of the journal entry"
+    },
+    "content": {
+      "type": "string",
+      "description": "The journal entry content - thoughts, feelings, ideas"
+    },
+    "mood_tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "Confident",
+          "Anxious",
+          "Excited",
+          "Fearful",
+          "Calm",
+          "Frustrated",
+          "Disciplined",
+          "Impulsive",
+          "Focused",
+          "Distracted",
+          "Motivated",
+          "Tired",
+          "Stressed",
+          "Optimistic",
+          "Doubtful"
+        ]
+      },
+      "description": "Mood/emotion tags for this entry"
+    },
+    "entry_type": {
+      "type": "string",
+      "enum": [
+        "thought",
+        "emotion",
+        "observation",
+        "goal",
+        "lesson",
+        "gratitude",
+        "struggle"
+      ],
+      "default": "thought",
+      "description": "Type of journal entry"
+    },
+    "related_trade_id": {
+      "type": "string",
+      "description": "Optional link to a specific trade"
+    },
+    "related_plan_id": {
+      "type": "string",
+      "description": "Optional link to a daily/weekly/monthly plan"
+    },
+    "is_private": {
+      "type": "boolean",
+      "default": true,
+      "description": "Keep this entry private"
+    },
+    "ai_sentiment": {
+      "type": "string",
+      "enum": [
+        "positive",
+        "negative",
+        "neutral",
+        "mixed"
+      ],
+      "description": "AI-detected sentiment"
+    },
+    "ai_insights": {
+      "type": "string",
+      "description": "AI-generated insights about this entry"
+    }
+  },
+  "required": [
+    "date",
+    "content"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

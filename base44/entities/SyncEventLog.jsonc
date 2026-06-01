@@ -1,0 +1,93 @@
+{
+  "name": "SyncEventLog",
+  "type": "object",
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "description": "Unique event identifier for idempotency"
+    },
+    "connection_id": {
+      "type": "string",
+      "description": "Reference to BrokerConnection"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "User who owns this event"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "trade.opened",
+        "trade.updated",
+        "trade.closed",
+        "account.snapshot",
+        "risk.violation",
+        "connection.status",
+        "manual.import",
+        "scheduled.sync"
+      ],
+      "description": "Type of sync event"
+    },
+    "source": {
+      "type": "string",
+      "description": "Source platform"
+    },
+    "payload": {
+      "type": "object",
+      "description": "Event payload data"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "processed",
+        "failed",
+        "duplicate"
+      ],
+      "default": "pending",
+      "description": "Processing status"
+    },
+    "processed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When event was processed"
+    },
+    "error_message": {
+      "type": "string",
+      "description": "Error details if processing failed"
+    },
+    "trades_created": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of trades created from this event"
+    },
+    "trades_updated": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of trades updated from this event"
+    },
+    "trades_skipped": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of duplicate trades skipped"
+    }
+  },
+  "required": [
+    "event_id",
+    "user_email",
+    "event_type",
+    "source"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "user_email": "{{user.email}}"
+    },
+    "update": {
+      "user_email": "{{user.email}}"
+    },
+    "delete": {
+      "user_email": "{{user.email}}"
+    }
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "subscription_tier": {
+      "type": "string",
+      "enum": [
+        "free",
+        "pro",
+        "team"
+      ],
+      "default": "free",
+      "description": "User's subscription tier"
+    },
+    "subscription_status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "cancelled",
+        "past_due",
+        "trialing"
+      ],
+      "default": "active",
+      "description": "Stripe subscription status"
+    },
+    "stripe_customer_id": {
+      "type": "string",
+      "description": "Stripe customer ID"
+    },
+    "stripe_subscription_id": {
+      "type": "string",
+      "description": "Stripe subscription ID"
+    },
+    "subscription_period_end": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When current subscription period ends"
+    }
+  },
+  "required": [
+    "stripe_customer_id",
+    "stripe_subscription_id",
+    "subscription_period_end"
+  ]
+}

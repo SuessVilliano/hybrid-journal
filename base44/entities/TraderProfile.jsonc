@@ -1,0 +1,183 @@
+{
+  "name": "TraderProfile",
+  "type": "object",
+  "properties": {
+    "onboarding_completed": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether user completed onboarding"
+    },
+    "preferred_name": {
+      "type": "string",
+      "description": "Name they want to be called"
+    },
+    "timezone": {
+      "type": "string",
+      "default": "America/New_York",
+      "description": "User's timezone for scheduling and notifications"
+    },
+    "location": {
+      "type": "string",
+      "description": "City/Country for context"
+    },
+    "trader_type": {
+      "type": "string",
+      "enum": [
+        "Day Trader",
+        "Swing Trader",
+        "Scalper",
+        "Position Trader",
+        "Algorithmic Trader",
+        "Beginner"
+      ],
+      "description": "Primary trading style"
+    },
+    "experience_level": {
+      "type": "string",
+      "enum": [
+        "Beginner (0-6 months)",
+        "Intermediate (6 months - 2 years)",
+        "Advanced (2-5 years)",
+        "Expert (5+ years)"
+      ],
+      "description": "Trading experience"
+    },
+    "primary_markets": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "Forex",
+          "Futures",
+          "Stocks",
+          "Options",
+          "Crypto",
+          "CFDs"
+        ]
+      },
+      "description": "Markets they trade"
+    },
+    "primary_goals": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Main trading goals"
+    },
+    "trading_session": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "Asian",
+          "London",
+          "New York",
+          "After Hours"
+        ]
+      },
+      "description": "Preferred trading sessions"
+    },
+    "risk_tolerance": {
+      "type": "string",
+      "enum": [
+        "Conservative (0.5-1% per trade)",
+        "Moderate (1-2% per trade)",
+        "Aggressive (2-3% per trade)",
+        "Very Aggressive (3%+ per trade)"
+      ],
+      "description": "Risk per trade"
+    },
+    "account_size": {
+      "type": "string",
+      "enum": [
+        "Under $1,000",
+        "$1,000 - $5,000",
+        "$5,000 - $25,000",
+        "$25,000 - $100,000",
+        "Over $100,000",
+        "Prefer not to say"
+      ],
+      "description": "Trading account size range"
+    },
+    "strategies": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Trading strategies they use"
+    },
+    "main_challenges": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Biggest trading challenges"
+    },
+    "prop_firm_trader": {
+      "type": "boolean",
+      "default": false,
+      "description": "Trading with a prop firm"
+    },
+    "prop_firm_name": {
+      "type": "string",
+      "description": "Name of prop firm if applicable"
+    },
+    "ai_coaching_preferences": {
+      "type": "object",
+      "properties": {
+        "proactive_alerts": {
+          "type": "boolean",
+          "default": true
+        },
+        "rule_enforcement": {
+          "type": "boolean",
+          "default": true
+        },
+        "performance_feedback": {
+          "type": "boolean",
+          "default": true
+        },
+        "emotional_check_ins": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "description": "AI coaching preferences"
+    },
+    "notification_preferences": {
+      "type": "object",
+      "properties": {
+        "rule_violations": {
+          "type": "boolean",
+          "default": true
+        },
+        "milestone_achievements": {
+          "type": "boolean",
+          "default": true
+        },
+        "daily_reminders": {
+          "type": "boolean",
+          "default": true
+        },
+        "risk_warnings": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "description": "Notification preferences"
+    }
+  },
+  "required": [],
+  "rls": {
+    "create": {},
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

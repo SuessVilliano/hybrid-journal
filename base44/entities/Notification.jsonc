@@ -1,0 +1,75 @@
+{
+  "name": "Notification",
+  "type": "object",
+  "properties": {
+    "recipient_email": {
+      "type": "string",
+      "description": "Email of the user receiving this notification"
+    },
+    "sender_email": {
+      "type": "string",
+      "description": "Email of the user who triggered this notification (optional)"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "system",
+        "user_alert",
+        "trade_alert",
+        "goal_achieved",
+        "risk_warning",
+        "plan_reminder",
+        "access_granted",
+        "access_request",
+        "message"
+      ],
+      "description": "Type of notification"
+    },
+    "title": {
+      "type": "string",
+      "description": "Notification title"
+    },
+    "message": {
+      "type": "string",
+      "description": "Notification message body"
+    },
+    "link": {
+      "type": "string",
+      "description": "Optional link to navigate to when clicked"
+    },
+    "is_read": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the notification has been read"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "urgent"
+      ],
+      "default": "medium",
+      "description": "Priority level"
+    }
+  },
+  "required": [
+    "recipient_email",
+    "type",
+    "title",
+    "message"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "recipient_email": "{{user.email}}"
+    },
+    "update": {
+      "recipient_email": "{{user.email}}"
+    },
+    "delete": {
+      "recipient_email": "{{user.email}}"
+    }
+  }
+}

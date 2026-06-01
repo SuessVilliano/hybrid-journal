@@ -1,0 +1,30 @@
+{
+  "name": "PostLike",
+  "type": "object",
+  "properties": {
+    "post_id": {
+      "type": "string",
+      "description": "Liked post ID"
+    },
+    "trader_profile_id": {
+      "type": "string",
+      "description": "Liker's profile ID"
+    }
+  },
+  "required": [
+    "post_id",
+    "trader_profile_id"
+  ],
+  "rls": {
+    "create": {
+      "trader_profile_id": "{{user.profile_id}}"
+    },
+    "read": {},
+    "update": {
+      "trader_profile_id": "{{user.profile_id}}"
+    },
+    "delete": {
+      "trader_profile_id": "{{user.profile_id}}"
+    }
+  }
+}

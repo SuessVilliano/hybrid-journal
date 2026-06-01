@@ -1,0 +1,108 @@
+{
+  "name": "DashboardSettings",
+  "type": "object",
+  "properties": {
+    "widgets": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "Array of enabled widgets with positions"
+    },
+    "layout": {
+      "type": "string",
+      "enum": [
+        "grid",
+        "list",
+        "compact"
+      ],
+      "default": "grid",
+      "description": "Dashboard layout style"
+    },
+    "theme_preference": {
+      "type": "string",
+      "enum": [
+        "dark",
+        "light",
+        "auto"
+      ],
+      "default": "auto",
+      "description": "Theme preference"
+    },
+    "default_timeframe": {
+      "type": "string",
+      "enum": [
+        "7d",
+        "30d",
+        "90d",
+        "1y",
+        "all"
+      ],
+      "default": "30d",
+      "description": "Default timeframe for metrics"
+    },
+    "menu_order": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Custom order of menu items by ID"
+    },
+    "favorites": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Favorited menu item IDs"
+    },
+    "recent_pages": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "Recently visited pages with timestamps"
+    },
+    "menu_view": {
+      "type": "string",
+      "enum": [
+        "all",
+        "favorites",
+        "recent"
+      ],
+      "default": "all",
+      "description": "Current menu view mode"
+    },
+    "quick_access": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Quick access page IDs (4 max)"
+    },
+    "hide_funding_banner": {
+      "type": "boolean",
+      "default": false,
+      "description": "Hide the Get Funded banner on dashboard"
+    },
+    "selected_account_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Globally selected trading account IDs across all pages"
+    }
+  },
+  "required": [],
+  "rls": {
+    "create": {},
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

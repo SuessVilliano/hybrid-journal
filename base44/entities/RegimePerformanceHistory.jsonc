@@ -1,0 +1,53 @@
+{
+  "name": "RegimePerformanceHistory",
+  "type": "object",
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Trading day"
+    },
+    "regime": {
+      "type": "string",
+      "enum": [
+        "RISK-OFF",
+        "CAUTION",
+        "NEUTRAL",
+        "RISK-ON"
+      ],
+      "description": "Market regime for this day"
+    },
+    "es_open": {
+      "type": "number",
+      "description": "ES open price"
+    },
+    "es_close": {
+      "type": "number",
+      "description": "ES close price"
+    },
+    "es_high": {
+      "type": "number",
+      "description": "ES high price"
+    },
+    "es_low": {
+      "type": "number",
+      "description": "ES low price"
+    },
+    "vix_level": {
+      "type": "number",
+      "description": "VIX level for the day"
+    },
+    "cause_score_avg": {
+      "type": "number",
+      "description": "Average cause score for the day"
+    },
+    "major_catalyst": {
+      "type": "string",
+      "description": "Main catalyst/event for this day"
+    }
+  },
+  "required": [
+    "date",
+    "regime"
+  ]
+}

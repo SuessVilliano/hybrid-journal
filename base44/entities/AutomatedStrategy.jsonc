@@ -1,0 +1,137 @@
+{
+  "name": "AutomatedStrategy",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Strategy name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Strategy description"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "paused",
+        "stopped"
+      ],
+      "default": "paused",
+      "description": "Execution status"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "simulated",
+        "live"
+      ],
+      "default": "simulated",
+      "description": "Trading mode"
+    },
+    "broker_connection_id": {
+      "type": "string",
+      "description": "Linked broker connection"
+    },
+    "symbols": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Trading symbols"
+    },
+    "timeframe": {
+      "type": "string",
+      "description": "Chart timeframe"
+    },
+    "entry_conditions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Entry condition rules"
+    },
+    "exit_conditions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Exit condition rules"
+    },
+    "risk_management": {
+      "type": "object",
+      "properties": {
+        "max_position_size": {
+          "type": "number"
+        },
+        "risk_per_trade_percent": {
+          "type": "number"
+        },
+        "stop_loss_percent": {
+          "type": "number"
+        },
+        "take_profit_percent": {
+          "type": "number"
+        },
+        "max_daily_loss": {
+          "type": "number"
+        },
+        "max_open_trades": {
+          "type": "number"
+        }
+      }
+    },
+    "ai_settings": {
+      "type": "object",
+      "properties": {
+        "use_ai_predictions": {
+          "type": "boolean"
+        },
+        "confidence_threshold": {
+          "type": "number"
+        },
+        "sentiment_analysis": {
+          "type": "boolean"
+        }
+      }
+    },
+    "statistics": {
+      "type": "object",
+      "properties": {
+        "total_signals": {
+          "type": "number"
+        },
+        "trades_executed": {
+          "type": "number"
+        },
+        "win_rate": {
+          "type": "number"
+        },
+        "total_pnl": {
+          "type": "number"
+        }
+      }
+    }
+  },
+  "required": [
+    "name",
+    "symbols"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    },
+    "write": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

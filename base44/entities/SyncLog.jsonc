@@ -1,0 +1,94 @@
+{
+  "name": "SyncLog",
+  "type": "object",
+  "properties": {
+    "broker_connection_id": {
+      "type": "string",
+      "description": "Related broker connection (optional for webhook logs)"
+    },
+    "sync_type": {
+      "type": "string",
+      "enum": [
+        "manual",
+        "automatic",
+        "scheduled",
+        "webhook_signal"
+      ],
+      "description": "Type of sync trigger"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "success",
+        "partial",
+        "failed"
+      ],
+      "description": "Sync status"
+    },
+    "records_synced": {
+      "type": "number",
+      "description": "Number of records synced (trades or signals)"
+    },
+    "trades_fetched": {
+      "type": "number",
+      "description": "Number of trades fetched from API"
+    },
+    "trades_imported": {
+      "type": "number",
+      "description": "Number of new trades imported"
+    },
+    "trades_skipped": {
+      "type": "number",
+      "description": "Number of duplicate trades skipped"
+    },
+    "trades_updated": {
+      "type": "number",
+      "description": "Number of existing trades updated"
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "List of errors encountered"
+    },
+    "error_message": {
+      "type": "string",
+      "description": "Main error message if failed"
+    },
+    "details": {
+      "type": "string",
+      "description": "Additional details or log message"
+    },
+    "duration_ms": {
+      "type": "number",
+      "description": "Sync duration in milliseconds"
+    },
+    "sync_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When sync occurred"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user who owns this sync log"
+    }
+  },
+  "required": [
+    "sync_type",
+    "status",
+    "user_email"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "user_email": "{{user.email}}"
+    },
+    "update": {
+      "user_email": "{{user.email}}"
+    },
+    "delete": {
+      "user_email": "{{user.email}}"
+    }
+  }
+}

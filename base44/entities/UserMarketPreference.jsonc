@@ -1,0 +1,75 @@
+{
+  "name": "UserMarketPreference",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "User email"
+    },
+    "preferred_regimes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "RISK-OFF",
+          "CAUTION",
+          "NEUTRAL",
+          "RISK-ON"
+        ]
+      },
+      "description": "Preferred market regimes to trade in"
+    },
+    "avoid_regimes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "RISK-OFF",
+          "CAUTION",
+          "NEUTRAL",
+          "RISK-ON"
+        ]
+      },
+      "description": "Regimes to avoid trading in"
+    },
+    "alert_score_threshold": {
+      "type": "number",
+      "default": 75,
+      "description": "Alert when cause score exceeds this threshold"
+    },
+    "alert_methods": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "notification",
+          "email"
+        ]
+      },
+      "default": [
+        "notification"
+      ],
+      "description": "How to receive alerts"
+    },
+    "auto_capture_context": {
+      "type": "boolean",
+      "default": true,
+      "description": "Automatically capture market context with trades"
+    }
+  },
+  "required": [
+    "user_email"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "user_email": "{{user.email}}"
+    },
+    "update": {
+      "user_email": "{{user.email}}"
+    },
+    "delete": {
+      "user_email": "{{user.email}}"
+    }
+  }
+}

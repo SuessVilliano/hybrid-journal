@@ -1,0 +1,139 @@
+{
+  "name": "CopiedTrade",
+  "type": "object",
+  "properties": {
+    "copy_params_id": {
+      "type": "string",
+      "description": "Reference to CopyParameters"
+    },
+    "source_trade_id": {
+      "type": "string",
+      "description": "Original trade ID from source"
+    },
+    "target_trade_id": {
+      "type": "string",
+      "description": "Trade ID on target account"
+    },
+    "source_connection_id": {
+      "type": "string",
+      "description": "Source connection"
+    },
+    "target_connection_id": {
+      "type": "string",
+      "description": "Target connection"
+    },
+    "symbol": {
+      "type": "string",
+      "description": "Symbol traded"
+    },
+    "side": {
+      "type": "string",
+      "enum": [
+        "Long",
+        "Short"
+      ],
+      "description": "Trade direction"
+    },
+    "source_quantity": {
+      "type": "number",
+      "description": "Original position size"
+    },
+    "copied_quantity": {
+      "type": "number",
+      "description": "Actual copied position size"
+    },
+    "source_entry_price": {
+      "type": "number",
+      "description": "Source entry price"
+    },
+    "copied_entry_price": {
+      "type": "number",
+      "description": "Actual entry price on target"
+    },
+    "slippage_pips": {
+      "type": "number",
+      "description": "Slippage between source and target"
+    },
+    "copy_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "executed",
+        "partial",
+        "failed",
+        "rejected",
+        "closed"
+      ],
+      "default": "pending",
+      "description": "Status of the copy operation"
+    },
+    "execution_time_ms": {
+      "type": "number",
+      "description": "Time taken to execute in milliseconds"
+    },
+    "error_message": {
+      "type": "string",
+      "description": "Error details if failed"
+    },
+    "reconciliation_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "matched",
+        "mismatch",
+        "missing"
+      ],
+      "default": "pending",
+      "description": "Reconciliation status with source"
+    },
+    "reconciled_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When reconciliation was performed"
+    },
+    "source_exit_price": {
+      "type": "number",
+      "description": "Exit price on source (when closed)"
+    },
+    "copied_exit_price": {
+      "type": "number",
+      "description": "Exit price on target (when closed)"
+    },
+    "source_pnl": {
+      "type": "number",
+      "description": "P&L on source trade"
+    },
+    "copied_pnl": {
+      "type": "number",
+      "description": "P&L on copied trade"
+    },
+    "pnl_difference": {
+      "type": "number",
+      "description": "Difference between source and copied P&L"
+    },
+    "raw_execution_response": {
+      "type": "object",
+      "description": "Raw response from execution API"
+    }
+  },
+  "required": [
+    "copy_params_id",
+    "source_trade_id",
+    "source_connection_id",
+    "target_connection_id",
+    "symbol",
+    "side"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

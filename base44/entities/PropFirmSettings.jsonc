@@ -1,0 +1,112 @@
+{
+  "name": "PropFirmSettings",
+  "type": "object",
+  "properties": {
+    "firm_name": {
+      "type": "string",
+      "description": "Name of the prop firm (e.g., FTMO, MyForexFunds)"
+    },
+    "account_size": {
+      "type": "number",
+      "description": "Account size for the challenge/funded account"
+    },
+    "max_daily_loss_percent": {
+      "type": "number",
+      "default": 5,
+      "description": "Maximum daily loss as percentage of account"
+    },
+    "max_daily_loss_dollars": {
+      "type": "number",
+      "description": "Maximum daily loss in dollars (alternative to percentage)"
+    },
+    "max_total_loss_percent": {
+      "type": "number",
+      "default": 10,
+      "description": "Maximum total drawdown percentage"
+    },
+    "max_total_loss_dollars": {
+      "type": "number",
+      "description": "Maximum total loss in dollars"
+    },
+    "trailing_drawdown_percent": {
+      "type": "number",
+      "default": 10,
+      "description": "Trailing drawdown threshold percentage"
+    },
+    "min_trading_days": {
+      "type": "number",
+      "description": "Minimum number of trading days required"
+    },
+    "profit_target_percent": {
+      "type": "number",
+      "description": "Profit target percentage to pass phase"
+    },
+    "profit_target_dollars": {
+      "type": "number",
+      "description": "Profit target in dollars"
+    },
+    "max_position_size": {
+      "type": "number",
+      "description": "Maximum lot size or contracts per trade"
+    },
+    "consistency_rule": {
+      "type": "string",
+      "description": "Consistency rules (e.g., 'No single trade > 40% of total profit')"
+    },
+    "weekend_holding": {
+      "type": "boolean",
+      "default": false,
+      "description": "Can hold trades over weekend"
+    },
+    "news_trading_allowed": {
+      "type": "boolean",
+      "default": true,
+      "description": "Can trade during high-impact news"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Is this the currently active prop firm account"
+    },
+    "phase": {
+      "type": "string",
+      "enum": [
+        "Challenge",
+        "Verification",
+        "Funded"
+      ],
+      "default": "Challenge",
+      "description": "Current phase/stage"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Challenge/phase start date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Challenge/phase end date"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes or custom rules"
+    }
+  },
+  "required": [
+    "firm_name",
+    "account_size"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

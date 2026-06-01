@@ -1,0 +1,170 @@
+{
+  "name": "WeeklyTradePlan",
+  "type": "object",
+  "properties": {
+    "week_start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Start date of the trading week (usually Monday)"
+    },
+    "week_end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "End date of the trading week (usually Friday)"
+    },
+    "account_id": {
+      "type": "string",
+      "description": "Linked trading account for this plan"
+    },
+    "plan_text": {
+      "type": "string",
+      "description": "Overall weekly plan and market outlook"
+    },
+    "voice_transcript": {
+      "type": "string",
+      "description": "Original voice transcript if voice input was used"
+    },
+    "chart_screenshots": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "URLs of uploaded chart screenshots"
+    },
+    "market_bias": {
+      "type": "string",
+      "enum": [
+        "Bullish",
+        "Bearish",
+        "Neutral",
+        "Mixed"
+      ],
+      "description": "Overall market bias for the week"
+    },
+    "key_levels": {
+      "type": "object",
+      "description": "Key support/resistance levels for major instruments"
+    },
+    "economic_events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string"
+          },
+          "event": {
+            "type": "string"
+          },
+          "impact": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Major economic events for the week"
+    },
+    "primary_setups": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Primary trade setups to watch for"
+    },
+    "instruments_to_focus": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Instruments/symbols to focus on this week"
+    },
+    "weekly_goals": {
+      "type": "object",
+      "properties": {
+        "max_trades": {
+          "type": "number"
+        },
+        "profit_target": {
+          "type": "number"
+        },
+        "max_risk": {
+          "type": "number"
+        },
+        "win_rate_target": {
+          "type": "number"
+        }
+      },
+      "description": "Weekly performance goals"
+    },
+    "rules_to_follow": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Key trading rules for the week"
+    },
+    "things_to_avoid": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Common mistakes or situations to avoid"
+    },
+    "linked_monthly_plan_id": {
+      "type": "string",
+      "description": "Reference to parent monthly plan"
+    },
+    "ai_summary": {
+      "type": "string",
+      "description": "AI-generated summary of the weekly plan"
+    },
+    "execution_tracking": {
+      "type": "object",
+      "properties": {
+        "trades_taken": {
+          "type": "number"
+        },
+        "profit_so_far": {
+          "type": "number"
+        },
+        "goal_progress": {
+          "type": "number"
+        },
+        "on_track": {
+          "type": "boolean"
+        },
+        "pivot_notes": {
+          "type": "string"
+        }
+      },
+      "description": "Weekly execution tracking vs plan"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "planned",
+        "in_progress",
+        "completed",
+        "reviewed"
+      ],
+      "default": "planned",
+      "description": "Status of the weekly plan"
+    }
+  },
+  "required": [
+    "week_start_date",
+    "week_end_date",
+    "plan_text"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

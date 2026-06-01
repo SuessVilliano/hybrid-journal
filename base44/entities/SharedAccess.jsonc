@@ -1,0 +1,81 @@
+{
+  "name": "SharedAccess",
+  "type": "object",
+  "properties": {
+    "owner_email": {
+      "type": "string",
+      "description": "Email of the account owner sharing access"
+    },
+    "shared_with_email": {
+      "type": "string",
+      "description": "Email of the user being granted access"
+    },
+    "permission_level": {
+      "type": "string",
+      "enum": [
+        "view",
+        "edit",
+        "manage"
+      ],
+      "default": "view",
+      "description": "Level of access granted - view (read-only), edit (modify data), manage (full control)"
+    },
+    "access_type": {
+      "type": "string",
+      "enum": [
+        "mentor",
+        "student",
+        "manager",
+        "team_member",
+        "observer"
+      ],
+      "description": "Type of relationship"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "active",
+        "revoked",
+        "declined"
+      ],
+      "default": "pending",
+      "description": "Status of the access grant"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Optional expiration date for temporary access"
+    },
+    "note": {
+      "type": "string",
+      "description": "Optional note about this access grant"
+    }
+  },
+  "required": [
+    "owner_email",
+    "shared_with_email",
+    "permission_level"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "owner_email": "{{user.email}}"
+        },
+        {
+          "data.shared_with_email": "{{user.email}}"
+        }
+      ]
+    },
+    "update": {
+      "owner_email": "{{user.email}}"
+    },
+    "delete": {
+      "owner_email": "{{user.email}}"
+    },
+    "write": {
+      "owner_email": "{{user.email}}"
+    }
+  }
+}
