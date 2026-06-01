@@ -96,22 +96,20 @@ Deno.serve(async (req) => {
       timestamp: new Date().toISOString()
     });
 
-    // Check for duplicate signals within last 2 minutes
-    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+    // Check for duplicate signals within last 5 minutes (same symbol + action = duplicate)
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     const recentSignals = await base44.asServiceRole.entities.Signal.filter({
       user_email: user.email,
       symbol: signalData.symbol,
       action: signalData.action
     });
 
-    // Filter to signals in last 2 minutes - same symbol+action+provider = duplicate
-    // Price check: if price > 0 compare it, otherwise just symbol+action+provider+notes
     const duplicates = recentSignals.filter(s => {
-      if (new Date(s.created_date) <= new Date(twoMinutesAgo)) return false;
-      if (s.provider !== signalData.provider) return false;
-      // If both have prices, check they're close
+      // Only check signals within the last 5 minutes
+      if (new Date(s.created_date) <= new Date(fiveMinutesAgo)) return false;
+      // If both have prices, check they're close (0.1% tolerance)
       if (signalData.price > 0 && s.price > 0) {
-        const priceTolerance = signalData.price * 0.001; // 0.1% tolerance
+        const priceTolerance = signalData.price * 0.001;
         if (Math.abs(s.price - signalData.price) > priceTolerance) return false;
       }
       return true;

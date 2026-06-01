@@ -234,7 +234,15 @@ export default function LiveTradingSignals() {
     }
   });
 
-  const filteredSignals = signals.filter(signal => {
+  // Only show signals from the last 30 days, and never show ignored ones in the main list
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const activeSignals = signals.filter(s => {
+    if (s.status === 'ignored') return false;
+    const signalDate = new Date(s.created_date || s.updated_date);
+    return signalDate >= thirtyDaysAgo;
+  });
+
+  const filteredSignals = activeSignals.filter(signal => {
     if (filters.symbols.length > 0 && !filters.symbols.includes(signal.symbol)) return false;
     if (filters.actions.length > 0 && !filters.actions.includes(signal.action)) return false;
     if (filters.providers.length > 0 && !filters.providers.includes(signal.provider)) return false;
@@ -242,8 +250,8 @@ export default function LiveTradingSignals() {
     return true;
   });
 
+  const today = new Date();
   const newSignals = filteredSignals.filter(s => s.status === 'new');
-  const viewedSignals = filteredSignals.filter(s => s.status === 'viewed');
   const executedSignals = filteredSignals.filter(s => s.status === 'executed');
 
   const resetFilters = () => {
@@ -443,9 +451,8 @@ export default function LiveTradingSignals() {
                 <div>
                   <div className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Total Today</div>
                   <div className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                    {signals.filter(s => {
+                    {activeSignals.filter(s => {
                       const signalDate = new Date(s.created_date);
-                      const today = new Date();
                       return signalDate.toDateString() === today.toDateString();
                     }).length}
                   </div>
