@@ -5,7 +5,7 @@ import PullToRefresh from '@/components/mobile/PullToRefresh';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Bell, TrendingUp, TrendingDown, X, Check, Eye, Zap, Brain, RefreshCw, FileText } from 'lucide-react';
+import { Bell, TrendingUp, TrendingDown, X, Check, Eye, Zap, Brain, RefreshCw, FileText, CheckSquare, Square, Trash2, EyeOff } from 'lucide-react';
 import { format } from 'date-fns';
 import WebhookSettings from '@/components/profile/WebhookSettings';
 import AISignalAnalysis from '@/components/signals/AISignalAnalysis';
@@ -34,6 +34,8 @@ export default function LiveTradingSignals() {
   const [updatingSignalId, setUpdatingSignalId] = useState(null);
   const [routingSignalId, setRoutingSignalId] = useState(null);
   const [isMutating, setIsMutating] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
   const queryClient = useQueryClient();
   const darkMode = document.documentElement.classList.contains('dark');
   const { permission, requestPermission, isSupported } = useBrowserNotifications();
@@ -264,6 +266,71 @@ export default function LiveTradingSignals() {
     });
   };
 
+  const toggleSelectSignal = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredSignals.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredSignals.map(s => s.id)));
+    }
+  };
+
+  const handleBulkIgnore = async () => {
+    if (selectedIds.size === 0) return;
+    setIsBulkProcessing(true);
+    setIsMutating(true);
+    await queryClient.cancelQueries({ queryKey: ['signals', user?.email] });
+    // Optimistic update
+    queryClient.setQueryData(['signals', user?.email], (old) =>
+      old ? old.map(s => selectedIds.has(s.id) ? { ...s, status: 'ignored' } : s) : old
+    );
+    try {
+      await Promise.all(
+        [...selectedIds].map(id =>
+          base44.functions.invoke('updateSignalStatus', { signal_id: id, status: 'ignored' })
+            .catch(() => base44.entities.Signal.update(id, { status: 'ignored' }))
+        )
+      );
+      toast.success(`${selectedIds.size} signal${selectedIds.size > 1 ? 's' : ''} ignored`);
+    } catch (e) {
+      queryClient.invalidateQueries({ queryKey: ['signals', user?.email] });
+      toast.error('Some signals failed to update');
+    } finally {
+      setSelectedIds(new Set());
+      setIsBulkProcessing(false);
+      setIsMutating(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    setIsBulkProcessing(true);
+    setIsMutating(true);
+    await queryClient.cancelQueries({ queryKey: ['signals', user?.email] });
+    // Optimistic update — remove from cache immediately
+    queryClient.setQueryData(['signals', user?.email], (old) =>
+      old ? old.filter(s => !selectedIds.has(s.id)) : old
+    );
+    try {
+      await Promise.all([...selectedIds].map(id => base44.entities.Signal.delete(id)));
+      toast.success(`${selectedIds.size} signal${selectedIds.size > 1 ? 's' : ''} deleted`);
+    } catch (e) {
+      queryClient.invalidateQueries({ queryKey: ['signals', user?.email] });
+      toast.error('Some signals failed to delete');
+    } finally {
+      setSelectedIds(new Set());
+      setIsBulkProcessing(false);
+      setIsMutating(false);
+    }
+  };
+
   return (
     <div className={`min-h-screen p-4 md:p-6 transition-colors ${
       darkMode 
@@ -485,20 +552,92 @@ export default function LiveTradingSignals() {
               </CardContent>
             </Card>
           ) : (
-            filteredSignals.map((signal) => (
-              <SignalCard
-                key={signal.id}
-                signal={signal}
-                user={user}
-                onAnalyze={setAnalyzingSignal}
-                onRoute={(id, override) => routeTradeMutation.mutate({ signal_id: id, override_approval: override })}
-                onForceExecute={(id) => routeTradeMutation.mutate({ signal_id: id, override_approval: true })}
-                onMarkViewed={(id) => updateStatusMutation.mutate({ id, status: 'viewed' })}
-                onIgnore={(id) => updateStatusMutation.mutate({ id, status: 'ignored' })}
-                isRouting={routingSignalId === signal.id}
-                isUpdating={updatingSignalId === signal.id}
-              />
-            ))
+            <>
+              {/* Select All / Bulk Action Bar */}
+              <div className={`flex items-center justify-between px-4 py-3 rounded-xl border ${
+                darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'
+              }`}>
+                <button
+                  onClick={toggleSelectAll}
+                  className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+                    darkMode ? 'text-slate-300 hover:text-cyan-400' : 'text-slate-700 hover:text-cyan-600'
+                  }`}
+                >
+                  {selectedIds.size === filteredSignals.length && filteredSignals.length > 0
+                    ? <CheckSquare className="h-5 w-5 text-cyan-500" />
+                    : <Square className="h-5 w-5" />
+                  }
+                  {selectedIds.size > 0
+                    ? `${selectedIds.size} of ${filteredSignals.length} selected`
+                    : `Select all (${filteredSignals.length})`
+                  }
+                </button>
+
+                {selectedIds.size > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={isBulkProcessing}
+                      onClick={handleBulkIgnore}
+                      className="border-yellow-500/40 text-yellow-600 hover:bg-yellow-50 dark:text-yellow-400 dark:hover:bg-yellow-900/20"
+                    >
+                      <EyeOff className="h-4 w-4 mr-1" />
+                      Ignore ({selectedIds.size})
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={isBulkProcessing}
+                      onClick={handleBulkDelete}
+                      className="border-red-500/40 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Delete ({selectedIds.size})
+                    </Button>
+                    <button
+                      onClick={() => setSelectedIds(new Set())}
+                      className={`text-xs underline ${darkMode ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                      Clear
+                    </button>
+                    {isBulkProcessing && (
+                      <div className="w-4 h-4 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {filteredSignals.map((signal) => (
+                <div key={signal.id} className="flex items-start gap-3">
+                  {/* Checkbox */}
+                  <button
+                    onClick={() => toggleSelectSignal(signal.id)}
+                    className={`mt-4 flex-shrink-0 transition-colors ${
+                      darkMode ? 'text-slate-400 hover:text-cyan-400' : 'text-slate-400 hover:text-cyan-600'
+                    }`}
+                  >
+                    {selectedIds.has(signal.id)
+                      ? <CheckSquare className="h-5 w-5 text-cyan-500" />
+                      : <Square className="h-5 w-5" />
+                    }
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <SignalCard
+                      signal={signal}
+                      user={user}
+                      onAnalyze={setAnalyzingSignal}
+                      onRoute={(id, override) => routeTradeMutation.mutate({ signal_id: id, override_approval: override })}
+                      onForceExecute={(id) => routeTradeMutation.mutate({ signal_id: id, override_approval: true })}
+                      onMarkViewed={(id) => updateStatusMutation.mutate({ id, status: 'viewed' })}
+                      onIgnore={(id) => updateStatusMutation.mutate({ id, status: 'ignored' })}
+                      isRouting={routingSignalId === signal.id}
+                      isUpdating={updatingSignalId === signal.id}
+                    />
+                  </div>
+                </div>
+              ))}
+            </>
           )}
         </div>
 
