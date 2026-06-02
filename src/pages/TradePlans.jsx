@@ -9,6 +9,7 @@ import MonthlyPlanForm from '@/components/planning/MonthlyPlanForm';
 import WeeklyPlanForm from '@/components/planning/WeeklyPlanForm';
 import DailyPlanForm from '@/components/planning/DailyPlanForm';
 import PlanCorrelationView from '@/components/planning/PlanCorrelationView';
+import GoogleCalendarSync from '@/components/planning/GoogleCalendarSync';
 import GoalForm from '@/components/goals/GoalForm';
 import GoalCard from '@/components/goals/GoalCard';
 
@@ -101,6 +102,8 @@ export default function TradePlans() {
             </div>
           </CardContent>
         </Card>
+
+        <GoogleCalendarSync dailyPlans={dailyPlans} darkMode={darkMode} />
 
         <PlanCorrelationView 
           monthlyPlan={currentMonthPlan}
