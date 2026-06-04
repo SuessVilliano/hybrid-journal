@@ -5,10 +5,15 @@ import { queryClientInstance } from '@/lib/query-client'
 import VisualEditAgent from '@/lib/VisualEditAgent'
 import NavigationTracker from '@/lib/NavigationTracker'
 import { pagesConfig } from './pages.config'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import Login from '@/pages/Login';
+import Register from '@/pages/Register';
+import ForgotPassword from '@/pages/ForgotPassword';
+import ResetPassword from '@/pages/ResetPassword';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -18,8 +23,11 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   <Layout currentPageName={currentPageName}>{children}</Layout>
   : <>{children}</>;
 
+// Pages that are public and do not require authentication
+const PUBLIC_PAGES = new Set(['Landing', 'PublicDashboard', 'Pricing', 'Onboarding', 'PlatformTour', 'SocialFeed', 'Help']);
+
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError } = useAuth();
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
@@ -30,26 +38,25 @@ const AuthenticatedApp = () => {
     );
   }
 
-  // Handle authentication errors
-  if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      // Redirect to login automatically
-      navigateToLogin();
-      return null;
-    }
+  // Handle user_not_registered at the app level
+  if (authError?.type === 'user_not_registered') {
+    return <UserNotRegisteredError />;
   }
 
-  // Render the main app
+  // Separate pages into public and protected
+  const publicPageEntries = Object.entries(Pages).filter(([path]) => PUBLIC_PAGES.has(path));
+  const protectedPageEntries = Object.entries(Pages).filter(([path]) => !PUBLIC_PAGES.has(path));
+
   return (
     <Routes>
-      <Route path="/" element={
-        <LayoutWrapper currentPageName={mainPageKey}>
-          <MainPage />
-        </LayoutWrapper>
-      } />
-      {Object.entries(Pages).map(([path, Page]) => (
+      {/* Auth routes — no layout wrapper */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+
+      {/* Public pages — accessible without login */}
+      {publicPageEntries.map(([path, Page]) => (
         <Route
           key={path}
           path={`/${path}`}
@@ -60,6 +67,27 @@ const AuthenticatedApp = () => {
           }
         />
       ))}
+
+      {/* Protected pages — redirect to /login if not authenticated */}
+      <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
+        <Route path="/" element={
+          <LayoutWrapper currentPageName={mainPageKey}>
+            <MainPage />
+          </LayoutWrapper>
+        } />
+        {protectedPageEntries.map(([path, Page]) => (
+          <Route
+            key={path}
+            path={`/${path}`}
+            element={
+              <LayoutWrapper currentPageName={path}>
+                <Page />
+              </LayoutWrapper>
+            }
+          />
+        ))}
+      </Route>
+
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

@@ -70,6 +70,14 @@ export default function Register() {
     base44.auth.loginWithProvider("google", "/");
   };
 
+  const handleMicrosoft = () => {
+    base44.auth.loginWithProvider("microsoft", "/");
+  };
+
+  const handleFacebook = () => {
+    base44.auth.loginWithProvider("facebook", "/");
+  };
+
   if (showOtp) {
     return (
       <AuthLayout
@@ -138,14 +146,39 @@ export default function Register() {
         </>
       }
     >
-      <Button
-        variant="outline"
-        className="w-full h-12 text-sm font-medium mb-6"
-        onClick={handleGoogle}
-      >
-        <GoogleIcon className="w-5 h-5 mr-2" />
-        Continue with Google
-      </Button>
+      <div className="space-y-3 mb-6">
+        <Button
+          variant="outline"
+          className="w-full h-12 text-sm font-medium"
+          onClick={handleGoogle}
+        >
+          <GoogleIcon className="w-5 h-5 mr-2" />
+          Continue with Google
+        </Button>
+        <Button
+          variant="outline"
+          className="w-full h-12 text-sm font-medium"
+          onClick={handleMicrosoft}
+        >
+          <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M11.4 2H2v9.4h9.4V2z" fill="#F25022"/>
+            <path d="M22 2h-9.4v9.4H22V2z" fill="#7FBA00"/>
+            <path d="M11.4 12.6H2V22h9.4v-9.4z" fill="#00A4EF"/>
+            <path d="M22 12.6h-9.4V22H22v-9.4z" fill="#FFB900"/>
+          </svg>
+          Continue with Microsoft
+        </Button>
+        <Button
+          variant="outline"
+          className="w-full h-12 text-sm font-medium"
+          onClick={handleFacebook}
+        >
+          <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="#1877F2" xmlns="http://www.w3.org/2000/svg">
+            <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.513c-1.491 0-1.956.93-1.956 1.886v2.268h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/>
+          </svg>
+          Continue with Facebook
+        </Button>
+      </div>
 
       <div className="relative mb-6">
         <div className="absolute inset-0 flex items-center">
