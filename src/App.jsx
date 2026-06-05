@@ -43,6 +43,17 @@ const AuthenticatedApp = () => {
     return <UserNotRegisteredError />;
   }
 
+  // Handle auth_required — redirect to login
+  if (authError?.type === 'auth_required') {
+    if (!window.location.pathname.startsWith('/login') &&
+        !window.location.pathname.startsWith('/register') &&
+        !window.location.pathname.startsWith('/forgot-password') &&
+        !window.location.pathname.startsWith('/reset-password')) {
+      window.location.href = '/login';
+    }
+    return null;
+  }
+
   // Separate pages into public and protected
   const publicPageEntries = Object.entries(Pages).filter(([path]) => PUBLIC_PAGES.has(path));
   const protectedPageEntries = Object.entries(Pages).filter(([path]) => !PUBLIC_PAGES.has(path));
