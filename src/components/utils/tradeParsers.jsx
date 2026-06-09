@@ -385,6 +385,24 @@ function mapCSVToTrade(headers, values) {
   return trade;
 }
 
+// Try to detect account number from the first few lines of a CSV/text file
+export function detectAccountNumberFromContent(content) {
+  const firstLines = content.split('\n').slice(0, 15).join('\n');
+  // Common patterns: "Account: 12345", "Login: 12345", "Account Number: 12345", "Account ID: 12345"
+  const patterns = [
+    /account\s*(?:number|no\.?|id|#)?[:\s]+([A-Z0-9\-_]+)/i,
+    /login[:\s]+([A-Z0-9\-_]+)/i,
+    /client\s*(?:id|no\.?)?[:\s]+([A-Z0-9\-_]+)/i,
+  ];
+  for (const pattern of patterns) {
+    const match = firstLines.match(pattern);
+    if (match && match[1] && match[1].length >= 3) {
+      return match[1].trim();
+    }
+  }
+  return null;
+}
+
 // Auto-detect file format
 export function detectFormat(filename, content) {
   const lower = filename.toLowerCase();
@@ -446,7 +464,12 @@ export async function parseTradeFile(file, aiHelper) {
     throw new Error(`Unsupported format: ${detectedFormat}`);
   }
   
-  return parser(text);
+  const result = parser(text);
+  // Try to detect account number from file content for CSV/HTML files
+  if (!result.detected_account_number) {
+    result.detected_account_number = detectAccountNumberFromContent(text);
+  }
+  return result;
 }
 
 // AI-powered PDF parser - Universal for all trading platforms
@@ -456,6 +479,8 @@ async function parsePDFWithAI(file, aiHelper) {
       type: "object",
       properties: {
         platform: { type: "string", description: "Detected broker/platform name" },
+        account_number: { type: "string", description: "Account number or login ID found in the statement, if present" },
+        account_name: { type: "string", description: "Account holder name found in the statement, if present" },
         trades: {
           type: "array",
           items: {
@@ -482,7 +507,8 @@ async function parsePDFWithAI(file, aiHelper) {
 
 INSTRUCTIONS:
 1. Identify the broker/platform (DXTrade, MetaTrader, cTrader, etc.)
-2. Extract EVERY completed trade (trades that have been closed with a final P&L)
+2. Extract the account number/login ID and account holder name from the statement header if present
+3. Extract EVERY completed trade (trades that have been closed with a final P&L)
 3. Match opening and closing transactions to create complete trade records
 4. For each completed trade, extract:
    - symbol: The trading instrument (e.g., EURUSD, NAS100, BTC/USD)
@@ -571,7 +597,9 @@ Return the platform name and the array of trades. If you cannot find any complet
     return { 
       trades: validTrades, 
       errors, 
-      format: `${result.platform || 'PDF'} Statement` 
+      format: `${result.platform || 'PDF'} Statement`,
+      detected_account_number: result.account_number || null,
+      detected_account_name: result.account_name || null
     };
   } catch (error) {
     return { 

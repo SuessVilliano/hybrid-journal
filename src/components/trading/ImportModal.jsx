@@ -3,9 +3,9 @@ import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { X, Upload, FileText, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
+import { X, Upload, FileText, CheckCircle, AlertCircle, AlertTriangle, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { parseTradeFile } from '@/components/utils/tradeParsers';
+import { parseTradeFile, detectAccountNumberFromContent } from '@/components/utils/tradeParsers';
 import ImportResults from './ImportResults';
 
 export default function ImportModal({ onClose }) {
@@ -13,6 +13,7 @@ export default function ImportModal({ onClose }) {
   const [uploading, setUploading] = useState(false);
   const [importResult, setImportResult] = useState(null);
   const [selectedAccount, setSelectedAccount] = useState(null);
+  const [accountVerification, setAccountVerification] = useState(null); // { status, detectedNumber, matchedAccount }
   const queryClient = useQueryClient();
 
   const { data: accounts = [] } = useQuery({
@@ -20,12 +21,54 @@ export default function ImportModal({ onClose }) {
     queryFn: () => base44.entities.Account.list()
   });
 
-  const handleFileSelect = (e) => {
+  const handleFileSelect = async (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
       setFile(selectedFile);
       setImportResult(null);
+      setAccountVerification(null);
+
+      // For non-PDF files, do a quick pre-scan for account number
+      if (!selectedFile.name.toLowerCase().endsWith('.pdf')) {
+        try {
+          const text = await selectedFile.text();
+          const detectedNumber = detectAccountNumberFromContent(text);
+          if (detectedNumber) {
+            const account = accounts.find(a => a.id === selectedAccount);
+            const verif = { detectedNumber, detectedName: null };
+            if (account) {
+              const accountNum = (account.account_number || '').trim().toLowerCase();
+              const detected = detectedNumber.trim().toLowerCase();
+              const isMatch = accountNum && (accountNum === detected || accountNum.includes(detected) || detected.includes(accountNum));
+              verif.status = !accountNum ? 'no_account_number' : isMatch ? 'match' : 'mismatch';
+            } else {
+              verif.status = 'no_account_number';
+            }
+            setAccountVerification(verif);
+          }
+        } catch (_) {}
+      }
     }
+  };
+
+  // When account is selected, re-check verification if we already have a detected number
+  const handleAccountSelect = (accountId) => {
+    setSelectedAccount(accountId);
+    if (accountVerification?.detectedNumber) {
+      const account = accounts.find(a => a.id === accountId);
+      checkAccountMatch(accountVerification.detectedNumber, account);
+    }
+  };
+
+  const checkAccountMatch = (detectedNumber, account) => {
+    if (!detectedNumber || !account) return;
+    const accountNum = (account.account_number || '').trim().toLowerCase();
+    const detected = detectedNumber.trim().toLowerCase();
+    const isMatch = accountNum && (accountNum === detected || accountNum.includes(detected) || detected.includes(accountNum));
+    setAccountVerification(prev => ({
+      ...prev,
+      status: !accountNum ? 'no_account_number' : isMatch ? 'match' : 'mismatch',
+    }));
   };
 
   const handleImport = async () => {
@@ -56,7 +99,31 @@ export default function ImportModal({ onClose }) {
       } : null;
 
       const parseResult = await parseTradeFile(file, aiHelper);
-      const { trades: parsedTrades, errors, format } = parseResult;
+      const { trades: parsedTrades, errors, format, detected_account_number, detected_account_name } = parseResult;
+
+      // Account number verification
+      if (detected_account_number) {
+        const account = accounts.find(a => a.id === selectedAccount);
+        const accountNum = (account?.account_number || '').trim().toLowerCase();
+        const detected = detected_account_number.trim().toLowerCase();
+        const isMatch = accountNum && (accountNum === detected || accountNum.includes(detected) || detected.includes(accountNum));
+        const verificationState = {
+          detectedNumber: detected_account_number,
+          detectedName: detected_account_name,
+          status: !accountNum ? 'no_account_number' : isMatch ? 'match' : 'mismatch'
+        };
+        setAccountVerification(verificationState);
+
+        if (verificationState.status === 'mismatch') {
+          setUploading(false);
+          setImportResult({
+            status: 'error',
+            message: `Account number mismatch! The file contains account "${detected_account_number}" but you selected account "${account?.name}" (${account?.account_number || 'no account number set'}). Please select the correct account or update the account number in your Accounts settings.`,
+            errors: [{ error: 'Account number mismatch — import blocked for data integrity' }]
+          });
+          return;
+        }
+      }
 
       if (parsedTrades.length === 0) {
         setImportResult({
@@ -196,14 +263,16 @@ export default function ImportModal({ onClose }) {
               <label className="block text-sm font-medium text-slate-900 mb-2">
                 Import to Account *
               </label>
-              <Select value={selectedAccount || ''} onValueChange={setSelectedAccount}>
+              <Select value={selectedAccount || ''} onValueChange={handleAccountSelect}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select account..." />
                 </SelectTrigger>
                 <SelectContent>
                   {accounts.map(acc => (
                     <SelectItem key={acc.id} value={acc.id}>
-                      {acc.name} {acc.account_type && `(${acc.account_type})`}
+                      {acc.name}
+                      {acc.account_number && ` — #${acc.account_number}`}
+                      {acc.account_type && ` (${acc.account_type})`}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -212,6 +281,37 @@ export default function ImportModal({ onClose }) {
                 <p className="text-xs text-amber-600 mt-1">
                   ⚠️ No accounts found. Create an account first in the Accounts page.
                 </p>
+              )}
+
+              {/* Account verification banner */}
+              {accountVerification?.detectedNumber && (
+                <div className={`mt-3 p-3 rounded-lg border flex items-start gap-3 text-sm ${
+                  accountVerification.status === 'match'
+                    ? 'bg-green-50 border-green-200 text-green-800'
+                    : accountVerification.status === 'mismatch'
+                    ? 'bg-red-50 border-red-200 text-red-800'
+                    : 'bg-amber-50 border-amber-200 text-amber-800'
+                }`}>
+                  {accountVerification.status === 'match' ? (
+                    <ShieldCheck className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
+                  ) : (
+                    <ShieldAlert className="h-5 w-5 shrink-0 mt-0.5" />
+                  )}
+                  <div>
+                    <p className="font-semibold">
+                      {accountVerification.status === 'match' && 'Account Verified ✓'}
+                      {accountVerification.status === 'mismatch' && 'Account Mismatch — Wrong Account Selected!'}
+                      {accountVerification.status === 'no_account_number' && 'Cannot Verify — No Account Number Set'}
+                    </p>
+                    <p className="mt-0.5">
+                      Detected in file: <strong>#{accountVerification.detectedNumber}</strong>
+                      {accountVerification.detectedName && ` (${accountVerification.detectedName})`}
+                    </p>
+                    {accountVerification.status === 'no_account_number' && (
+                      <p className="mt-1 text-xs">Add the account number to your account in the Accounts page to enable automatic verification.</p>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           </div>
