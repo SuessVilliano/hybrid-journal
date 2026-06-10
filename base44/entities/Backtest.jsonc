@@ -99,6 +99,13 @@
       },
       "description": "Equity curve data points"
     },
+    "data_source": {
+      "type": "string",
+      "enum": [
+        "simulated"
+      ],
+      "description": "Origin of the price data used (simulated = AI-generated, not real market history)"
+    },
     "entry_rules": {
       "type": "string",
       "description": "Entry logic used"

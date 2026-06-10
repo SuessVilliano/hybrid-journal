@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { X, TrendingUp, TrendingDown, Target, Activity } from 'lucide-react';
+import { X, TrendingUp, TrendingDown, Target, Activity, AlertTriangle } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function BacktestResults({ backtest, onClose }) {
@@ -12,6 +12,19 @@ export default function BacktestResults({ backtest, onClose }) {
 
   return (
     <div className="space-y-6">
+      <Card className="border-2 border-amber-400 bg-amber-50">
+        <CardContent className="p-4 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <h3 className="font-bold text-amber-900">Simulated Data — Not Real Market History</h3>
+            <p className="text-sm text-amber-800">
+              These results are based on AI-simulated price data, not real market history.
+              They should not be used to validate strategies for real-money trading.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card className={`border-2 ${meetsTargets ? 'border-green-500 bg-green-50' : 'border-blue-200'}`}>
         <CardHeader className="flex flex-row items-center justify-between">
           <div className="flex-1">

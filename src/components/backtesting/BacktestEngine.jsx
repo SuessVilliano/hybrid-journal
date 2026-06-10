@@ -1,10 +1,10 @@
 // Advanced Backtesting Engine
 import { base44 } from '@/api/base44Client';
 
-// Fetch historical price data
+// Generate simulated price data (AI-generated synthetic OHLCV, NOT real market history)
 export async function fetchHistoricalData(symbol, startDate, endDate, timeframe = '1h') {
   try {
-    const prompt = `Fetch historical OHLCV data for ${symbol} from ${startDate} to ${endDate} with ${timeframe} timeframe. 
+    const prompt = `Fetch historical OHLCV data for ${symbol} from ${startDate} to ${endDate} with ${timeframe} timeframe.
     Return a JSON array with objects containing: timestamp, open, high, low, close, volume.
     Generate realistic price movements with proper trends and volatility.`;
     
@@ -183,36 +183,245 @@ function calculateATR(data, period = 14) {
   return [null, ...calculateSMA(tr, period)];
 }
 
-// Evaluate entry condition
-function evaluateCondition(condition, candle, indicators, position) {
-  try {
-    const context = {
-      open: candle.open,
-      high: candle.high,
-      low: candle.low,
-      close: candle.close,
-      volume: candle.volume,
-      ...indicators,
-      position
-    };
-    
-    // Simple condition parser
-    return new Function(...Object.keys(context), `return ${condition}`)(...Object.values(context));
-  } catch (error) {
-    console.error('Error evaluating condition:', error);
-    return false;
+// --- Safe condition expression evaluator ---
+// Supports: numbers, identifiers (looked up in the context), parentheses,
+// unary - and !, * /, + -, comparisons (> < >= <= == !=) and && ||.
+// Anything else (function calls, assignment, brackets, semicolons, quotes)
+// is rejected as a syntax error. Conditions are NEVER executed as JavaScript.
+
+function tokenizeCondition(input) {
+  const tokens = [];
+  let i = 0;
+
+  while (i < input.length) {
+    const ch = input[i];
+
+    if (/\s/.test(ch)) {
+      i++;
+      continue;
+    }
+
+    if (/[0-9.]/.test(ch)) {
+      let num = '';
+      while (i < input.length && /[0-9.]/.test(input[i])) {
+        num += input[i];
+        i++;
+      }
+      if (!/^(\d+(\.\d+)?|\.\d+)$/.test(num)) {
+        throw new Error(`invalid number "${num}"`);
+      }
+      tokens.push({ type: 'number', value: parseFloat(num) });
+      continue;
+    }
+
+    if (/[A-Za-z_]/.test(ch)) {
+      let name = '';
+      while (i < input.length && /[A-Za-z0-9_]/.test(input[i])) {
+        name += input[i];
+        i++;
+      }
+      tokens.push({ type: 'identifier', value: name });
+      continue;
+    }
+
+    const three = input.slice(i, i + 3);
+    if (three === '===' || three === '!==') {
+      tokens.push({ type: 'op', value: three.slice(0, 2) });
+      i += 3;
+      continue;
+    }
+
+    const two = input.slice(i, i + 2);
+    if (['==', '!=', '>=', '<=', '&&', '||'].includes(two)) {
+      tokens.push({ type: 'op', value: two });
+      i += 2;
+      continue;
+    }
+
+    if ('><+-*/!()'.includes(ch)) {
+      tokens.push({ type: 'op', value: ch });
+      i++;
+      continue;
+    }
+
+    throw new Error(`unexpected character "${ch}"`);
+  }
+
+  return tokens;
+}
+
+function parseConditionTokens(tokens) {
+  let pos = 0;
+
+  const peek = () => tokens[pos];
+  const matchOp = (...ops) => {
+    const token = tokens[pos];
+    if (token && token.type === 'op' && ops.includes(token.value)) {
+      pos++;
+      return token.value;
+    }
+    return null;
+  };
+
+  function parsePrimary() {
+    const token = peek();
+    if (!token) {
+      throw new Error('unexpected end of expression');
+    }
+    if (token.type === 'number') {
+      pos++;
+      return { type: 'number', value: token.value };
+    }
+    if (token.type === 'identifier') {
+      pos++;
+      return { type: 'identifier', name: token.value };
+    }
+    if (matchOp('(')) {
+      const expr = parseOr();
+      if (!matchOp(')')) {
+        throw new Error('missing closing parenthesis');
+      }
+      return expr;
+    }
+    throw new Error(`unexpected token "${token.value}"`);
+  }
+
+  function parseUnary() {
+    const op = matchOp('-', '!');
+    if (op) {
+      return { type: 'unary', op, arg: parseUnary() };
+    }
+    return parsePrimary();
+  }
+
+  function parseBinary(parseNext, ...ops) {
+    let left = parseNext();
+    let op;
+    while ((op = matchOp(...ops))) {
+      left = { type: 'binary', op, left, right: parseNext() };
+    }
+    return left;
+  }
+
+  const parseMultiplicative = () => parseBinary(parseUnary, '*', '/');
+  const parseAdditive = () => parseBinary(parseMultiplicative, '+', '-');
+  const parseComparison = () => parseBinary(parseAdditive, '>', '<', '>=', '<=');
+  const parseEquality = () => parseBinary(parseComparison, '==', '!=');
+  const parseAnd = () => parseBinary(parseEquality, '&&');
+  const parseOr = () => parseBinary(parseAnd, '||');
+
+  const ast = parseOr();
+  if (pos < tokens.length) {
+    throw new Error(`unexpected token "${tokens[pos].value}"`);
+  }
+  return ast;
+}
+
+function collectIdentifiers(node, identifiers) {
+  if (node.type === 'identifier') {
+    identifiers.add(node.name);
+  } else if (node.type === 'unary') {
+    collectIdentifiers(node.arg, identifiers);
+  } else if (node.type === 'binary') {
+    collectIdentifiers(node.left, identifiers);
+    collectIdentifiers(node.right, identifiers);
   }
 }
 
-// Run backtest simulation
-export async function runBacktest(config) {
+function evaluateAst(node, context) {
+  switch (node.type) {
+    case 'number':
+      return node.value;
+    case 'identifier':
+      return context[node.name];
+    case 'unary':
+      return node.op === '-' ? -evaluateAst(node.arg, context) : !evaluateAst(node.arg, context);
+    case 'binary': {
+      const left = evaluateAst(node.left, context);
+      switch (node.op) {
+        case '&&': return Boolean(left) && Boolean(evaluateAst(node.right, context));
+        case '||': return Boolean(left) || Boolean(evaluateAst(node.right, context));
+      }
+      const right = evaluateAst(node.right, context);
+      switch (node.op) {
+        case '*': return left * right;
+        case '/': return left / right;
+        case '+': return left + right;
+        case '-': return left - right;
+        case '>': return left > right;
+        case '<': return left < right;
+        case '>=': return left >= right;
+        case '<=': return left <= right;
+        case '==': return left === right;
+        case '!=': return left !== right;
+      }
+    }
+  }
+  throw new Error('invalid expression node');
+}
+
+const conditionCache = new Map();
+const unknownIdentifierWarnings = new Set();
+
+function parseCondition(condition) {
+  if (conditionCache.has(condition)) {
+    return conditionCache.get(condition);
+  }
+  const ast = parseConditionTokens(tokenizeCondition(condition));
+  const identifiers = new Set();
+  collectIdentifiers(ast, identifiers);
+  const parsed = { ast, identifiers };
+  conditionCache.set(condition, parsed);
+  return parsed;
+}
+
+// Evaluate entry condition
+function evaluateCondition(condition, candle, indicators, position) {
+  if (!condition || !String(condition).trim()) return false;
+
+  const context = {
+    open: candle.open,
+    high: candle.high,
+    low: candle.low,
+    close: candle.close,
+    volume: candle.volume,
+    ...indicators,
+    position
+  };
+
+  let parsed;
+  try {
+    parsed = parseCondition(condition);
+  } catch (error) {
+    throw new Error(`Invalid strategy condition "${condition}": ${error.message}`);
+  }
+
+  for (const name of parsed.identifiers) {
+    if (!(name in context)) {
+      if (!unknownIdentifierWarnings.has(name)) {
+        unknownIdentifierWarnings.add(name);
+        console.warn(`Unknown identifier "${name}" in condition "${condition}" - condition evaluates to false`);
+      }
+      return false;
+    }
+    // Indicator not yet available (e.g. warmup period) - never coerce null to 0
+    if (context[name] === null || context[name] === undefined) {
+      return false;
+    }
+  }
+
+  return Boolean(evaluateAst(parsed.ast, context));
+}
+
+// Run backtest simulation (on simulated data - pass preloadedData to reuse a series)
+export async function runBacktest(config, preloadedData = null) {
   const { symbol, startDate, endDate, timeframe, initialCapital, strategy, indicators, riskPercent } = config;
-  
-  // Fetch historical data
-  const rawData = await fetchHistoricalData(symbol, startDate, endDate, timeframe);
-  
+
+  // Generate simulated data (or reuse a previously generated series)
+  const rawData = preloadedData || await fetchHistoricalData(symbol, startDate, endDate, timeframe);
+
   if (rawData.length === 0) {
-    throw new Error('No historical data available');
+    throw new Error('No simulated price data available');
   }
   
   // Prepare data structure
@@ -356,6 +565,7 @@ export async function runBacktest(config) {
   return {
     trades,
     equityCurve,
+    data_source: 'simulated',
     stats: {
       initialCapital,
       finalEquity: equity,
@@ -375,31 +585,37 @@ export async function runBacktest(config) {
 }
 
 // Parameter optimization
+// Generates the simulated data series ONCE and runs every parameter
+// combination against the SAME series so the rankings are comparable.
+// Returns { results, data } so callers can reuse the series.
 export async function optimizeParameters(baseConfig, paramRanges, metric = 'totalReturn') {
   const results = [];
-  
+
+  // Generate the price series once for all combinations
+  const data = await fetchHistoricalData(baseConfig.symbol, baseConfig.startDate, baseConfig.endDate, baseConfig.timeframe);
+
+  if (data.length === 0) {
+    throw new Error('No simulated price data available');
+  }
+
   // Generate parameter combinations
   const combinations = generateCombinations(paramRanges);
-  
+
   for (const params of combinations) {
     const config = { ...baseConfig, ...params };
-    
-    try {
-      const result = await runBacktest(config);
-      results.push({
-        params,
-        stats: result.stats,
-        score: result.stats[metric]
-      });
-    } catch (error) {
-      console.error('Optimization error:', error);
-    }
+
+    const result = await runBacktest(config, data);
+    results.push({
+      params,
+      stats: result.stats,
+      score: result.stats[metric]
+    });
   }
-  
+
   // Sort by score
   results.sort((a, b) => b.score - a.score);
-  
-  return results;
+
+  return { results, data };
 }
 
 function generateCombinations(ranges) {

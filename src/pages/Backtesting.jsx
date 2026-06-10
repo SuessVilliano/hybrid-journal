@@ -47,13 +47,13 @@ export default function Backtesting() {
     try {
       if (optimizationParams) {
         setOptimizing(true);
-        const results = await optimizeParameters(config, optimizationParams, 'totalReturn');
+        const { results, data } = await optimizeParameters(config, optimizationParams, 'totalReturn');
         setOptimizationResults(results);
         setOptimizing(false);
-        
+
         const bestParams = results[0].params;
         const finalConfig = { ...config, ...bestParams };
-        await executeBacktest(finalConfig);
+        await executeBacktest(finalConfig, data);
       } else {
         await executeBacktest(config);
       }
@@ -65,11 +65,11 @@ export default function Backtesting() {
     }
   };
 
-  const executeBacktest = async (config) => {
+  const executeBacktest = async (config, preloadedData = null) => {
     setRunning(true);
-    
-    const result = await runBacktest(config);
-    
+
+    const result = await runBacktest(config, preloadedData);
+
     const backtestData = {
       name: config.name || `${config.symbol} Backtest`,
       strategy_name: selectedStrategy?.name || config.name,
@@ -92,6 +92,7 @@ export default function Backtesting() {
       largest_win: result.stats.largestWin,
       largest_loss: result.stats.largestLoss,
       equity_curve: result.equityCurve,
+      data_source: result.data_source,
       entry_rules: config.strategy.longEntry,
       exit_rules: config.strategy.exitCondition || 'Stop Loss / Take Profit',
       notes: `Indicators: ${config.indicators.map(i => `${i.type}(${i.period})`).join(', ')}`
@@ -150,7 +151,7 @@ export default function Backtesting() {
                 <h3 className="font-bold text-slate-900 mb-2">Advanced Backtesting Features</h3>
                 <ul className="text-sm text-slate-700 space-y-1">
                   <li>✓ Test saved strategies or create custom rules</li>
-                  <li>✓ Real-time historical data with AI-powered market simulation</li>
+                  <li>✓ AI-simulated price data (synthetic — not real market history)</li>
                   <li>✓ Technical indicators (SMA, EMA, RSI, MACD, Bollinger, ATR)</li>
                   <li>✓ AI parameter optimization to maximize performance</li>
                   <li>✓ Comprehensive metrics, equity curves, and AI analysis</li>
@@ -166,7 +167,7 @@ export default function Backtesting() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
               <div>
                 <p className="font-medium text-blue-900">Running backtest simulation...</p>
-                <p className="text-sm text-blue-700">Fetching historical data and executing strategy</p>
+                <p className="text-sm text-blue-700">Generating simulated price data and executing strategy</p>
               </div>
             </CardContent>
           </Card>
