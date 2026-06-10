@@ -16,12 +16,18 @@ export default function ImportVisualization({ importRecord, onClose }) {
 
   const loadTrades = async () => {
     try {
-      const allTrades = await base44.entities.Trade.list('-entry_date', 1000);
-      const importTrades = allTrades.filter(t => 
-        t.import_source === importRecord.filename ||
-        new Date(t.created_date).toDateString() === new Date(importRecord.created_date).toDateString()
-      );
-      setTrades(importTrades.slice(0, importRecord.trades_imported));
+      // Trades stamped with this import's id (server-side filter)
+      let importTrades = await base44.entities.Trade.filter({ import_id: importRecord.id }, '-entry_date', 1000);
+
+      // Legacy fallback for trades created before import_id stamping
+      if (importTrades.length === 0) {
+        const allTrades = await base44.entities.Trade.list('-entry_date', 1000);
+        importTrades = allTrades.filter(t =>
+          t.import_source === importRecord.filename ||
+          t.import_source?.includes(importRecord.id)
+        );
+      }
+      setTrades(importTrades);
     } catch (error) {
       console.error('Error loading trades:', error);
     } finally {

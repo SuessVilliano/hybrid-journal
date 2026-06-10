@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 export default function ImportResults({ result }) {
   if (!result) return null;
 
-  const { status, message, format, totalParsed, imported, failed, errors, progress } = result;
+  const { status, message, format, totalParsed, imported, failed, skipped, errors, progress } = result;
 
   if (status === 'processing' || status === 'parsed') {
     return (
@@ -60,6 +60,11 @@ export default function ImportResults({ result }) {
                   {imported} imported
                 </Badge>
                 {format && <Badge variant="outline">{format}</Badge>}
+                {skipped > 0 && (
+                  <Badge className="bg-amber-500">
+                    {skipped} duplicates skipped
+                  </Badge>
+                )}
                 {failed > 0 && (
                   <Badge className="bg-red-600">
                     {failed} failed

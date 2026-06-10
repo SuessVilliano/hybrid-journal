@@ -134,6 +134,27 @@ export default function ImportModal({ onClose }) {
         return;
       }
 
+      // Fetch existing trades for this account so re-imports don't create duplicates
+      setImportResult({ status: 'processing', message: 'Checking for duplicate trades...' });
+      let existingTrades = [];
+      try {
+        existingTrades = await base44.entities.Trade.filter({ account_id: selectedAccount }, '-entry_date', 10000);
+      } catch (dedupeError) {
+        console.error('Failed to load existing trades for dedupe:', dedupeError);
+      }
+
+      // Dedupe key: broker trade id if available, else symbol|entry_date|side|quantity|pnl
+      const tradeKey = (trade) => {
+        if (trade.broker_trade_id) return `id:${trade.broker_trade_id}`;
+        if (trade.source_trade_id) return `id:${trade.source_trade_id}`;
+        let entryDate = trade.entry_date;
+        try {
+          entryDate = new Date(trade.entry_date).toISOString();
+        } catch (_) {}
+        return [trade.symbol, entryDate, trade.side, trade.quantity, trade.pnl].join('|');
+      };
+      const existingKeys = new Set(existingTrades.map(tradeKey));
+
       setImportResult({ status: 'processing', message: 'Creating import record...' });
       const importRecord = await base44.entities.Import.create({
         filename: file.name,
@@ -152,19 +173,27 @@ export default function ImportModal({ onClose }) {
 
       const imported = [];
       const failed = [];
+      const skipped = [];
 
       for (let i = 0; i < parsedTrades.length; i++) {
-        try {
-          const created = await base44.entities.Trade.create({
-            ...parsedTrades[i],
-            account_id: selectedAccount
-          });
-          imported.push(created);
-        } catch (error) {
-          console.error(`Trade ${i} failed:`, error);
-          failed.push({ trade: parsedTrades[i], error: error.message });
+        const key = tradeKey(parsedTrades[i]);
+        if (existingKeys.has(key)) {
+          skipped.push(parsedTrades[i]);
+        } else {
+          try {
+            const created = await base44.entities.Trade.create({
+              ...parsedTrades[i],
+              account_id: selectedAccount,
+              import_id: importRecord.id
+            });
+            existingKeys.add(key);
+            imported.push(created);
+          } catch (error) {
+            console.error(`Trade ${i} failed:`, error);
+            failed.push({ trade: parsedTrades[i], error: error.message });
+          }
         }
-        
+
         if ((i + 1) % 5 === 0 || i === parsedTrades.length - 1) {
           setImportResult({
             status: 'importing',
@@ -176,10 +205,14 @@ export default function ImportModal({ onClose }) {
         }
       }
 
+      const importNotes = [];
+      if (failed.length > 0) importNotes.push(`${failed.length} trades failed`);
+      if (skipped.length > 0) importNotes.push(`${skipped.length} duplicates skipped`);
+
       await base44.entities.Import.update(importRecord.id, {
         status: 'Completed',
         trades_imported: imported.length,
-        error_message: failed.length > 0 ? `${failed.length} trades failed` : null
+        error_message: importNotes.length > 0 ? importNotes.join(', ') : null
       });
 
       setImportResult({
@@ -187,6 +220,7 @@ export default function ImportModal({ onClose }) {
         format,
         imported: imported.length,
         failed: failed.length,
+        skipped: skipped.length,
         errors: [...errors, ...failed],
         trades: imported
       });

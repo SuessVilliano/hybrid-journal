@@ -27,6 +27,12 @@ interface HybridFundingMetrics {
     totalProfitLoss: number;
 }
 
+// Parse a numeric value, stripping currency formatting ($, commas, spaces)
+function parseNumeric(value: unknown): number {
+    if (typeof value === 'number') return value;
+    return parseFloat(String(value ?? '').replace(/[$,\s]/g, ''));
+}
+
 // Parse the Hybrid Funding dashboard HTML to extract trades
 function parseHybridFundingDashboard(html: string): {
     trades: HybridFundingTrade[];
@@ -82,14 +88,14 @@ function parseHybridFundingDashboard(html: string): {
                             dealId: t.dealId || t.id || `${t.symbol}_${t.openDate}`,
                             symbol: t.symbol,
                             openDate: t.openDate || t.openTime,
-                            openPrice: parseFloat(t.openPrice),
+                            openPrice: parseNumeric(t.openPrice),
                             closeDate: t.closeDate || t.closeTime,
-                            closePrice: parseFloat(t.closePrice),
+                            closePrice: parseNumeric(t.closePrice),
                             type: t.type || t.side,
-                            stopLoss: t.stopLoss ? parseFloat(t.stopLoss) : null,
-                            takeProfit: t.takeProfit ? parseFloat(t.takeProfit) : null,
-                            lots: parseFloat(t.lots || t.volume),
-                            profit: parseFloat(t.profit || t.pnl),
+                            stopLoss: t.stopLoss ? parseNumeric(t.stopLoss) : null,
+                            takeProfit: t.takeProfit ? parseNumeric(t.takeProfit) : null,
+                            lots: parseNumeric(t.lots || t.volume),
+                            profit: parseNumeric(t.profit || t.pnl),
                             duration: t.duration || ''
                         });
                     }

@@ -1,5 +1,107 @@
 // Trade parsers for different platforms and file formats
 
+// Parse a monetary/numeric value from broker statements.
+// Strips currency symbols ($, €, £), commas and spaces; treats "(x)" as negative.
+// Returns undefined (never NaN) when the value is not a finite number.
+export function parseMoney(value) {
+  if (value === undefined || value === null) return undefined;
+  let str = String(value).trim();
+  if (!str) return undefined;
+  let negative = false;
+  if (/^\(.*\)$/.test(str)) {
+    negative = true;
+    str = str.slice(1, -1);
+  }
+  str = str.replace(/[$€£,\s]/g, '');
+  if (!str) return undefined;
+  const num = parseFloat(str);
+  if (!Number.isFinite(num)) return undefined;
+  return negative ? -Math.abs(num) : num;
+}
+
+// Parse statement dates, including the MT4/5 "YYYY.MM.DD HH:MM[:SS]" format
+// which the native Date constructor cannot handle. Returns an ISO string,
+// or undefined (never throws) when the date is invalid.
+export function parseStatementDate(value) {
+  if (value === undefined || value === null) return undefined;
+  const str = String(value).trim();
+  if (!str) return undefined;
+  const mtMatch = str.match(/^(\d{4})\.(\d{1,2})\.(\d{1,2})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+  let date;
+  if (mtMatch) {
+    const [, year, month, day, hours, minutes, seconds] = mtMatch;
+    date = new Date(
+      parseInt(year, 10),
+      parseInt(month, 10) - 1,
+      parseInt(day, 10),
+      hours ? parseInt(hours, 10) : 0,
+      minutes ? parseInt(minutes, 10) : 0,
+      seconds ? parseInt(seconds, 10) : 0
+    );
+  } else {
+    date = new Date(str);
+  }
+  return isNaN(date.getTime()) ? undefined : date.toISOString();
+}
+
+// Locate MT4/5 statement columns by matching header row text (case-insensitive).
+// Returns null when the row doesn't look like an MT4 trade header.
+function mapMT4HeaderColumns(headerTexts) {
+  const texts = headerTexts.map(h => String(h).toLowerCase().trim());
+  const profitIdx = texts.indexOf('profit');
+  if (profitIdx === -1) return null;
+  const findCol = (...names) => {
+    const idx = texts.findIndex(h => names.includes(h));
+    return idx >= 0 ? idx : undefined;
+  };
+  const firstPrice = texts.indexOf('price');
+  const lastPrice = texts.lastIndexOf('price');
+  return {
+    openTime: findCol('open time', 'opentime'),
+    type: findCol('type'),
+    size: findCol('size', 'volume', 'lots'),
+    symbol: findCol('item', 'symbol'),
+    openPrice: findCol('open price') ?? (firstPrice >= 0 ? firstPrice : undefined),
+    closeTime: findCol('close time', 'closetime'),
+    closePrice: findCol('close price') ?? (lastPrice > firstPrice ? lastPrice : undefined),
+    commission: findCol('commission'),
+    swap: findCol('swap'),
+    profit: profitIdx
+  };
+}
+
+// Default MT4 column indices when no header row is found. The 14-column
+// statement layout includes a Taxes column: Ticket(0), Open Time(1), Type(2),
+// Size(3), Item(4), Price(5), S/L(6), T/P(7), Close Time(8), Price(9),
+// Commission(10), Taxes(11), Swap(12), Profit(13). The 13-column variant
+// omits Taxes, shifting Swap to 11 and Profit to 12.
+function defaultMT4Columns(columnCount) {
+  const hasTaxes = columnCount >= 14;
+  return {
+    openTime: 1,
+    type: 2,
+    size: 3,
+    symbol: 4,
+    openPrice: 5,
+    closeTime: 8,
+    closePrice: 9,
+    commission: 10,
+    swap: hasTaxes ? 12 : 11,
+    profit: hasTaxes ? 13 : 12
+  };
+}
+
+// Merge header-matched columns over the index fallbacks
+function resolveMT4Columns(headerCols, columnCount) {
+  const cols = defaultMT4Columns(columnCount);
+  if (headerCols) {
+    Object.keys(headerCols).forEach(key => {
+      if (headerCols[key] !== undefined) cols[key] = headerCols[key];
+    });
+  }
+  return cols;
+}
+
 export const parsers = {
   // Generic CSV parser with flexible column mapping
   csv: (text) => {
@@ -14,8 +116,12 @@ export const parsers = {
       try {
         const values = parseCSVLine(lines[i]);
         const trade = mapCSVToTrade(headers, values);
-        if (trade.symbol && trade.pnl !== undefined) {
-          trades.push(trade);
+        if (trade.symbol) {
+          if (trade.pnl === undefined) {
+            errors.push({ line: i + 1, error: 'Invalid or missing P&L value — row skipped' });
+          } else {
+            trades.push(trade);
+          }
         }
       } catch (error) {
         errors.push({ line: i + 1, error: error.message });
@@ -35,37 +141,61 @@ export const parsers = {
       if (!tableMatch) throw new Error('No trade table found in MT4/5 HTML');
 
       const rowMatches = tableMatch[0].match(/<tr[^>]*>(.*?)<\/tr>/gis);
-      
+      const cleanCell = (cell) => cell.replace(/<[^>]*>/g, '').trim();
+
+      // Locate columns by matching header row text, with index fallbacks
+      let headerCols = null;
+      for (const row of rowMatches) {
+        const headerCells = row.match(/<t[dh][^>]*>(.*?)<\/t[dh]>/gis);
+        if (!headerCells) continue;
+        const mapped = mapMT4HeaderColumns(headerCells.map(cleanCell));
+        if (mapped) {
+          headerCols = mapped;
+          break;
+        }
+      }
+
       for (let i = 1; i < rowMatches.length; i++) {
         try {
           const cells = rowMatches[i].match(/<td[^>]*>(.*?)<\/td>/gis);
           if (!cells || cells.length < 8) continue;
 
-          const cleanCell = (cell) => cell.replace(/<[^>]*>/g, '').trim();
-          
-          const type = cleanCell(cells[2]);
-          const symbol = cleanCell(cells[4]);
-          const openPrice = parseFloat(cleanCell(cells[5]));
-          const closePrice = cells[9] ? parseFloat(cleanCell(cells[9])) : null;
-          const profit = cells[12] ? parseFloat(cleanCell(cells[12])) : 0;
+          const cols = resolveMT4Columns(headerCols, cells.length);
+          const cellValue = (idx) => (idx !== undefined && cells[idx] !== undefined) ? cleanCell(cells[idx]) : '';
 
-          if (symbol && !isNaN(profit)) {
-            trades.push({
-              symbol: symbol,
-              side: type.toLowerCase().includes('buy') ? 'Long' : 'Short',
-              entry_date: new Date(cleanCell(cells[1])).toISOString(),
-              exit_date: cells[8] ? new Date(cleanCell(cells[8])).toISOString() : null,
-              entry_price: openPrice,
-              exit_price: closePrice,
-              quantity: parseFloat(cleanCell(cells[3])),
-              commission: cells[10] ? parseFloat(cleanCell(cells[10])) : 0,
-              swap: cells[11] ? parseFloat(cleanCell(cells[11])) : 0,
-              pnl: profit,
-              platform: 'MT4/MT5',
-              instrument_type: 'Forex',
-              import_source: 'MT4/5 HTML Statement'
-            });
+          const type = cellValue(cols.type);
+          if (!type.toLowerCase().includes('buy') && !type.toLowerCase().includes('sell')) continue;
+
+          const symbol = cellValue(cols.symbol);
+          if (!symbol) continue;
+
+          const profit = parseMoney(cellValue(cols.profit));
+          if (profit === undefined) {
+            errors.push({ line: i, error: `Invalid or missing profit value: "${cellValue(cols.profit)}" — row skipped` });
+            continue;
           }
+
+          const entryDate = parseStatementDate(cellValue(cols.openTime));
+          if (!entryDate) {
+            errors.push({ line: i, error: `Unparseable open time: "${cellValue(cols.openTime)}" — row skipped` });
+            continue;
+          }
+
+          trades.push({
+            symbol: symbol,
+            side: type.toLowerCase().includes('buy') ? 'Long' : 'Short',
+            entry_date: entryDate,
+            exit_date: parseStatementDate(cellValue(cols.closeTime)) || null,
+            entry_price: parseMoney(cellValue(cols.openPrice)),
+            exit_price: parseMoney(cellValue(cols.closePrice)) ?? null,
+            quantity: parseMoney(cellValue(cols.size)),
+            commission: parseMoney(cellValue(cols.commission)) ?? 0,
+            swap: parseMoney(cellValue(cols.swap)) ?? 0,
+            pnl: profit,
+            platform: 'MT4/MT5',
+            instrument_type: 'Forex',
+            import_source: 'MT4/5 HTML Statement'
+          });
         } catch (error) {
           errors.push({ line: i, error: error.message });
         }
@@ -83,33 +213,47 @@ export const parsers = {
     const trades = [];
     const errors = [];
 
+    // Locate columns by matching header row text, with index fallbacks
+    const headerCols = lines.length > 0 ? mapMT4HeaderColumns(parseCSVLine(lines[0])) : null;
+
     for (let i = 1; i < lines.length; i++) {
       try {
         const values = parseCSVLine(lines[i]);
         if (values.length < 10) continue;
 
-        const type = values[2];
-        if (!type || (!type.toLowerCase().includes('buy') && !type.toLowerCase().includes('sell'))) continue;
+        const cols = resolveMT4Columns(headerCols, values.length);
 
-        const trade = {
-          symbol: values[4],
+        const type = values[cols.type];
+        if (!type || (!type.toLowerCase().includes('buy') && !type.toLowerCase().includes('sell'))) continue;
+        if (!values[cols.symbol]) continue;
+
+        const pnl = parseMoney(values[cols.profit]);
+        if (pnl === undefined) {
+          errors.push({ line: i + 1, error: `Invalid or missing profit value: "${values[cols.profit]}" — row skipped` });
+          continue;
+        }
+
+        const entryDate = parseStatementDate(values[cols.openTime]);
+        if (!entryDate) {
+          errors.push({ line: i + 1, error: `Unparseable open time: "${values[cols.openTime]}" — row skipped` });
+          continue;
+        }
+
+        trades.push({
+          symbol: values[cols.symbol],
           side: type.toLowerCase().includes('buy') ? 'Long' : 'Short',
-          entry_date: new Date(values[1]).toISOString(),
-          exit_date: values[8] ? new Date(values[8]).toISOString() : null,
-          entry_price: parseFloat(values[5]),
-          exit_price: values[9] ? parseFloat(values[9]) : null,
-          quantity: parseFloat(values[3]),
-          commission: values[10] ? parseFloat(values[10]) : 0,
-          swap: values[12] ? parseFloat(values[12]) : 0,
-          pnl: values[13] ? parseFloat(values[13]) : 0,
+          entry_date: entryDate,
+          exit_date: parseStatementDate(values[cols.closeTime]) || null,
+          entry_price: parseMoney(values[cols.openPrice]),
+          exit_price: parseMoney(values[cols.closePrice]) ?? null,
+          quantity: parseMoney(values[cols.size]),
+          commission: parseMoney(values[cols.commission]) ?? 0,
+          swap: parseMoney(values[cols.swap]) ?? 0,
+          pnl: pnl,
           platform: 'MT4/MT5',
           instrument_type: 'Forex',
           import_source: 'MT4/5 CSV'
-        };
-
-        if (trade.symbol && !isNaN(trade.pnl)) {
-          trades.push(trade);
-        }
+        });
       } catch (error) {
         errors.push({ line: i + 1, error: error.message });
       }
@@ -139,22 +283,32 @@ export const parsers = {
         const entryTimeIdx = headers.findIndex(h => h.includes('entry') && h.includes('time'));
         const closeTimeIdx = headers.findIndex(h => h.includes('close') && h.includes('time'));
 
+        const entryDate = values[entryTimeIdx] ? parseStatementDate(values[entryTimeIdx]) : new Date().toISOString();
+        if (values[entryTimeIdx] && !entryDate) {
+          errors.push({ line: i + 1, error: `Unparseable entry time: "${values[entryTimeIdx]}" — row skipped` });
+          continue;
+        }
+
         const trade = {
           symbol: values[symbolIdx],
           side: values[sideIdx]?.toLowerCase().includes('buy') ? 'Long' : 'Short',
-          entry_date: values[entryTimeIdx] ? new Date(values[entryTimeIdx]).toISOString() : new Date().toISOString(),
-          exit_date: values[closeTimeIdx] ? new Date(values[closeTimeIdx]).toISOString() : null,
-          entry_price: parseFloat(values[entryPriceIdx]),
-          exit_price: parseFloat(values[closePriceIdx]),
-          quantity: parseFloat(values[volumeIdx]),
-          pnl: parseFloat(values[profitIdx]),
+          entry_date: entryDate,
+          exit_date: values[closeTimeIdx] ? (parseStatementDate(values[closeTimeIdx]) || null) : null,
+          entry_price: parseMoney(values[entryPriceIdx]),
+          exit_price: parseMoney(values[closePriceIdx]),
+          quantity: parseMoney(values[volumeIdx]),
+          pnl: parseMoney(values[profitIdx]),
           platform: 'cTrader',
           instrument_type: 'Forex',
           import_source: 'cTrader CSV'
         };
 
-        if (trade.symbol && !isNaN(trade.pnl)) {
-          trades.push(trade);
+        if (trade.symbol) {
+          if (trade.pnl === undefined) {
+            errors.push({ line: i + 1, error: `Invalid or missing profit value: "${values[profitIdx]}" — row skipped` });
+          } else {
+            trades.push(trade);
+          }
         }
       } catch (error) {
         errors.push({ line: i + 1, error: error.message });
@@ -177,10 +331,14 @@ export const parsers = {
         const values = parseCSVLine(lines[i]);
         const trade = mapCSVToTrade(headers, values);
         
-        if (trade.symbol && trade.pnl !== undefined) {
-          trade.platform = 'DXTrade';
-          trade.import_source = 'DXTrade Export';
-          trades.push(trade);
+        if (trade.symbol) {
+          if (trade.pnl === undefined) {
+            errors.push({ line: i + 1, error: 'Invalid or missing P&L value — row skipped' });
+          } else {
+            trade.platform = 'DXTrade';
+            trade.import_source = 'DXTrade Export';
+            trades.push(trade);
+          }
         }
       } catch (error) {
         errors.push({ line: i + 1, error: error.message });
@@ -203,10 +361,14 @@ export const parsers = {
         const values = parseCSVLine(lines[i]);
         const trade = mapCSVToTrade(headers, values);
         
-        if (trade.symbol && trade.pnl !== undefined) {
-          trade.platform = 'MatchTrader';
-          trade.import_source = 'MatchTrader Export';
-          trades.push(trade);
+        if (trade.symbol) {
+          if (trade.pnl === undefined) {
+            errors.push({ line: i + 1, error: 'Invalid or missing P&L value — row skipped' });
+          } else {
+            trade.platform = 'MatchTrader';
+            trade.import_source = 'MatchTrader Export';
+            trades.push(trade);
+          }
         }
       } catch (error) {
         errors.push({ line: i + 1, error: error.message });
@@ -229,11 +391,15 @@ export const parsers = {
         const values = parseCSVLine(lines[i]);
         const trade = mapCSVToTrade(headers, values);
         
-        if (trade.symbol && trade.pnl !== undefined) {
-          trade.platform = 'Rithmic';
-          trade.instrument_type = 'Futures';
-          trade.import_source = 'Rithmic Report';
-          trades.push(trade);
+        if (trade.symbol) {
+          if (trade.pnl === undefined) {
+            errors.push({ line: i + 1, error: 'Invalid or missing P&L value — row skipped' });
+          } else {
+            trade.platform = 'Rithmic';
+            trade.instrument_type = 'Futures';
+            trade.import_source = 'Rithmic Report';
+            trades.push(trade);
+          }
         }
       } catch (error) {
         errors.push({ line: i + 1, error: error.message });
@@ -256,10 +422,14 @@ export const parsers = {
         const values = parseCSVLine(lines[i]);
         const trade = mapCSVToTrade(headers, values);
         
-        if (trade.symbol && trade.pnl !== undefined) {
-          trade.platform = 'TradingView';
-          trade.import_source = 'TradingView Paper Trading';
-          trades.push(trade);
+        if (trade.symbol) {
+          if (trade.pnl === undefined) {
+            errors.push({ line: i + 1, error: 'Invalid or missing P&L value — row skipped' });
+          } else {
+            trade.platform = 'TradingView';
+            trade.import_source = 'TradingView Paper Trading';
+            trades.push(trade);
+          }
         }
       } catch (error) {
         errors.push({ line: i + 1, error: error.message });
@@ -322,59 +492,51 @@ function mapCSVToTrade(headers, values) {
     }
     // Entry price
     else if ((h.includes('entry') || h.includes('open')) && h.includes('price')) {
-      trade.entry_price = parseFloat(value);
+      trade.entry_price = parseMoney(value);
     }
     // Exit price
     else if ((h.includes('exit') || h.includes('close') || h.includes('fill')) && h.includes('price')) {
-      trade.exit_price = parseFloat(value);
+      trade.exit_price = parseMoney(value);
     }
     // Generic price
     else if (h === 'price' && !trade.entry_price) {
-      trade.entry_price = parseFloat(value);
+      trade.entry_price = parseMoney(value);
     }
     // Quantity variations
-    else if (h.includes('quantity') || h.includes('volume') || h.includes('lots') || 
+    else if (h.includes('quantity') || h.includes('volume') || h.includes('lots') ||
              h.includes('size') || h.includes('amount') || h.includes('contracts') || h === 'qty') {
-      trade.quantity = parseFloat(value);
+      trade.quantity = parseMoney(value);
     }
     // P&L variations
-    else if (h.includes('profit') || h.includes('pnl') || h.includes('p/l') || 
+    else if (h.includes('profit') || h.includes('pnl') || h.includes('p/l') ||
              h.includes('p&l') || h === 'net' || h.includes('realized')) {
-      trade.pnl = parseFloat(value);
+      trade.pnl = parseMoney(value);
     }
     // Entry date/time
-    else if ((h.includes('entry') || h.includes('open') || h.includes('fill')) && 
+    else if ((h.includes('entry') || h.includes('open') || h.includes('fill')) &&
              (h.includes('date') || h.includes('time') || h.includes('timestamp'))) {
-      try {
-        trade.entry_date = new Date(value).toISOString();
-      } catch (e) {
-        trade.entry_date = value;
-      }
+      trade.entry_date = parseStatementDate(value) || value;
     }
     // Exit date/time
-    else if ((h.includes('exit') || h.includes('close')) && 
+    else if ((h.includes('exit') || h.includes('close')) &&
              (h.includes('date') || h.includes('time') || h.includes('timestamp'))) {
-      try {
-        trade.exit_date = new Date(value).toISOString();
-      } catch (e) {
-        trade.exit_date = value;
-      }
+      trade.exit_date = parseStatementDate(value) || value;
     }
     // Stop loss
     else if ((h.includes('stop') && (h.includes('loss') || h.includes('sl'))) || h === 'sl') {
-      trade.stop_loss = parseFloat(value);
+      trade.stop_loss = parseMoney(value);
     }
     // Take profit
     else if ((h.includes('take') && (h.includes('profit') || h.includes('tp'))) || h === 'tp') {
-      trade.take_profit = parseFloat(value);
+      trade.take_profit = parseMoney(value);
     }
     // Commission/Fees
     else if (h.includes('commission') || h.includes('fee') || h.includes('cost')) {
-      trade.commission = parseFloat(value);
+      trade.commission = parseMoney(value);
     }
     // Swap/Rollover
     else if (h.includes('swap') || h.includes('rollover') || h.includes('financing')) {
-      trade.swap = parseFloat(value);
+      trade.swap = parseMoney(value);
     }
     // Platform/Broker
     else if (h.includes('platform') || h.includes('broker') || h.includes('account')) {
@@ -560,10 +722,11 @@ Return the platform name and the array of trades. If you cannot find any complet
     result.trades.forEach((trade, index) => {
       try {
         // Validate required fields
-        if (!trade.symbol || trade.pnl === undefined || trade.pnl === null) {
-          errors.push({ 
-            line: index + 1, 
-            error: `Missing required fields (symbol or P&L)` 
+        const pnl = parseMoney(trade.pnl);
+        if (!trade.symbol || pnl === undefined) {
+          errors.push({
+            line: index + 1,
+            error: `Missing required fields (symbol or P&L)`
           });
           return;
         }
@@ -572,14 +735,14 @@ Return the platform name and the array of trades. If you cannot find any complet
         const normalizedTrade = {
           symbol: trade.symbol.trim().toUpperCase(),
           side: trade.side === 'Long' || trade.side === 'Buy' ? 'Long' : 'Short',
-          entry_date: trade.entry_date || new Date().toISOString(),
-          exit_date: trade.exit_date || new Date().toISOString(),
-          entry_price: trade.entry_price || 0,
-          exit_price: trade.exit_price || 0,
-          quantity: trade.quantity || 1,
-          pnl: trade.pnl,
-          commission: trade.commission || 0,
-          swap: trade.swap || 0,
+          entry_date: parseStatementDate(trade.entry_date) || new Date().toISOString(),
+          exit_date: parseStatementDate(trade.exit_date) || new Date().toISOString(),
+          entry_price: parseMoney(trade.entry_price) ?? 0,
+          exit_price: parseMoney(trade.exit_price) ?? 0,
+          quantity: parseMoney(trade.quantity) ?? 1,
+          pnl: pnl,
+          commission: parseMoney(trade.commission) ?? 0,
+          swap: parseMoney(trade.swap) ?? 0,
           platform: result.platform || 'Unknown',
           instrument_type: detectInstrumentType(trade.symbol),
           import_source: `${result.platform || 'PDF'} Statement`

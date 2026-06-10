@@ -14,6 +14,7 @@ export default function Imports() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [selectedImport, setSelectedImport] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [deleteResult, setDeleteResult] = useState(null);
   const [editingName, setEditingName] = useState(null);
   const [newName, setNewName] = useState('');
   const queryClient = useQueryClient();
@@ -43,22 +44,30 @@ export default function Imports() {
 
   const deleteMutation = useMutation({
     mutationFn: async (importId) => {
-      // First, get all trades from this import
-      const allTrades = await base44.entities.Trade.list();
-      const importTrades = allTrades.filter(t => t.import_source?.includes(importId));
-      
+      // Trades stamped with this import's id (server-side filter)
+      const importTrades = await base44.entities.Trade.filter({ import_id: importId });
+
+      // Legacy fallback for trades created before import_id stamping
+      const allTrades = await base44.entities.Trade.list('-created_date', 10000);
+      const legacyTrades = allTrades.filter(t =>
+        t.import_source?.includes(importId) && !importTrades.some(it => it.id === t.id)
+      );
+
       // Delete all trades from this import
-      for (const trade of importTrades) {
+      const tradesToDelete = [...importTrades, ...legacyTrades];
+      for (const trade of tradesToDelete) {
         await base44.entities.Trade.delete(trade.id);
       }
-      
+
       // Delete the import record
       await base44.entities.Import.delete(importId);
+      return tradesToDelete.length;
     },
-    onSuccess: () => {
+    onSuccess: (deletedCount) => {
       queryClient.invalidateQueries(['imports']);
       queryClient.invalidateQueries(['trades']);
       setDeleteConfirm(null);
+      setDeleteResult(deletedCount);
     }
   });
 
@@ -68,6 +77,7 @@ export default function Imports() {
 
   const confirmDelete = () => {
     if (deleteConfirm) {
+      setDeleteResult(null);
       deleteMutation.mutate(deleteConfirm.id);
     }
   };
@@ -136,8 +146,25 @@ export default function Imports() {
           </CardContent>
         </Card>
 
+        {deleteResult !== null && (
+          <Card className="bg-green-50 border-green-200">
+            <CardContent className="p-4 flex items-center justify-between">
+              <p className="text-sm text-green-800 flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                Import deleted — {deleteResult} associated trade{deleteResult === 1 ? '' : 's'} removed.
+              </p>
+              <button
+                onClick={() => setDeleteResult(null)}
+                className="text-green-600 hover:text-green-800"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </CardContent>
+          </Card>
+        )}
+
         {selectedImport && (
-          <ImportVisualization 
+          <ImportVisualization
             importRecord={selectedImport}
             onClose={() => setSelectedImport(null)}
           />

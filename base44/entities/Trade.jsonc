@@ -256,6 +256,10 @@
       "type": "string",
       "description": "Source of import (CSV, API, Webhook, Manual)"
     },
+    "import_id": {
+      "type": "string",
+      "description": "ID of the Import record this trade was created from"
+    },
     "broker_connection_id": {
       "type": "string",
       "description": "ID of broker connection if synced via API"
