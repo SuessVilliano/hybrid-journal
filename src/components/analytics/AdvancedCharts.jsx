@@ -20,17 +20,21 @@ export default function AdvancedCharts({ trades }) {
   }, [trades]);
 
   const drawdownData = useMemo(() => {
+    // Trades arrive newest-first from the API; equity must accumulate in
+    // chronological order, booked at close time when available
+    const sorted = [...trades].sort(
+      (a, b) => new Date(a.exit_date || a.entry_date) - new Date(b.exit_date || b.entry_date)
+    );
     let peak = 0;
     let cumulative = 0;
-    return trades.map((trade, idx) => {
+    return sorted.map((trade, idx) => {
       cumulative += trade.pnl || 0;
       if (cumulative > peak) peak = cumulative;
-      const drawdown = ((peak - cumulative) / peak) * 100;
       return {
         trade: idx + 1,
         equity: cumulative,
-        drawdown: -drawdown,
-        date: new Date(trade.entry_date).toLocaleDateString()
+        drawdown: -(peak - cumulative),
+        date: new Date(trade.exit_date || trade.entry_date).toLocaleDateString()
       };
     });
   }, [trades]);
@@ -45,7 +49,7 @@ export default function AdvancedCharts({ trades }) {
         symbol,
         winRate: total > 0 ? (wins / total) * 100 : 0,
         trades: total,
-        totalPnl: symbolTrades.reduce((sum, t) => sum + t.pnl, 0)
+        totalPnl: symbolTrades.reduce((sum, t) => sum + (t.pnl || 0), 0)
       };
     });
   }, [trades]);
@@ -55,7 +59,7 @@ export default function AdvancedCharts({ trades }) {
     return emotions.map(emotion => {
       const emotionTrades = trades.filter(t => t.emotion_before === emotion);
       const avgPnl = emotionTrades.length > 0 
-        ? emotionTrades.reduce((sum, t) => sum + t.pnl, 0) / emotionTrades.length 
+        ? emotionTrades.reduce((sum, t) => sum + (t.pnl || 0), 0) / emotionTrades.length 
         : 0;
       return {
         emotion,
@@ -90,7 +94,7 @@ export default function AdvancedCharts({ trades }) {
       {/* Drawdown Analysis */}
       <Card>
         <CardHeader>
-          <CardTitle>Drawdown Analysis</CardTitle>
+          <CardTitle>Drawdown Analysis ($)</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
@@ -98,7 +102,7 @@ export default function AdvancedCharts({ trades }) {
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis dataKey="trade" stroke="#64748b" style={{ fontSize: '12px' }} />
               <YAxis stroke="#64748b" style={{ fontSize: '12px' }} />
-              <Tooltip />
+              <Tooltip formatter={(value, name) => [`$${Number(value).toFixed(2)}`, name]} labelFormatter={(label, payload) => payload?.[0]?.payload?.date || `Trade ${label}`} />
               <Area type="monotone" dataKey="drawdown" stroke="#ef4444" fill="#ef4444" fillOpacity={0.3} />
             </AreaChart>
           </ResponsiveContainer>

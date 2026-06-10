@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { base44 } from '@/api/base44Client';
+import { PUBLIC_PAGES } from '@/lib/public-pages';
 import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText, Menu, X, Wallet, Sun, Moon, Home, Users, User, Brain, GripVertical, Star, Clock, List, Bell, HelpCircle, UserCheck, Image as ImageIcon, Trophy, Filter } from 'lucide-react';
 import FloatingAIAssistant from '@/components/ai/FloatingAIAssistant';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
@@ -63,14 +64,15 @@ export default function Layout({ children, currentPageName }) {
           const profiles = await base44.entities.TraderProfile.list();
           if (profiles.length > 0 && profiles[0].onboarding_completed) {
             setNeedsOnboarding(false);
-          } else if (currentPageName !== 'Landing' && currentPageName !== 'Onboarding' && currentPageName !== 'PlatformTour') {
+          } else if (!PUBLIC_PAGES.has(currentPageName)) {
             setNeedsOnboarding(true);
             window.location.href = createPageUrl('Onboarding');
           }
         } catch (error) {
+          // Anonymous visitors may view public pages; only protected pages redirect
           console.error('Auth check failed:', error);
           setCurrentUser(null);
-          if (currentPageName !== 'Landing') {
+          if (!PUBLIC_PAGES.has(currentPageName)) {
             window.location.href = createPageUrl('Landing');
           }
         }

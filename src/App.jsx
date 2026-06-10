@@ -23,8 +23,7 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   <Layout currentPageName={currentPageName}>{children}</Layout>
   : <>{children}</>;
 
-// Pages that are public and do not require authentication
-const PUBLIC_PAGES = new Set(['Landing', 'PublicDashboard', 'Pricing', 'Onboarding', 'PlatformTour', 'SocialFeed', 'Help']);
+import { PUBLIC_PAGES } from '@/lib/public-pages';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError } = useAuth();

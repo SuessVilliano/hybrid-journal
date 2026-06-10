@@ -5,8 +5,24 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertCircle, Calculator, TrendingUp, Shield } from 'lucide-react';
 
-export default function RiskCalculator({ 
-  accountBalance = 0, 
+// Dollar value of a 1.0-point move per contract (exchange contract specs)
+const FUTURES_SPECS = {
+  NQ: { label: 'NQ — Nasdaq 100', pointValue: 20 },
+  MNQ: { label: 'MNQ — Micro Nasdaq', pointValue: 2 },
+  ES: { label: 'ES — S&P 500', pointValue: 50 },
+  MES: { label: 'MES — Micro S&P', pointValue: 5 },
+  YM: { label: 'YM — Dow', pointValue: 5 },
+  MYM: { label: 'MYM — Micro Dow', pointValue: 0.5 },
+  RTY: { label: 'RTY — Russell 2000', pointValue: 50 },
+  M2K: { label: 'M2K — Micro Russell', pointValue: 5 },
+  GC: { label: 'GC — Gold', pointValue: 100 },
+  MGC: { label: 'MGC — Micro Gold', pointValue: 10 },
+  CL: { label: 'CL — Crude Oil', pointValue: 1000 },
+  MCL: { label: 'MCL — Micro Crude', pointValue: 100 }
+};
+
+export default function RiskCalculator({
+  accountBalance = 0,
   onCalculationComplete,
   initialValues = {}
 }) {
@@ -14,54 +30,47 @@ export default function RiskCalculator({
   const [riskPercent, setRiskPercent] = useState(initialValues.max_risk_percent_per_trade || 1);
   const [entryPrice, setEntryPrice] = useState(initialValues.target_entry_price || '');
   const [stopLoss, setStopLoss] = useState(initialValues.target_stop_loss || '');
-  const [contractSize, setContractSize] = useState(1);
-  const [pipValue, setPipValue] = useState(10); // Default for futures
+  const [futuresSymbol, setFuturesSymbol] = useState('NQ');
   const [calculated, setCalculated] = useState(null);
-
-  useEffect(() => {
-    // Update pip values based on instrument type
-    if (instrumentType === 'Futures') {
-      setPipValue(5); // $5 per tick for NQ
-      setContractSize(1);
-    } else if (instrumentType === 'Forex') {
-      setPipValue(10); // $10 per pip for standard lot
-      setContractSize(1);
-    } else if (instrumentType === 'Crypto') {
-      setPipValue(1);
-      setContractSize(0.01);
-    }
-  }, [instrumentType]);
 
   useEffect(() => {
     if (accountBalance && entryPrice && stopLoss && riskPercent) {
       calculatePosition();
     }
-  }, [accountBalance, entryPrice, stopLoss, riskPercent, instrumentType, pipValue, contractSize]);
+  }, [accountBalance, entryPrice, stopLoss, riskPercent, instrumentType, futuresSymbol]);
 
   const calculatePosition = () => {
     const entry = parseFloat(entryPrice);
     const sl = parseFloat(stopLoss);
     const maxRiskDollars = accountBalance * (riskPercent / 100);
+    const priceRisk = Math.abs(entry - sl);
+
+    if (!Number.isFinite(priceRisk) || priceRisk <= 0) {
+      setCalculated(null);
+      return;
+    }
 
     let riskPerUnit, positionSize, monetaryRisk;
 
     if (instrumentType === 'Futures') {
-      // For futures: risk per contract = (Entry - SL) * point value
-      const pointsRisk = Math.abs(entry - sl);
-      riskPerUnit = pointsRisk * pipValue;
+      // Risk per contract = points at risk * dollar value per point
+      const pointValue = FUTURES_SPECS[futuresSymbol]?.pointValue || 20;
+      riskPerUnit = priceRisk * pointValue;
       positionSize = Math.floor(maxRiskDollars / riskPerUnit);
       monetaryRisk = positionSize * riskPerUnit;
     } else if (instrumentType === 'Forex') {
-      // For forex: risk in pips
-      const pipsRisk = Math.abs(entry - sl) * 10000; // Convert to pips
-      riskPerUnit = pipsRisk * pipValue * contractSize;
-      positionSize = Math.floor(maxRiskDollars / riskPerUnit);
+      // Risk per standard lot = pips at risk * $10/pip; size in 0.01-lot steps
+      const pipsRisk = priceRisk * 10000;
+      riskPerUnit = pipsRisk * 10;
+      positionSize = Math.floor((maxRiskDollars / riskPerUnit) * 100) / 100;
       monetaryRisk = positionSize * riskPerUnit;
     } else if (instrumentType === 'Crypto') {
-      // For crypto: risk per unit
-      const priceRisk = Math.abs(entry - sl);
       riskPerUnit = priceRisk;
       positionSize = maxRiskDollars / riskPerUnit;
+      monetaryRisk = positionSize * riskPerUnit;
+    } else if (instrumentType === 'Stocks') {
+      riskPerUnit = priceRisk;
+      positionSize = Math.floor(maxRiskDollars / riskPerUnit);
       monetaryRisk = positionSize * riskPerUnit;
     }
 
@@ -105,6 +114,24 @@ export default function RiskCalculator({
               </SelectContent>
             </Select>
           </div>
+
+          {instrumentType === 'Futures' && (
+            <div className="space-y-2">
+              <Label className={darkMode ? 'text-slate-300' : 'text-slate-700'}>Contract</Label>
+              <Select value={futuresSymbol} onValueChange={setFuturesSymbol}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(FUTURES_SPECS).map(([symbol, spec]) => (
+                    <SelectItem key={symbol} value={symbol}>
+                      {spec.label} (${spec.pointValue}/pt)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label className={darkMode ? 'text-slate-300' : 'text-slate-700'}>Risk Per Trade (%)</Label>
@@ -150,9 +177,14 @@ export default function RiskCalculator({
                 <TrendingUp className={`h-4 w-4 ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`} />
               </div>
               <div className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                {calculated.positionSize.toFixed(instrumentType === 'Crypto' ? 4 : 0)}{' '}
-                {instrumentType === 'Futures' ? 'contracts' : instrumentType === 'Forex' ? 'lots' : 'units'}
+                {calculated.positionSize.toFixed(instrumentType === 'Crypto' ? 4 : instrumentType === 'Forex' ? 2 : 0)}{' '}
+                {instrumentType === 'Futures' ? 'contracts' : instrumentType === 'Forex' ? 'lots' : instrumentType === 'Stocks' ? 'shares' : 'units'}
               </div>
+              {instrumentType === 'Forex' && (
+                <p className={`text-xs mt-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                  Assumes a USD-quoted pair ($10/pip per standard lot). JPY pairs are not yet supported.
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
