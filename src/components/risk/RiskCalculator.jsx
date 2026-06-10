@@ -31,13 +31,15 @@ export default function RiskCalculator({
   const [entryPrice, setEntryPrice] = useState(initialValues.target_entry_price || '');
   const [stopLoss, setStopLoss] = useState(initialValues.target_stop_loss || '');
   const [futuresSymbol, setFuturesSymbol] = useState('NQ');
+  // Forex pip size: 0.0001 for standard pairs, 0.01 for JPY-quoted pairs
+  const [pipSize, setPipSize] = useState('0.0001');
   const [calculated, setCalculated] = useState(null);
 
   useEffect(() => {
     if (accountBalance && entryPrice && stopLoss && riskPercent) {
       calculatePosition();
     }
-  }, [accountBalance, entryPrice, stopLoss, riskPercent, instrumentType, futuresSymbol]);
+  }, [accountBalance, entryPrice, stopLoss, riskPercent, instrumentType, futuresSymbol, pipSize]);
 
   const calculatePosition = () => {
     const entry = parseFloat(entryPrice);
@@ -59,9 +61,13 @@ export default function RiskCalculator({
       positionSize = Math.floor(maxRiskDollars / riskPerUnit);
       monetaryRisk = positionSize * riskPerUnit;
     } else if (instrumentType === 'Forex') {
-      // Risk per standard lot = pips at risk * $10/pip; size in 0.01-lot steps
-      const pipsRisk = priceRisk * 10000;
-      riskPerUnit = pipsRisk * 10;
+      // Pips at risk = price distance / pip size (0.0001 standard, 0.01 JPY pairs).
+      // $/pip per standard lot: $10 for USD-quoted pairs; for JPY pairs the
+      // exact value varies with USD/JPY, approximated here at $7/pip.
+      const pip = parseFloat(pipSize) || 0.0001;
+      const pipValuePerLot = pip === 0.01 ? JPY_PIP_VALUE_PER_LOT : 10;
+      const pipsRisk = priceRisk / pip;
+      riskPerUnit = pipsRisk * pipValuePerLot;
       positionSize = Math.floor((maxRiskDollars / riskPerUnit) * 100) / 100;
       monetaryRisk = positionSize * riskPerUnit;
     } else if (instrumentType === 'Crypto') {

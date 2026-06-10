@@ -21,6 +21,9 @@ import { decryptSecret } from './helpers/secrets.js';
 
 const DEFAULT_BASE = 'https://app.crosstrade.io/v1/api';
 
+// A sync lock younger than this blocks concurrent syncs for the same connection.
+const SYNC_LOCK_TTL_MS = 5 * 60 * 1000;
+
 interface NormFill {
     id: string;
     instrument: string;
@@ -247,6 +250,22 @@ Deno.serve(async (req) => {
             ? connection.server.replace(/\/$/, '')
             : DEFAULT_BASE;
 
+        // Per-connection sync lock: if another sync started less than
+        // SYNC_LOCK_TTL_MS ago, bail out instead of duplicating trades.
+        const lockTs = connection.sync_in_progress_at ? Date.parse(connection.sync_in_progress_at) : NaN;
+        if (!isNaN(lockTs) && Date.now() - lockTs < SYNC_LOCK_TTL_MS) {
+            return Response.json({
+                success: false,
+                sync_in_progress: true,
+                error: 'Sync already in progress for this connection'
+            }, { status: 409 });
+        }
+        await base44.entities.BrokerConnection.update(connection_id, {
+            sync_in_progress_at: new Date().toISOString()
+        });
+
+        try {
+
         console.log(`[SyncCrossTrade] Starting sync for connection ${connection_id}`);
 
         // Resolve which NinjaTrader account(s) to sync.
@@ -323,7 +342,10 @@ Deno.serve(async (req) => {
                             pnl: trip.pnl,
                             pnl_net: pnlNet,
                             commission: trip.commission,
-                            trade_status: trip.status
+                            trade_status: trip.status,
+                            // Stamp the linked internal account so Accounts-page
+                            // stats include synced trades (backfills old rows too).
+                            account_id: connection.account_id || existing.account_id || undefined
                         });
                         updated++;
                     } else {
@@ -333,6 +355,7 @@ Deno.serve(async (req) => {
                 }
 
                 await base44.entities.Trade.create({
+                    account_id: connection.account_id || undefined,
                     symbol: trip.instrument,
                     side: trip.side,
                     quantity: trip.qty,

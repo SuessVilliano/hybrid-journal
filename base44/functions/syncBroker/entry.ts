@@ -6,6 +6,9 @@ import { decryptSecret } from './helpers/secrets.js';
 // balances (see AUDIT.md critical #1).
 const SYNCABLE_BROKERS = ['binance'];
 
+// A sync lock younger than this blocks concurrent syncs for the same connection.
+const SYNC_LOCK_TTL_MS = 5 * 60 * 1000;
+
 const BINANCE_BASE = 'https://api.binance.com';
 const BINANCE_RECV_WINDOW = 10000;
 
@@ -44,6 +47,22 @@ Deno.serve(async (req) => {
       }, { status: 400 });
     }
 
+    // Per-connection sync lock: if another sync started less than
+    // SYNC_LOCK_TTL_MS ago, bail out instead of duplicating trades.
+    const lockTs = connection.sync_in_progress_at ? Date.parse(connection.sync_in_progress_at) : NaN;
+    if (!isNaN(lockTs) && Date.now() - lockTs < SYNC_LOCK_TTL_MS) {
+      return Response.json({
+        success: false,
+        sync_in_progress: true,
+        error: 'Sync already in progress for this connection'
+      }, { status: 409 });
+    }
+    await base44.entities.BrokerConnection.update(connection.id, {
+      sync_in_progress_at: new Date().toISOString()
+    });
+
+    try {
+
     // Fetch trades from broker using the backend integration
     const brokerData = await fetchBrokerTrades(connection);
 
@@ -77,7 +96,10 @@ Deno.serve(async (req) => {
               exit_price: brokerTrade.exit_price,
               pnl: brokerTrade.pnl,
               commission: brokerTrade.commission || existingTrade.commission,
-              swap: brokerTrade.swap || existingTrade.swap
+              swap: brokerTrade.swap || existingTrade.swap,
+              // Stamp the linked internal account so Accounts-page stats
+              // include synced trades (backfills old rows too).
+              account_id: connection.account_id || existingTrade.account_id || undefined
             });
             updated.push(existingTrade.id);
           } else {
@@ -88,6 +110,7 @@ Deno.serve(async (req) => {
 
         // New trade - import it
         const tradeData = {
+          account_id: connection.account_id || undefined,
           symbol: brokerTrade.symbol,
           side: brokerTrade.side,
           entry_date: brokerTrade.entry_date,
@@ -118,8 +141,12 @@ Deno.serve(async (req) => {
 
     // Update connection with sync time — and the new balance only when the
     // broker actually reported one (never write a fabricated default).
+    // `last_sync_at` is the canonical field (matches the schema); `last_sync`
+    // is still written during the transition for older readers.
+    const syncedAt = new Date().toISOString();
     const connectionUpdate: Record<string, unknown> = {
-      last_sync: new Date().toISOString(),
+      last_sync_at: syncedAt,
+      last_sync: syncedAt,
       status: 'connected'
     };
     if (typeof brokerData.account_balance === 'number') {
@@ -151,6 +178,17 @@ Deno.serve(async (req) => {
       account_balance: brokerData.account_balance,
       account_equity: brokerData.equity
     });
+
+    } finally {
+      // Always release the per-connection sync lock.
+      try {
+        await base44.entities.BrokerConnection.update(connection.id, {
+          sync_in_progress_at: null
+        });
+      } catch (unlockError) {
+        console.warn(`[syncBroker] Failed to clear sync lock: ${unlockError.message}`);
+      }
+    }
 
   } catch (error) {
     console.error('Broker sync error:', error);

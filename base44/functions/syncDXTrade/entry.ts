@@ -270,6 +270,7 @@ Deno.serve(async (req) => {
 
                 // Create new trade
                 await base44.entities.Trade.create({
+                    account_id: connection.account_id || undefined,
                     symbol,
                     side,
                     quantity,
@@ -298,9 +299,13 @@ Deno.serve(async (req) => {
             }
         }
 
-        // Update connection with latest sync info
+        // Update connection with latest sync info.
+        // `last_sync_at` is the canonical field (matches the schema); `last_sync`
+        // is still written during the transition for older readers.
+        const syncedAt = new Date().toISOString();
         const updateData: any = {
-            last_sync: new Date().toISOString(),
+            last_sync_at: syncedAt,
+            last_sync: syncedAt,
             status: 'connected'
         };
 
@@ -337,6 +342,17 @@ Deno.serve(async (req) => {
             account_equity: accountInfo?.equity,
             duration_ms: Date.now() - startTime
         });
+
+        } finally {
+            // Always release the per-connection sync lock.
+            try {
+                await base44.entities.BrokerConnection.update(connection_id, {
+                    sync_in_progress_at: null
+                });
+            } catch (unlockError) {
+                console.warn(`[SyncDXTrade] Failed to clear sync lock: ${unlockError.message}`);
+            }
+        }
 
     } catch (error) {
         console.error('[SyncDXTrade] Error:', error);
