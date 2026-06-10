@@ -28,7 +28,7 @@ export default function DetailedCharts({ trades }) {
 
     // Cumulative P&L
     let cumulative = 0;
-    const cumulativePnL = trades
+    const cumulativePnL = [...trades]
       .sort((a, b) => new Date(a.entry_date) - new Date(b.entry_date))
       .map((t, idx) => {
         cumulative += t.pnl || 0;

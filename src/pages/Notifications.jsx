@@ -27,8 +27,8 @@ export default function NotificationsPage() {
   const markAsReadMutation = useMutation({
     mutationFn: (id) => base44.entities.Notification.update(id, { is_read: true }),
     onSuccess: () => {
-      queryClient.invalidateQueries(['allNotifications']);
-      queryClient.invalidateQueries(['notifications']);
+      queryClient.invalidateQueries({ queryKey: ['allNotifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
     }
   });
 
@@ -38,8 +38,8 @@ export default function NotificationsPage() {
       await Promise.all(unread.map(n => base44.entities.Notification.update(n.id, { is_read: true })));
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['allNotifications']);
-      queryClient.invalidateQueries(['notifications']);
+      queryClient.invalidateQueries({ queryKey: ['allNotifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
       toast.success('All notifications marked as read');
     }
   });
@@ -47,8 +47,8 @@ export default function NotificationsPage() {
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Notification.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries(['allNotifications']);
-      queryClient.invalidateQueries(['notifications']);
+      queryClient.invalidateQueries({ queryKey: ['allNotifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
       toast.success('Notification deleted');
     }
   });

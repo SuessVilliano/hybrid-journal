@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { profitFactor as calcProfitFactor, formatProfitFactor } from '@/lib/metrics';
 
 export default function ComprehensiveStats({ trades }) {
   const stats = useMemo(() => {
@@ -27,7 +28,7 @@ export default function ComprehensiveStats({ trades }) {
     const largestLoss = losing.length > 0 ? Math.abs(Math.min(...losing.map(t => t.pnl))) : 0;
 
     const winRate = trades.length > 0 ? (winning.length / trades.length) * 100 : 0;
-    const profitFactor = totalLoss > 0 ? totalProfit / totalLoss : 0;
+    const profitFactor = calcProfitFactor(totalProfit, totalLoss);
 
     // Standard deviation
     const winStdDev = winning.length > 1 ? Math.sqrt(
@@ -324,7 +325,7 @@ export default function ComprehensiveStats({ trades }) {
             <StatRow label="Average Trade P&L" value={`$${(stats.totalPnl / stats.totalTrades).toFixed(2)}`} />
             
             <StatRow label="Average Daily Volume" value={stats.avgDailyVolume.toFixed(1)} />
-            <StatRow label="Profit Factor" value={stats.profitFactor.toFixed(2)} 
+            <StatRow label="Profit Factor" value={formatProfitFactor(stats.profitFactor)}
               valueClass={stats.profitFactor >= 2 ? 'text-green-600' : stats.profitFactor >= 1 ? 'text-yellow-600' : 'text-red-600'} />
             
             <StatRow label="Average Winning Trade" value={`$${stats.avgWin.toFixed(2)}`} valueClass="text-green-600" />

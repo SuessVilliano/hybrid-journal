@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PullToRefresh from '@/components/mobile/PullToRefresh';
@@ -78,21 +78,27 @@ export default function LiveTradingSignals() {
       }
     },
     enabled: !!user?.email,
-    refetchInterval: isMutating ? false : 10000, // Pause refetch during mutations, slower interval
-    onSuccess: (newSignals) => {
-      // Check for new signals and show browser notification
-      if (user?.notification_preferences?.browser_push && permission === 'granted') {
-        const newUnseenSignals = newSignals.filter(s => s.status === 'new');
-        const prevSignals = queryClient.getQueryData(['signals', user?.email]) || [];
-        const prevNewSignals = prevSignals.filter(s => s.status === 'new');
-        
-        if (newUnseenSignals.length > prevNewSignals.length) {
-          const latestSignal = newUnseenSignals[0];
-          showSignalNotification(latestSignal, '/LiveTradingSignals');
-        }
+    refetchInterval: isMutating ? false : 10000 // Pause refetch during mutations, slower interval
+  });
+
+  // React Query v5 removed `onSuccess` on useQuery — watch the query data instead.
+  // Tracks previously-seen "new" signal ids in a ref so we only notify on signals
+  // that weren't present in the last fetch (and never on the initial load).
+  const prevNewSignalIdsRef = useRef(null);
+  useEffect(() => {
+    const newUnseenSignals = signals.filter(s => s.status === 'new');
+    const prevIds = prevNewSignalIdsRef.current;
+    prevNewSignalIdsRef.current = new Set(newUnseenSignals.map(s => s.id));
+
+    if (prevIds === null) return; // initial load — nothing to compare against
+
+    if (user?.notification_preferences?.browser_push && permission === 'granted') {
+      const freshSignals = newUnseenSignals.filter(s => !prevIds.has(s.id));
+      if (freshSignals.length > 0) {
+        showSignalNotification(freshSignals[0], '/LiveTradingSignals');
       }
     }
-  });
+  }, [signals, user, permission]);
 
   const { data: syncLogs = [], refetch: refetchLogs } = useQuery({
     queryKey: ['syncLogs', user?.email],

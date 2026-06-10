@@ -295,7 +295,7 @@ export default function TradePlans() {
                       onDelete={(id) => {
                         if (confirm('Delete this goal?')) {
                           base44.entities.Goal.delete(id).then(() => {
-                            queryClient.invalidateQueries(['goals']);
+                            queryClient.invalidateQueries({ queryKey: ['goals'] });
                           });
                         }
                       }}
@@ -323,7 +323,7 @@ export default function TradePlans() {
                       onDelete={(id) => {
                         if (confirm('Delete this goal?')) {
                           base44.entities.Goal.delete(id).then(() => {
-                            queryClient.invalidateQueries(['goals']);
+                            queryClient.invalidateQueries({ queryKey: ['goals'] });
                           });
                         }
                       }}
@@ -362,7 +362,7 @@ export default function TradePlans() {
                   } else {
                     await base44.entities.Goal.create(data);
                   }
-                  queryClient.invalidateQueries(['goals']);
+                  queryClient.invalidateQueries({ queryKey: ['goals'] });
                   setShowGoalForm(false);
                   setEditingGoal(null);
                 }}

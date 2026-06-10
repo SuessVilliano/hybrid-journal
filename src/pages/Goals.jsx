@@ -26,7 +26,7 @@ export default function Goals() {
   const createGoalMutation = useMutation({
     mutationFn: (data) => base44.entities.Goal.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['goals']);
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
       setShowForm(false);
       setEditingGoal(null);
     }
@@ -35,7 +35,7 @@ export default function Goals() {
   const updateGoalMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Goal.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['goals']);
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
       setShowForm(false);
       setEditingGoal(null);
     }
@@ -44,7 +44,7 @@ export default function Goals() {
   const deleteGoalMutation = useMutation({
     mutationFn: (id) => base44.entities.Goal.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries(['goals']);
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
     }
   });
 

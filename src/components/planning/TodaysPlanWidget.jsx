@@ -80,7 +80,7 @@ Provide:
       return analysis;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['todaysTradePlan', today]);
+      queryClient.invalidateQueries({ queryKey: ['todaysTradePlan', today] });
     }
   });
 

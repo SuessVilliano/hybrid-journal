@@ -8,7 +8,15 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 export default function BacktestResults({ backtest, onClose }) {
   if (!backtest) return null;
 
-  const meetsTargets = backtest.win_rate >= 50 && backtest.profit_factor >= 1.5;
+  // A non-finite profit factor (Infinity) means zero gross loss — a flawless
+  // run — which passes the profitable-strategy check and displays as "∞"
+  const profitFactor = backtest.profit_factor;
+  const profitFactorPasses = profitFactor != null &&
+    (!Number.isFinite(profitFactor) ? profitFactor > 0 : profitFactor >= 1.5);
+  const profitFactorDisplay = profitFactor == null
+    ? '—'
+    : (Number.isFinite(profitFactor) ? profitFactor.toFixed(2) : '∞');
+  const meetsTargets = backtest.win_rate >= 50 && profitFactorPasses;
 
   return (
     <div className="space-y-6">
@@ -63,7 +71,7 @@ export default function BacktestResults({ backtest, onClose }) {
             <div className="bg-white rounded-lg p-4 text-center">
               <div className="text-sm text-slate-600 mb-1">Profit Factor</div>
               <div className="text-2xl font-bold text-purple-600">
-                {backtest.profit_factor?.toFixed(2)}
+                {profitFactorDisplay}
               </div>
             </div>
 
@@ -82,10 +90,12 @@ export default function BacktestResults({ backtest, onClose }) {
               <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={backtest.equity_curve}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis 
-                    dataKey="trade" 
+                  <XAxis
+                    dataKey="timestamp"
                     stroke="#64748b"
                     style={{ fontSize: '12px' }}
+                    tickFormatter={(value) => String(value).slice(0, 10)}
+                    minTickGap={40}
                   />
                   <YAxis 
                     stroke="#64748b"

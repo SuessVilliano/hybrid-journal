@@ -5,6 +5,17 @@ import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
 
 const AuthContext = createContext();
 
+// Remove a stale/expired token from storage so the login page starts clean
+// (key matches the one written by getAppParamValue('access_token') in app-params.js).
+const clearStoredToken = () => {
+  try {
+    window.localStorage.removeItem('base44_access_token');
+  } catch (e) {
+    // localStorage unavailable (e.g. SSR/private mode) — nothing to clear
+  }
+  appParams.token = null;
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -52,6 +63,10 @@ export const AuthProvider = ({ children }) => {
         if (appError.status === 403 && appError.data?.extra_data?.reason) {
           const reason = appError.data.extra_data.reason;
           if (reason === 'auth_required') {
+            // If we sent a token and still got auth_required, the token is stale
+            if (appParams.token) {
+              clearStoredToken();
+            }
             setAuthError({
               type: 'auth_required',
               message: 'Authentication required'
@@ -100,8 +115,10 @@ export const AuthProvider = ({ children }) => {
       setIsLoadingAuth(false);
       setIsAuthenticated(false);
       
-      // If user auth fails, it might be an expired token
+      // If user auth fails, it might be an expired token — clear it so the
+      // login page isn't poisoned by the stale credential on the next attempt
       if (error.status === 401 || error.status === 403) {
+        clearStoredToken();
         setAuthError({
           type: 'auth_required',
           message: 'Authentication required'

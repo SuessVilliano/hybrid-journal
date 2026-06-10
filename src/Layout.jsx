@@ -207,9 +207,10 @@ export default function Layout({ children, currentPageName }) {
     ? menuOrder.map(id => defaultNavigation.find(item => item.id === id)).filter(Boolean)
     : defaultNavigation;
 
-  // Filter admin-only items
+  // Filter admin-only items — gate on role, not a hardcoded email.
+  // NOTE: this is client-side UX only; admin access must also be enforced server-side.
   const filteredNavigation = allNavigation.filter(item => {
-    if (item.adminOnly && currentUser?.email !== 'liv8ent@gmail.com') {
+    if (item.adminOnly && currentUser?.role !== 'admin') {
       return false;
     }
     return true;

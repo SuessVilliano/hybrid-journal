@@ -144,7 +144,7 @@ export default function MonthlyPlanForm({ existingPlan }) {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['monthlyPlans']);
+      queryClient.invalidateQueries({ queryKey: ['monthlyPlans'] });
       alert('Monthly plan saved!');
     }
   });

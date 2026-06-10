@@ -19,7 +19,7 @@ export default function QuickTradePanel({ symbol, currentPrice, onClose }) {
   const createTradeMutation = useMutation({
     mutationFn: (data) => base44.entities.Trade.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['trades']);
+      queryClient.invalidateQueries({ queryKey: ['trades'] });
       onClose();
     }
   });

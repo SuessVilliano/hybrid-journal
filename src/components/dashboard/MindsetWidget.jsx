@@ -30,7 +30,7 @@ export default function MindsetWidget() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['recentJournalEntries']);
+      queryClient.invalidateQueries({ queryKey: ['recentJournalEntries'] });
       setContent('');
       setShowQuickEntry(false);
     }

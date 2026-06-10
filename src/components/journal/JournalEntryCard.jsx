@@ -18,7 +18,7 @@ export default function JournalEntryCard({ entry }) {
   const updateMutation = useMutation({
     mutationFn: (data) => base44.entities.JournalEntry.update(entry.id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['journalEntries']);
+      queryClient.invalidateQueries({ queryKey: ['journalEntries'] });
       setIsEditing(false);
     }
   });
@@ -26,7 +26,7 @@ export default function JournalEntryCard({ entry }) {
   const deleteMutation = useMutation({
     mutationFn: () => base44.entities.JournalEntry.delete(entry.id),
     onSuccess: () => {
-      queryClient.invalidateQueries(['journalEntries']);
+      queryClient.invalidateQueries({ queryKey: ['journalEntries'] });
     }
   });
 

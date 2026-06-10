@@ -36,7 +36,7 @@ export default function Imports() {
       await base44.entities.Import.update(id, { filename });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['imports']);
+      queryClient.invalidateQueries({ queryKey: ['imports'] });
       setEditingName(null);
       setNewName('');
     }
@@ -64,8 +64,8 @@ export default function Imports() {
       return tradesToDelete.length;
     },
     onSuccess: (deletedCount) => {
-      queryClient.invalidateQueries(['imports']);
-      queryClient.invalidateQueries(['trades']);
+      queryClient.invalidateQueries({ queryKey: ['imports'] });
+      queryClient.invalidateQueries({ queryKey: ['trades'] });
       setDeleteConfirm(null);
       setDeleteResult(deletedCount);
     }

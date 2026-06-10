@@ -54,7 +54,7 @@ export default function ShareModal({ onClose }) {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['shareSettings']);
+      queryClient.invalidateQueries({ queryKey: ['shareSettings'] });
       onClose();
     }
   });

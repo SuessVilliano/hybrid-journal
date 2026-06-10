@@ -4,15 +4,24 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, FileText } from 'lucide-react';
+import { format } from 'date-fns';
 import AISummaryGenerator from '@/components/summaries/AISummaryGenerator';
+
+// Parse a "YYYY-MM-DD" string as LOCAL time. `new Date("YYYY-MM-DD")` parses
+// as UTC midnight, which shifts to the previous day for users west of UTC.
+const parseLocalDate = (dateStr) => {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d);
+};
 
 export default function TradingSummaries() {
   const [period, setPeriod] = useState('daily');
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  // Initialize from local today (toISOString would give the UTC date)
+  const [selectedDate, setSelectedDate] = useState(() => format(new Date(), 'yyyy-MM-dd'));
   const darkMode = document.documentElement.classList.contains('dark');
 
   const getDateRange = () => {
-    const date = new Date(selectedDate);
+    const date = parseLocalDate(selectedDate);
     if (period === 'daily') {
       const start = new Date(date);
       start.setHours(0, 0, 0, 0);
@@ -52,7 +61,7 @@ export default function TradingSummaries() {
   });
 
   const changeDate = (days) => {
-    const date = new Date(selectedDate);
+    const date = parseLocalDate(selectedDate);
     if (period === 'daily') {
       date.setDate(date.getDate() + days);
     } else if (period === 'weekly') {
@@ -60,7 +69,7 @@ export default function TradingSummaries() {
     } else {
       date.setMonth(date.getMonth() + days);
     }
-    setSelectedDate(date.toISOString().split('T')[0]);
+    setSelectedDate(format(date, 'yyyy-MM-dd'));
   };
 
   const formatDateRange = () => {

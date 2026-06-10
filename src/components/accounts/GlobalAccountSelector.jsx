@@ -34,7 +34,7 @@ export default function GlobalAccountSelector({ onAccountsChange }) {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['dashboardSettings']);
+      queryClient.invalidateQueries({ queryKey: ['dashboardSettings'] });
     }
   });
 

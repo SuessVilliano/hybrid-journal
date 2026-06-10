@@ -20,10 +20,12 @@ export default function SharedAccess() {
   const queryClient = useQueryClient();
   const darkMode = document.documentElement.classList.contains('dark');
 
-  const { data: currentUser } = useQuery({
+  const { data: currentUser, isLoading: isLoadingUser } = useQuery({
     queryKey: ['currentUser'],
     queryFn: () => base44.auth.me()
   });
+
+  const isAdmin = currentUser?.role === 'admin';
 
   const { data: grantedAccess = [] } = useQuery({
     queryKey: ['grantedAccess'],
@@ -59,7 +61,7 @@ export default function SharedAccess() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['grantedAccess']);
+      queryClient.invalidateQueries({ queryKey: ['grantedAccess'] });
       setShowGrantForm(false);
       setGrantForm({ shared_with_email: '', permission_level: 'view', access_type: 'observer', note: '' });
       alert('Access granted successfully!');
@@ -73,14 +75,15 @@ export default function SharedAccess() {
   const updateAccessMutation = useMutation({
     mutationFn: ({ id, status }) => base44.entities.SharedAccess.update(id, { status }),
     onSuccess: () => {
-      queryClient.invalidateQueries(['grantedAccess', 'receivedAccess']);
+      queryClient.invalidateQueries({ queryKey: ['grantedAccess'] });
+      queryClient.invalidateQueries({ queryKey: ['receivedAccess'] });
     }
   });
 
   const deleteAccessMutation = useMutation({
     mutationFn: (id) => base44.entities.SharedAccess.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries(['grantedAccess']);
+      queryClient.invalidateQueries({ queryKey: ['grantedAccess'] });
     }
   });
 
@@ -96,6 +99,29 @@ export default function SharedAccess() {
     revoked: 'bg-red-500/20 text-red-400',
     declined: 'bg-slate-500/20 text-slate-400'
   };
+
+  // Admin-only page guard. NOTE: client-side only — server-side enforcement is still needed.
+  if (!isLoadingUser && !isAdmin) {
+    return (
+      <div className={`min-h-screen p-4 md:p-6 flex items-center justify-center transition-colors ${
+        darkMode
+          ? 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900'
+          : 'bg-gradient-to-br from-cyan-50 via-purple-50 to-pink-50'
+      }`}>
+        <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
+          <CardContent className="p-8 text-center">
+            <Shield className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h2 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+              Access Denied
+            </h2>
+            <p className={darkMode ? 'text-slate-400' : 'text-slate-600'}>
+              This page is only accessible to admin users.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen p-4 md:p-6 transition-colors ${

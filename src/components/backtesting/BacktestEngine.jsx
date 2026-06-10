@@ -413,6 +413,23 @@ function evaluateCondition(condition, candle, indicators, position) {
   return Boolean(evaluateAst(parsed.ast, context));
 }
 
+// Derive the warmup period from the longest indicator actually used, with a
+// 50-bar floor. SMA/EMA/RSI/Bollinger/ATR are null for ~period bars; MACD
+// needs slow + signal bars before its EMAs are meaningful.
+export function computeWarmupBars(indicators = []) {
+  let warmup = 50;
+  (indicators || []).forEach(indicator => {
+    let needed = 0;
+    if (indicator.type === 'MACD') {
+      needed = (indicator.slow || 26) + (indicator.signal || 9);
+    } else if (Number.isFinite(indicator.period)) {
+      needed = indicator.period + 1;
+    }
+    if (needed > warmup) warmup = needed;
+  });
+  return warmup;
+}
+
 // Run backtest simulation (on simulated data - pass preloadedData to reuse a series)
 export async function runBacktest(config, preloadedData = null) {
   const { symbol, startDate, endDate, timeframe, initialCapital, strategy, indicators, riskPercent } = config;
@@ -436,15 +453,18 @@ export async function runBacktest(config, preloadedData = null) {
   
   // Calculate indicators
   const indicatorResults = calculateIndicators(data, indicators);
-  
+
   // Initialize backtest state
   let equity = initialCapital;
   let position = null;
   const trades = [];
   const equityCurve = [{ timestamp: data.timestamp[0], equity: initialCapital }];
-  
+
+  // Warmup: skip bars until every indicator has data (50-bar floor)
+  const warmupBars = computeWarmupBars(indicators);
+
   // Run simulation
-  for (let i = 50; i < data.timestamp.length; i++) {
+  for (let i = warmupBars; i < data.timestamp.length; i++) {
     const candle = {
       timestamp: data.timestamp[i],
       open: data.open[i],
@@ -539,10 +559,47 @@ export async function runBacktest(config, preloadedData = null) {
         position = null;
       }
     }
-    
-    equityCurve.push({ timestamp: candle.timestamp, equity });
+
+    // Mark-to-market: include the open position's unrealized P&L so
+    // intra-trade drawdown is visible in the equity curve
+    let markToMarketEquity = equity;
+    if (position) {
+      const unrealizedPnl = position.side === 'Long' ?
+        (candle.close - position.entryPrice) * position.quantity :
+        (position.entryPrice - candle.close) * position.quantity;
+      markToMarketEquity = equity + unrealizedPnl;
+    }
+    equityCurve.push({ timestamp: candle.timestamp, equity: markToMarketEquity });
   }
-  
+
+  // Force-close any position still open at the end of the data so its
+  // P&L is realized and counted as a trade
+  if (position) {
+    const lastIndex = data.timestamp.length - 1;
+    const exitPrice = data.close[lastIndex];
+    const pnl = position.side === 'Long' ?
+      (exitPrice - position.entryPrice) * position.quantity :
+      (position.entryPrice - exitPrice) * position.quantity;
+
+    equity += pnl;
+
+    trades.push({
+      side: position.side,
+      entryPrice: position.entryPrice,
+      exitPrice,
+      entryTime: position.entryTime,
+      exitTime: data.timestamp[lastIndex],
+      quantity: position.quantity,
+      pnl,
+      exitReason: 'end_of_data'
+    });
+
+    position = null;
+    // The last curve point already marked this position to market at the
+    // final close; replace it with the realized equity
+    equityCurve[equityCurve.length - 1] = { timestamp: data.timestamp[lastIndex], equity };
+  }
+
   // Calculate statistics
   const winningTrades = trades.filter(t => t.pnl > 0);
   const losingTrades = trades.filter(t => t.pnl < 0);
@@ -551,7 +608,10 @@ export async function runBacktest(config, preloadedData = null) {
   const winRate = trades.length > 0 ? (winningTrades.length / trades.length) * 100 : 0;
   const avgWin = winningTrades.length > 0 ? winningTrades.reduce((sum, t) => sum + t.pnl, 0) / winningTrades.length : 0;
   const avgLoss = losingTrades.length > 0 ? Math.abs(losingTrades.reduce((sum, t) => sum + t.pnl, 0) / losingTrades.length) : 0;
-  const profitFactor = avgLoss > 0 ? (avgWin * winningTrades.length) / (avgLoss * losingTrades.length) : 0;
+  // Profit factor = gross profit / gross loss; Infinity for a flawless run
+  const grossProfit = winningTrades.reduce((sum, t) => sum + t.pnl, 0);
+  const grossLoss = Math.abs(losingTrades.reduce((sum, t) => sum + t.pnl, 0));
+  const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : (grossProfit > 0 ? Infinity : 0);
   
   // Max drawdown
   let peak = initialCapital;

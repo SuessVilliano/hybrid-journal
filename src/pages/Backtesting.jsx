@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Play, Info, Layers } from 'lucide-react';
+import { Play, Info, Layers, ShieldAlert } from 'lucide-react';
 import AdvancedBacktestForm from '@/components/backtesting/AdvancedBacktestForm';
 import BacktestResults from '@/components/backtesting/BacktestResults';
 import BacktestHistory from '@/components/backtesting/BacktestHistory';
@@ -21,20 +21,29 @@ export default function Backtesting() {
 
   const queryClient = useQueryClient();
 
+  const { data: currentUser, isLoading: isLoadingUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => base44.auth.me()
+  });
+
+  const isAdmin = currentUser?.role === 'admin';
+
   const { data: backtests = [] } = useQuery({
     queryKey: ['backtests'],
-    queryFn: () => base44.entities.Backtest.list('-created_date', 50)
+    queryFn: () => base44.entities.Backtest.list('-created_date', 50),
+    enabled: isAdmin
   });
 
   const { data: strategies = [] } = useQuery({
     queryKey: ['strategies'],
-    queryFn: () => base44.entities.Strategy.list('-created_date', 100)
+    queryFn: () => base44.entities.Strategy.list('-created_date', 100),
+    enabled: isAdmin
   });
 
   const createBacktestMutation = useMutation({
     mutationFn: (data) => base44.entities.Backtest.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['backtests']);
+      queryClient.invalidateQueries({ queryKey: ['backtests'] });
     }
   });
 
@@ -109,6 +118,29 @@ export default function Backtesting() {
     setView('form');
     // Could auto-populate form with current backtest settings
   };
+
+  if (isLoadingUser) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+      </div>
+    );
+  }
+
+  // Admin-only page guard. NOTE: client-side only — server-side enforcement is still needed.
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6 flex items-center justify-center">
+        <Card>
+          <CardContent className="p-8 text-center">
+            <ShieldAlert className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-slate-900 mb-2">Access Denied</h2>
+            <p className="text-slate-600">This page is only accessible to admin users.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">

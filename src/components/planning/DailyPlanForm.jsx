@@ -208,7 +208,7 @@ Provide:
       return base44.entities.DailyTradePlan.create(data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['dailyTradePlans']);
+      queryClient.invalidateQueries({ queryKey: ['dailyTradePlans'] });
       onSuccess?.();
       onClose?.();
     }

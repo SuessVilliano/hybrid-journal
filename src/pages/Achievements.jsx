@@ -52,7 +52,7 @@ export default function Achievements() {
       }
     }),
     onSuccess: () => {
-      queryClient.invalidateQueries(['achievement']);
+      queryClient.invalidateQueries({ queryKey: ['achievement'] });
     }
   });
 

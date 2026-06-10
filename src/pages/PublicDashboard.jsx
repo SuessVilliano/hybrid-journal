@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, Activity, Target, DollarSign } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { profitFactor as calcProfitFactor, formatProfitFactor } from '@/lib/metrics';
 
 export default function PublicDashboard() {
   const token = (() => {
@@ -35,6 +36,39 @@ export default function PublicDashboard() {
     retry: 1
   });
 
+  const { data: accounts = [] } = useQuery({
+    queryKey: ['publicAccounts', shareSettings?.created_by],
+    queryFn: async () => {
+      if (!shareSettings?.created_by) return [];
+      return await base44.asServiceRole.entities.Account.filter({ created_by: shareSettings.created_by });
+    },
+    enabled: !!shareSettings?.created_by && shareSettings?.is_public,
+    retry: 1
+  });
+
+  // Map account_id -> initial balance, used to express P&L as a percentage
+  // when dollar amounts are hidden.
+  const accountBalanceById = useMemo(() => {
+    const map = {};
+    accounts.forEach(a => {
+      if (a.id && a.initial_balance > 0) map[a.id] = a.initial_balance;
+    });
+    return map;
+  }, [accounts]);
+
+  // Privacy-safe P&L formatter for hideDollars mode: percentage of the
+  // account's initial balance when available, otherwise direction only.
+  // Never renders the raw dollar amount.
+  const formatHiddenPnl = (trade) => {
+    const pnl = trade.pnl || 0;
+    const balance = accountBalanceById[trade.account_id];
+    if (balance) {
+      const pct = (pnl / balance) * 100;
+      return `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`;
+    }
+    return pnl >= 0 ? 'Win' : 'Loss';
+  };
+
   const stats = useMemo(() => {
     if (!trades.length) return null;
     
@@ -44,7 +78,9 @@ export default function PublicDashboard() {
     const winRate = (winning.length / trades.length) * 100;
     const avgWin = winning.length > 0 ? winning.reduce((sum, t) => sum + t.pnl, 0) / winning.length : 0;
     const avgLoss = losing.length > 0 ? Math.abs(losing.reduce((sum, t) => sum + t.pnl, 0) / losing.length) : 0;
-    const profitFactor = avgLoss > 0 ? (avgWin * winning.length) / (avgLoss * losing.length) : 0;
+    const grossProfit = winning.reduce((sum, t) => sum + t.pnl, 0);
+    const grossLoss = Math.abs(losing.reduce((sum, t) => sum + t.pnl, 0));
+    const profitFactor = calcProfitFactor(grossProfit, grossLoss);
 
     return {
       totalTrades: trades.length,
@@ -62,7 +98,7 @@ export default function PublicDashboard() {
     if (!trades.length) return null;
 
     let cumulative = 0;
-    const equityCurve = trades
+    const equityCurve = [...trades]
       .sort((a, b) => new Date(a.entry_date) - new Date(b.entry_date))
       .map((t, idx) => {
         cumulative += t.pnl || 0;
@@ -121,6 +157,11 @@ export default function PublicDashboard() {
   }
 
   const hideDollars = shareSettings.hide_dollar_amounts;
+
+  const bestTrade = trades.length > 0
+    ? trades.reduce((best, t) => ((t.pnl || 0) > (best.pnl || 0) ? t : best))
+    : null;
+  const bestTradePnl = bestTrade ? (bestTrade.pnl || 0) : 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 p-6">
@@ -184,7 +225,7 @@ export default function PublicDashboard() {
                 <Activity className="h-4 w-4 text-purple-400" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl md:text-4xl font-bold text-white">{stats.profitFactor.toFixed(2)}</div>
+                <div className="text-3xl md:text-4xl font-bold text-white">{formatProfitFactor(stats.profitFactor)}</div>
                 <p className="text-sm text-purple-300 mt-1">Risk-adjusted performance</p>
               </CardContent>
             </Card>
@@ -286,8 +327,12 @@ export default function PublicDashboard() {
               <CardTitle className="text-green-400 text-lg">Best Trade</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold text-green-400 mb-2">
-                {hideDollars ? '+' + Math.max(...trades.map(t => t.pnl)).toFixed(1) + '%' : '+$' + Math.max(...trades.map(t => t.pnl)).toFixed(2)}
+              <div className={`text-4xl font-bold mb-2 ${bestTradePnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {!bestTrade
+                  ? 'N/A'
+                  : hideDollars
+                    ? formatHiddenPnl(bestTrade)
+                    : `${bestTradePnl >= 0 ? '+' : '-'}$${Math.abs(bestTradePnl).toFixed(2)}`}
               </div>
               <div className="text-sm text-slate-400">Largest winning trade</div>
             </CardContent>
@@ -338,9 +383,9 @@ export default function PublicDashboard() {
                         </td>
                         <td className={`py-3 font-bold ${trade.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                           {hideDollars ? (
-                            `${trade.pnl >= 0 ? '+' : ''}${((trade.pnl / 100) * 100).toFixed(1)}%`
+                            formatHiddenPnl(trade)
                           ) : (
-                            `${trade.pnl >= 0 ? '+' : ''}$${Math.abs(trade.pnl).toFixed(2)}`
+                            `${(trade.pnl || 0) >= 0 ? '+' : '-'}$${Math.abs(trade.pnl || 0).toFixed(2)}`
                           )}
                         </td>
                         <td className="py-3 text-slate-400">{trade.platform}</td>

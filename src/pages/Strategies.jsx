@@ -29,7 +29,7 @@ export default function Strategies() {
   const createStrategyMutation = useMutation({
     mutationFn: (data) => base44.entities.Strategy.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['strategies']);
+      queryClient.invalidateQueries({ queryKey: ['strategies'] });
       setShowForm(false);
       setEditingStrategy(null);
     }
@@ -38,7 +38,7 @@ export default function Strategies() {
   const updateStrategyMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Strategy.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['strategies']);
+      queryClient.invalidateQueries({ queryKey: ['strategies'] });
       setShowForm(false);
       setEditingStrategy(null);
     }
@@ -47,7 +47,7 @@ export default function Strategies() {
   const deleteStrategyMutation = useMutation({
     mutationFn: (id) => base44.entities.Strategy.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries(['strategies']);
+      queryClient.invalidateQueries({ queryKey: ['strategies'] });
     }
   });
 

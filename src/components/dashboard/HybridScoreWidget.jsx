@@ -2,6 +2,8 @@ import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Award, TrendingUp, Target, Calendar } from 'lucide-react';
+import { getISOWeek, getISOWeekYear } from 'date-fns';
+import { profitFactor as calcProfitFactor } from '@/lib/metrics';
 
 export default function HybridScoreWidget({ trades }) {
   const darkMode = document.documentElement.classList.contains('dark');
@@ -23,7 +25,8 @@ export default function HybridScoreWidget({ trades }) {
     const totalWins = winningTrades.reduce((sum, t) => sum + t.pnl, 0);
     const losingTrades = trades.filter(t => t.pnl < 0);
     const totalLosses = Math.abs(losingTrades.reduce((sum, t) => sum + t.pnl, 0));
-    const profitFactor = totalLosses > 0 ? totalWins / totalLosses : totalWins > 0 ? 5 : 0;
+    // Cap at 5 for scoring/display (Infinity from no losses becomes 5)
+    const profitFactor = Math.min(calcProfitFactor(totalWins, totalLosses), 5);
     
     let profitFactorPoints = 1;
     if (profitFactor >= 3) profitFactorPoints = 5;
@@ -35,7 +38,9 @@ export default function HybridScoreWidget({ trades }) {
     const tradesByWeek = {};
     trades.forEach(t => {
       const date = new Date(t.entry_date);
-      const weekKey = `${date.getFullYear()}-W${Math.ceil((date.getDate() + new Date(date.getFullYear(), date.getMonth(), 1).getDay()) / 7)}`;
+      // ISO week key (e.g. "2024-W05") so weeks are unique across months
+      // and lexicographic sort is chronological
+      const weekKey = `${getISOWeekYear(date)}-W${String(getISOWeek(date)).padStart(2, '0')}`;
       if (!tradesByWeek[weekKey]) tradesByWeek[weekKey] = 0;
       tradesByWeek[weekKey] += t.pnl || 0;
     });

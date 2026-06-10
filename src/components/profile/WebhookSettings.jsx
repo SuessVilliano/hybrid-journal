@@ -29,7 +29,7 @@ export default function WebhookSettings() {
       return newToken;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['currentUser']);
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
       toast.success('New webhook token generated!');
     }
   });
@@ -39,7 +39,7 @@ export default function WebhookSettings() {
       await base44.auth.updateMe({ webhook_enabled: enabled });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['currentUser']);
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
       toast.success('Webhook settings updated');
     }
   });
@@ -85,7 +85,7 @@ export default function WebhookSettings() {
 
       if (response.ok) {
         toast.success('Webhook test successful!');
-        queryClient.invalidateQueries(['signals']);
+        queryClient.invalidateQueries({ queryKey: ['signals'] });
       } else {
         toast.error('Webhook test failed');
       }

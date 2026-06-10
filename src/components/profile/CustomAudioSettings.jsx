@@ -33,7 +33,7 @@ export default function CustomAudioSettings() {
   const createAlertMutation = useMutation({
     mutationFn: async (data) => base44.entities.CustomAudioAlert.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['audioAlerts']);
+      queryClient.invalidateQueries({ queryKey: ['audioAlerts'] });
       setRecordedBlob(null);
       setEditingName('');
     }
@@ -42,7 +42,7 @@ export default function CustomAudioSettings() {
   const updateAlertMutation = useMutation({
     mutationFn: async ({ id, data }) => base44.entities.CustomAudioAlert.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['audioAlerts']);
+      queryClient.invalidateQueries({ queryKey: ['audioAlerts'] });
       setEditingId(null);
       setEditingName('');
     }
@@ -50,7 +50,7 @@ export default function CustomAudioSettings() {
 
   const deleteAlertMutation = useMutation({
     mutationFn: async (id) => base44.entities.CustomAudioAlert.delete(id),
-    onSuccess: () => queryClient.invalidateQueries(['audioAlerts'])
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['audioAlerts'] })
   });
 
   const handleFileUpload = async (e) => {

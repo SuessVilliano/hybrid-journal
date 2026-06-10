@@ -43,6 +43,10 @@
       "type": "string",
       "description": "Trading account number"
     },
+    "account_id": {
+      "type": "string",
+      "description": "Internal Account entity id — trades synced from this connection are stamped with this so Accounts-page stats include them"
+    },
     "external_connection_id": {
       "type": "string",
       "description": "Reference ID from iCopyTrade or external system"
@@ -71,6 +75,11 @@
       "type": "string",
       "format": "date-time",
       "description": "Last successful sync timestamp"
+    },
+    "sync_in_progress_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Per-connection sync lock: set when a sync starts, cleared when it finishes. A sync younger than ~5 minutes blocks concurrent syncs for this connection."
     },
     "sync_frequency_minutes": {
       "type": "number",

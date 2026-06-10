@@ -26,7 +26,7 @@ export default function Automation() {
   const createStrategyMutation = useMutation({
     mutationFn: (data) => base44.entities.AutomatedStrategy.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['automatedStrategies']);
+      queryClient.invalidateQueries({ queryKey: ['automatedStrategies'] });
       setShowBuilder(false);
       setEditingStrategy(null);
     }
@@ -35,7 +35,7 @@ export default function Automation() {
   const updateStrategyMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.AutomatedStrategy.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['automatedStrategies']);
+      queryClient.invalidateQueries({ queryKey: ['automatedStrategies'] });
       setShowBuilder(false);
       setEditingStrategy(null);
     }

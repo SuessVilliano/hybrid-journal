@@ -42,15 +42,18 @@ const AuthenticatedApp = () => {
     return <UserNotRegisteredError />;
   }
 
-  // Handle auth_required — redirect to login
+  // Handle auth_required — still render the auth routes so the login form is
+  // reachable (e.g. with a stale/expired token); redirect everything else.
   if (authError?.type === 'auth_required') {
-    if (!window.location.pathname.startsWith('/login') &&
-        !window.location.pathname.startsWith('/register') &&
-        !window.location.pathname.startsWith('/forgot-password') &&
-        !window.location.pathname.startsWith('/reset-password')) {
-      window.location.href = '/login';
-    }
-    return null;
+    return (
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
   }
 
   // Separate pages into public and protected

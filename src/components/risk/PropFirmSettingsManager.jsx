@@ -42,7 +42,7 @@ export default function PropFirmSettingsManager({ onSettingsSaved }) {
       return base44.entities.PropFirmSettings.create(data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['propFirmSettings']);
+      queryClient.invalidateQueries({ queryKey: ['propFirmSettings'] });
       setShowForm(false);
       setEditing(null);
       setFormData({
@@ -63,7 +63,7 @@ export default function PropFirmSettingsManager({ onSettingsSaved }) {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.PropFirmSettings.delete(id),
-    onSuccess: () => queryClient.invalidateQueries(['propFirmSettings'])
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['propFirmSettings'] })
   });
 
   const handleEdit = (setting) => {

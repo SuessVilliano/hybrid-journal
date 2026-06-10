@@ -36,7 +36,7 @@ export function useBrowserNotifications() {
             browser_push: true
           }
         });
-        queryClient.invalidateQueries(['user']);
+        queryClient.invalidateQueries({ queryKey: ['user'] });
       } catch (error) {
         console.error('Failed to update notification preferences:', error);
       }

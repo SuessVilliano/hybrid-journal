@@ -1,6 +1,10 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { decryptSecret } from './helpers/secrets.js';
 
 // Sync trades from DXtrade account to HybridJournal
+
+// A sync lock younger than this blocks concurrent syncs for the same connection.
+const SYNC_LOCK_TTL_MS = 5 * 60 * 1000;
 
 interface DXTradeSession {
     cookies: string;
@@ -169,12 +173,33 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'Not a DXtrade connection' }, { status: 400 });
         }
 
+        // Per-connection sync lock: if another sync started less than
+        // SYNC_LOCK_TTL_MS ago, bail out instead of duplicating trades.
+        const lockTs = connection.sync_in_progress_at ? Date.parse(connection.sync_in_progress_at) : NaN;
+        if (!isNaN(lockTs) && Date.now() - lockTs < SYNC_LOCK_TTL_MS) {
+            return Response.json({
+                success: false,
+                sync_in_progress: true,
+                error: 'Sync already in progress for this connection'
+            }, { status: 409 });
+        }
+        await base44.entities.BrokerConnection.update(connection_id, {
+            sync_in_progress_at: new Date().toISOString()
+        });
+
+        try {
+
         console.log(`[SyncDXTrade] Starting sync for connection ${connection_id}`);
+
+        // Credentials are stored encrypted at rest (see helpers/secrets) —
+        // decrypt before use. Legacy plaintext values pass through unchanged.
+        const username = await decryptSecret(connection.account_number || connection.username || '');
+        const password = await decryptSecret(connection.api_secret || connection.password || '');
 
         // Login to DXtrade
         const session = await dxtradeLogin(
-            connection.account_number || connection.username,
-            connection.api_secret || connection.password,
+            username,
+            password,
             connection.server
         );
 
@@ -231,7 +256,10 @@ Deno.serve(async (req) => {
                             exit_price: exitPrice || existing.exit_price,
                             pnl: pnl,
                             commission: commission || existing.commission,
-                            swap: swap || existing.swap
+                            swap: swap || existing.swap,
+                            // Stamp the linked internal account so Accounts-page
+                            // stats include synced trades (backfills old rows too).
+                            account_id: connection.account_id || existing.account_id || undefined
                         });
                         updated++;
                     } else {

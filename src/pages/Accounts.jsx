@@ -44,7 +44,7 @@ export default function Accounts() {
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Account.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['accounts']);
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
       setShowForm(false);
       setEditingAccount(null);
     }
@@ -53,7 +53,7 @@ export default function Accounts() {
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Account.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['accounts']);
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
       setShowForm(false);
       setEditingAccount(null);
     }
@@ -61,7 +61,7 @@ export default function Accounts() {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Account.delete(id),
-    onSuccess: () => queryClient.invalidateQueries(['accounts'])
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['accounts'] })
   });
 
   const getAccountStats = (accountId, initialBalance) => {
@@ -296,7 +296,7 @@ export default function Accounts() {
                   <ConnectionStatusCard 
                     key={conn.id} 
                     connection={conn}
-                    onSync={() => queryClient.invalidateQueries(['brokerConnections'])}
+                    onSync={() => queryClient.invalidateQueries({ queryKey: ['brokerConnections'] })}
                   />
                 ))}
               </div>
@@ -307,7 +307,7 @@ export default function Accounts() {
                 isOpen={showBrokerWizard}
                 onClose={() => setShowBrokerWizard(false)}
                 onComplete={() => {
-                  queryClient.invalidateQueries(['brokerConnections']);
+                  queryClient.invalidateQueries({ queryKey: ['brokerConnections'] });
                   setShowBrokerWizard(false);
                 }}
               />
@@ -352,7 +352,7 @@ function AccountForm({ account, onClose, onSubmit }) {
   const createPropFirmMutation = useMutation({
     mutationFn: (data) => base44.entities.PropFirmSettings.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['propFirmSettings']);
+      queryClient.invalidateQueries({ queryKey: ['propFirmSettings'] });
     }
   });
 

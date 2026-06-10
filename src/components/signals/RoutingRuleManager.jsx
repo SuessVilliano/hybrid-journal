@@ -36,7 +36,7 @@ export default function RoutingRuleManager() {
   const createRuleMutation = useMutation({
     mutationFn: (data) => base44.entities.SignalRoutingRule.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['routingRules']);
+      queryClient.invalidateQueries({ queryKey: ['routingRules'] });
       setShowEditor(false);
       setEditingRule(null);
       toast.success('Routing rule created');
@@ -46,7 +46,7 @@ export default function RoutingRuleManager() {
   const updateRuleMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.SignalRoutingRule.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['routingRules']);
+      queryClient.invalidateQueries({ queryKey: ['routingRules'] });
       setShowEditor(false);
       setEditingRule(null);
       toast.success('Routing rule updated');
@@ -56,14 +56,14 @@ export default function RoutingRuleManager() {
   const deleteRuleMutation = useMutation({
     mutationFn: (id) => base44.entities.SignalRoutingRule.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries(['routingRules']);
+      queryClient.invalidateQueries({ queryKey: ['routingRules'] });
       toast.success('Routing rule deleted');
     }
   });
 
   const toggleRuleMutation = useMutation({
     mutationFn: ({ id, enabled }) => base44.entities.SignalRoutingRule.update(id, { enabled }),
-    onSuccess: () => queryClient.invalidateQueries(['routingRules'])
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['routingRules'] })
   });
 
   const openEditor = (rule = null) => {

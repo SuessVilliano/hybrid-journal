@@ -36,7 +36,7 @@ export default function NotificationPreferences() {
       await base44.auth.updateMe({ notification_preferences: preferences });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['currentUser']);
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
       toast.success('Notification preferences saved!');
     }
   });

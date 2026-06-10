@@ -87,7 +87,7 @@ export default function Journal() {
       queryClient.setQueryData(['journalEntries'], context.previousEntries);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['journalEntries']);
+      queryClient.invalidateQueries({ queryKey: ['journalEntries'] });
       setNewEntry({ content: '', mood_tags: [], entry_type: 'thought' });
       setShowNewEntry(false);
     }

@@ -149,7 +149,7 @@ export default function WeeklyPlanForm({ existingPlan, monthlyPlan }) {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['weeklyPlans']);
+      queryClient.invalidateQueries({ queryKey: ['weeklyPlans'] });
       alert('Weekly plan saved!');
     }
   });

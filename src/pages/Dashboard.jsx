@@ -24,6 +24,7 @@ import CompoundCalculatorWidget from '@/components/dashboard/CompoundCalculatorW
 import HybridScoreWidget from '@/components/dashboard/HybridScoreWidget';
 import TodaysPlanWidget from '@/components/planning/TodaysPlanWidget';
 import GlobalAccountSelector from '@/components/accounts/GlobalAccountSelector';
+import { profitFactor as calcProfitFactor, formatProfitFactor } from '@/lib/metrics';
 
 export default function Dashboard() {
   const [timeframe, setTimeframe] = useState('all');
@@ -132,7 +133,9 @@ export default function Dashboard() {
     const avgLoss = losingTrades.length > 0 
       ? Math.abs(losingTrades.reduce((sum, t) => sum + t.pnl, 0) / losingTrades.length)
       : 0;
-    const profitFactor = avgLoss > 0 ? (avgWin * winningTrades.length) / (avgLoss * losingTrades.length) : 0;
+    const grossProfit = winningTrades.reduce((sum, t) => sum + t.pnl, 0);
+    const grossLoss = Math.abs(losingTrades.reduce((sum, t) => sum + t.pnl, 0));
+    const profitFactor = calcProfitFactor(grossProfit, grossLoss);
     
     return {
       totalTrades,
@@ -305,7 +308,7 @@ export default function Dashboard() {
                   <Activity className={`h-4 w-4 ${darkMode ? 'text-purple-400' : 'text-purple-600'}`} />
                 </CardHeader>
                 <CardContent>
-                  <div className={`text-2xl md:text-3xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>{stats.profitFactor.toFixed(2)}</div>
+                  <div className={`text-2xl md:text-3xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>{formatProfitFactor(stats.profitFactor)}</div>
                   <p className={`text-xs mt-1 ${darkMode ? 'text-purple-400/70' : 'text-purple-700/70'}`}>Risk-adjusted</p>
                 </CardContent>
               </Card>

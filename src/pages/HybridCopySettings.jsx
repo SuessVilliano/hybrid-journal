@@ -70,7 +70,7 @@ export default function HybridCopySettings() {
   const revokeConnection = async (appId) => {
     try {
       await base44.entities.ConnectedApp.update(appId, { status: 'revoked' });
-      queryClient.invalidateQueries(['connectedApps']);
+      queryClient.invalidateQueries({ queryKey: ['connectedApps'] });
       toast.success('Connection revoked');
     } catch (error) {
       toast.error('Failed to revoke: ' + error.message);
