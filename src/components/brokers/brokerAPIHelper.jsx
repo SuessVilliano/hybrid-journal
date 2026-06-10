@@ -36,13 +36,15 @@ export const SUPPORTED_BROKERS = [
     supportsAutoSync: true,
     syncFunction: 'syncDXTrade'
   },
-  { 
-    id: 'binance', 
-    name: 'Binance', 
-    type: 'crypto', 
+  {
+    id: 'binance',
+    name: 'Binance',
+    type: 'crypto',
     requiresCredentials: true,
     fields: ['api_key', 'api_secret'],
-    instructions: 'Create API key in Binance: Account > API Management. Enable Read permission only for security.'
+    supportsAutoSync: true,
+    syncFunction: 'syncBroker',
+    instructions: 'Create API key in Binance: Account > API Management. Enable Read permission only for security. Auto-sync imports closed spot round-trips (BTCUSDT and ETHUSDT by default) with real fill prices and P&L.'
   },
   { 
     id: 'coinbase', 
@@ -52,25 +54,29 @@ export const SUPPORTED_BROKERS = [
     fields: ['api_key', 'api_secret'],
     instructions: 'Create API key in Coinbase Pro: Settings > API. Select View permission only.'
   },
-  { 
-    id: 'tradovate', 
-    name: 'Tradovate', 
-    type: 'futures', 
+  {
+    id: 'tradovate',
+    name: 'Tradovate',
+    type: 'futures',
     requiresCredentials: true,
     fields: ['username', 'password', 'environment'],
-    supportsAutoSync: true,
-    syncFunction: 'syncBroker',
-    instructions: 'Enter your Tradovate login credentials. Select Demo for paper trading or Live for real accounts. Environment: demo.tradovateapi.com or live.tradovateapi.com'
+    // Auto-sync disabled: the syncBroker backend has no real Tradovate
+    // integration (the old fallback fabricated simulated trades — AUDIT.md
+    // critical #1). Use statement upload until a real integration exists.
+    supportsAutoSync: false,
+    instructions: 'Automatic sync for Tradovate is not yet supported. Export your trade history from Tradovate and upload it via the Import feature on the Trades page.'
   },
-  { 
-    id: 'kraken', 
-    name: 'Kraken', 
-    type: 'crypto', 
+  {
+    id: 'kraken',
+    name: 'Kraken',
+    type: 'crypto',
     requiresCredentials: true,
     fields: ['api_key', 'api_secret'],
-    supportsAutoSync: true,
-    syncFunction: 'syncBroker',
-    instructions: 'Generate API key in Kraken: Security > API. Enable: Query Funds, Query Open Orders & Trades, Query Closed Orders & Trades. DO NOT enable trading permissions.'
+    // Auto-sync disabled: the syncBroker backend has no real Kraken
+    // integration (the old fallback fabricated simulated trades — AUDIT.md
+    // critical #1). Use statement upload until a real integration exists.
+    supportsAutoSync: false,
+    instructions: 'Automatic sync for Kraken is not yet supported. Export your trade history (Kraken: History > Export) and upload it via the Import feature on the Trades page.'
   },
   { 
     id: 'ninjatrader', 
