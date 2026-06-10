@@ -18,7 +18,7 @@ export default function FloatingAIAssistant({ isOpen, onClose }) {
   const [uploading, setUploading] = useState(false);
   const recognitionRef = useRef(null);
   const fileInputRef = useRef(null);
-  const [position, setPosition] = useState({ x: window.innerWidth - 420, y: 100 });
+  const [position, setPosition] = useState({ x: Math.max(8, window.innerWidth - 420), y: 80 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const messagesEndRef = useRef(null);
@@ -355,7 +355,7 @@ export default function FloatingAIAssistant({ isOpen, onClose }) {
         left: `${position.x}px`,
         top: `${position.y}px`,
         zIndex: 9999,
-        width: isMinimized ? '300px' : '400px',
+        width: isMinimized ? 'min(300px, calc(100vw - 16px))' : 'min(400px, calc(100vw - 16px))',
         maxHeight: isMinimized ? 'auto' : '600px'
       }}
       onMouseDown={handleMouseDown}

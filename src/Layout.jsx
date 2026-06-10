@@ -656,11 +656,14 @@ export default function Layout({ children, currentPageName }) {
       {/* Floating AI Assistant */}
       <FloatingAIAssistant isOpen={showAI} onClose={() => setShowAI(false)} />
 
-      {/* Floating AI Toggle Button - Always visible */}
+      {/* Floating AI Toggle Button - Always visible, lifted above the bottom tab bar on mobile/app mode */}
       {!showAI && (
         <button
           onClick={() => setShowAI(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-full shadow-2xl hover:scale-110 transition-transform z-50 flex items-center justify-center group"
+          className="fixed right-6 w-14 h-14 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-full shadow-2xl hover:scale-110 transition-transform z-50 flex items-center justify-center group"
+          style={{
+            bottom: isMobile ? 'calc(env(safe-area-inset-bottom, 0px) + 5.5rem)' : '1.5rem'
+          }}
           title="Open AI Assistant"
         >
           <Brain className="h-6 w-6 text-white" />
