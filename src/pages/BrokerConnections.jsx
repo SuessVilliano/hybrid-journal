@@ -18,15 +18,23 @@ export default function BrokerConnections() {
 
   const queryClient = useQueryClient();
 
+  // Admin-only page (client-side gate; server-side enforcement still needed)
+  const { data: currentUser, isLoading: isLoadingUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => base44.auth.me()
+  });
+  const isAdmin = currentUser?.role === 'admin';
+
   const { data: connections = [], isLoading } = useQuery({
     queryKey: ['brokerConnections'],
-    queryFn: () => base44.entities.BrokerConnection.list('-created_date', 50)
+    queryFn: () => base44.entities.BrokerConnection.list('-created_date', 50),
+    enabled: isAdmin
   });
 
   const createConnectionMutation = useMutation({
     mutationFn: (data) => base44.entities.BrokerConnection.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['brokerConnections']);
+      queryClient.invalidateQueries({ queryKey: ['brokerConnections'] });
       setShowForm(false);
       setEditingConnection(null);
     }
@@ -35,7 +43,7 @@ export default function BrokerConnections() {
   const updateConnectionMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.BrokerConnection.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['brokerConnections']);
+      queryClient.invalidateQueries({ queryKey: ['brokerConnections'] });
       setShowForm(false);
       setEditingConnection(null);
     }
@@ -44,7 +52,7 @@ export default function BrokerConnections() {
   const deleteConnectionMutation = useMutation({
     mutationFn: (id) => base44.entities.BrokerConnection.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries(['brokerConnections']);
+      queryClient.invalidateQueries({ queryKey: ['brokerConnections'] });
     }
   });
 
@@ -59,27 +67,30 @@ export default function BrokerConnections() {
   const handleSync = async (connection) => {
     try {
       const result = await syncBrokerTrades(connection);
-      
-      // Update connection with new balance and sync time
-      await updateConnectionMutation.mutateAsync({
-        id: connection.id,
-        data: {
-          ...connection,
-          last_sync: new Date().toISOString(),
-          account_balance: result.account_balance,
-          account_equity: result.account_equity,
-          status: 'connected'
-        }
-      });
 
-      queryClient.invalidateQueries(['trades']);
+      // Update only the sync fields — spreading the whole (possibly stale)
+      // connection object would clobber concurrent changes. `last_sync_at`
+      // is canonical; `last_sync` is written during the transition.
+      const syncedAt = new Date().toISOString();
+      const data = {
+        last_sync_at: syncedAt,
+        last_sync: syncedAt,
+        status: 'connected',
+        error_message: null
+      };
+      if (typeof result?.account_balance === 'number') {
+        data.account_balance = result.account_balance;
+        data.account_equity = result.account_equity;
+      }
+      await updateConnectionMutation.mutateAsync({ id: connection.id, data });
+
+      queryClient.invalidateQueries({ queryKey: ['trades'] });
       
       alert(`✅ Sync complete!\n${result.imported} new trades imported\n${result.skipped} trades already exist`);
     } catch (error) {
       await updateConnectionMutation.mutateAsync({
         id: connection.id,
         data: {
-          ...connection,
           status: 'error',
           error_message: error.message
         }
@@ -101,8 +112,8 @@ export default function BrokerConnections() {
       const response = await base44.functions.invoke('onLoginSync', {});
       const data = response.data;
 
-      queryClient.invalidateQueries(['brokerConnections']);
-      queryClient.invalidateQueries(['trades']);
+      queryClient.invalidateQueries({ queryKey: ['brokerConnections'] });
+      queryClient.invalidateQueries({ queryKey: ['trades'] });
 
       if (data.success) {
         alert(`✅ Sync complete!\n${data.synced} accounts synced\n${data.skipped} skipped (recently synced)\n${data.errors} errors`);
@@ -122,8 +133,8 @@ export default function BrokerConnections() {
       setLoginSyncDone(true);
       // Trigger background sync - don't wait for it
       base44.functions.invoke('onLoginSync', {}).then(() => {
-        queryClient.invalidateQueries(['brokerConnections']);
-        queryClient.invalidateQueries(['trades']);
+        queryClient.invalidateQueries({ queryKey: ['brokerConnections'] });
+        queryClient.invalidateQueries({ queryKey: ['trades'] });
       }).catch(err => {
         console.log('[LoginSync] Background sync error:', err.message);
       });
@@ -132,10 +143,36 @@ export default function BrokerConnections() {
 
   const darkMode = document.documentElement.classList.contains('dark');
 
+  if (isLoadingUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className={`min-h-screen p-6 flex items-center justify-center ${
+        darkMode
+          ? 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900'
+          : 'bg-gradient-to-br from-slate-50 to-slate-100'
+      }`}>
+        <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white'}>
+          <CardContent className="p-8 text-center">
+            <AlertCircle className="h-12 w-12 mx-auto mb-4 text-red-500" />
+            <h2 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>Access Denied</h2>
+            <p className={darkMode ? 'text-slate-400' : 'text-slate-600'}>This page is only accessible to admin users.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className={`min-h-screen p-6 transition-colors ${
-      darkMode 
-        ? 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900' 
+      darkMode
+        ? 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900'
         : 'bg-gradient-to-br from-slate-50 to-slate-100'
     }`}>
       <AutoSyncManager />

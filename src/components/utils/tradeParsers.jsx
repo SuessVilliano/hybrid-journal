@@ -44,6 +44,32 @@ export function parseStatementDate(value) {
   return isNaN(date.getTime()) ? undefined : date.toISOString();
 }
 
+// Map an explicit direction value to 'Long'/'Short'. Only buy/long and
+// sell/short resolve; anything else (balance, deposit, market, limit, ...)
+// returns undefined so the row can be rejected instead of defaulting to Short.
+export function parseTradeSide(value) {
+  if (value === undefined || value === null) return undefined;
+  const v = String(value).toLowerCase();
+  if (v.includes('buy') || v.includes('long')) return 'Long';
+  if (v.includes('sell') || v.includes('short')) return 'Short';
+  return undefined;
+}
+
+// Shared validity guard for mapped CSV trades. Returns true when the trade is
+// importable; otherwise records the reason in the errors array.
+function validateMappedTrade(trade, lineNumber, errors) {
+  if (!trade.symbol) return false;
+  if (trade.pnl === undefined) {
+    errors.push({ line: lineNumber, error: 'Invalid or missing P&L value — row skipped' });
+    return false;
+  }
+  if (!trade.side) {
+    errors.push({ line: lineNumber, error: 'Could not determine trade direction — row skipped' });
+    return false;
+  }
+  return true;
+}
+
 // Locate MT4/5 statement columns by matching header row text (case-insensitive).
 // Returns null when the row doesn't look like an MT4 trade header.
 function mapMT4HeaderColumns(headerTexts) {
@@ -116,12 +142,8 @@ export const parsers = {
       try {
         const values = parseCSVLine(lines[i]);
         const trade = mapCSVToTrade(headers, values);
-        if (trade.symbol) {
-          if (trade.pnl === undefined) {
-            errors.push({ line: i + 1, error: 'Invalid or missing P&L value — row skipped' });
-          } else {
-            trades.push(trade);
-          }
+        if (validateMappedTrade(trade, i + 1, errors)) {
+          trades.push(trade);
         }
       } catch (error) {
         errors.push({ line: i + 1, error: error.message });
@@ -164,7 +186,10 @@ export const parsers = {
           const cellValue = (idx) => (idx !== undefined && cells[idx] !== undefined) ? cleanCell(cells[idx]) : '';
 
           const type = cellValue(cols.type);
-          if (!type.toLowerCase().includes('buy') && !type.toLowerCase().includes('sell')) continue;
+          // Only explicit buy/sell rows are trades; balance/deposit/credit
+          // rows in MT4 statements are intentionally skipped
+          const side = parseTradeSide(type);
+          if (!side) continue;
 
           const symbol = cellValue(cols.symbol);
           if (!symbol) continue;
@@ -183,7 +208,7 @@ export const parsers = {
 
           trades.push({
             symbol: symbol,
-            side: type.toLowerCase().includes('buy') ? 'Long' : 'Short',
+            side,
             entry_date: entryDate,
             exit_date: parseStatementDate(cellValue(cols.closeTime)) || null,
             entry_price: parseMoney(cellValue(cols.openPrice)),
@@ -224,7 +249,10 @@ export const parsers = {
         const cols = resolveMT4Columns(headerCols, values.length);
 
         const type = values[cols.type];
-        if (!type || (!type.toLowerCase().includes('buy') && !type.toLowerCase().includes('sell'))) continue;
+        // Only explicit buy/sell rows are trades; balance/deposit/credit
+        // rows in MT4 statements are intentionally skipped
+        const side = parseTradeSide(type);
+        if (!side) continue;
         if (!values[cols.symbol]) continue;
 
         const pnl = parseMoney(values[cols.profit]);
@@ -241,7 +269,7 @@ export const parsers = {
 
         trades.push({
           symbol: values[cols.symbol],
-          side: type.toLowerCase().includes('buy') ? 'Long' : 'Short',
+          side,
           entry_date: entryDate,
           exit_date: parseStatementDate(values[cols.closeTime]) || null,
           entry_price: parseMoney(values[cols.openPrice]),
@@ -289,9 +317,11 @@ export const parsers = {
           continue;
         }
 
+        const side = sideIdx >= 0 ? parseTradeSide(values[sideIdx]) : undefined;
+
         const trade = {
           symbol: values[symbolIdx],
-          side: values[sideIdx]?.toLowerCase().includes('buy') ? 'Long' : 'Short',
+          side,
           entry_date: entryDate,
           exit_date: values[closeTimeIdx] ? (parseStatementDate(values[closeTimeIdx]) || null) : null,
           entry_price: parseMoney(values[entryPriceIdx]),
@@ -306,6 +336,8 @@ export const parsers = {
         if (trade.symbol) {
           if (trade.pnl === undefined) {
             errors.push({ line: i + 1, error: `Invalid or missing profit value: "${values[profitIdx]}" — row skipped` });
+          } else if (!trade.side) {
+            errors.push({ line: i + 1, error: 'Could not determine trade direction — row skipped' });
           } else {
             trades.push(trade);
           }
@@ -331,14 +363,10 @@ export const parsers = {
         const values = parseCSVLine(lines[i]);
         const trade = mapCSVToTrade(headers, values);
         
-        if (trade.symbol) {
-          if (trade.pnl === undefined) {
-            errors.push({ line: i + 1, error: 'Invalid or missing P&L value — row skipped' });
-          } else {
-            trade.platform = 'DXTrade';
-            trade.import_source = 'DXTrade Export';
-            trades.push(trade);
-          }
+        if (validateMappedTrade(trade, i + 1, errors)) {
+          trade.platform = 'DXTrade';
+          trade.import_source = 'DXTrade Export';
+          trades.push(trade);
         }
       } catch (error) {
         errors.push({ line: i + 1, error: error.message });
@@ -361,14 +389,10 @@ export const parsers = {
         const values = parseCSVLine(lines[i]);
         const trade = mapCSVToTrade(headers, values);
         
-        if (trade.symbol) {
-          if (trade.pnl === undefined) {
-            errors.push({ line: i + 1, error: 'Invalid or missing P&L value — row skipped' });
-          } else {
-            trade.platform = 'MatchTrader';
-            trade.import_source = 'MatchTrader Export';
-            trades.push(trade);
-          }
+        if (validateMappedTrade(trade, i + 1, errors)) {
+          trade.platform = 'MatchTrader';
+          trade.import_source = 'MatchTrader Export';
+          trades.push(trade);
         }
       } catch (error) {
         errors.push({ line: i + 1, error: error.message });
@@ -391,15 +415,11 @@ export const parsers = {
         const values = parseCSVLine(lines[i]);
         const trade = mapCSVToTrade(headers, values);
         
-        if (trade.symbol) {
-          if (trade.pnl === undefined) {
-            errors.push({ line: i + 1, error: 'Invalid or missing P&L value — row skipped' });
-          } else {
-            trade.platform = 'Rithmic';
-            trade.instrument_type = 'Futures';
-            trade.import_source = 'Rithmic Report';
-            trades.push(trade);
-          }
+        if (validateMappedTrade(trade, i + 1, errors)) {
+          trade.platform = 'Rithmic';
+          trade.instrument_type = 'Futures';
+          trade.import_source = 'Rithmic Report';
+          trades.push(trade);
         }
       } catch (error) {
         errors.push({ line: i + 1, error: error.message });
@@ -422,14 +442,10 @@ export const parsers = {
         const values = parseCSVLine(lines[i]);
         const trade = mapCSVToTrade(headers, values);
         
-        if (trade.symbol) {
-          if (trade.pnl === undefined) {
-            errors.push({ line: i + 1, error: 'Invalid or missing P&L value — row skipped' });
-          } else {
-            trade.platform = 'TradingView';
-            trade.import_source = 'TradingView Paper Trading';
-            trades.push(trade);
-          }
+        if (validateMappedTrade(trade, i + 1, errors)) {
+          trade.platform = 'TradingView';
+          trade.import_source = 'TradingView Paper Trading';
+          trades.push(trade);
         }
       } catch (error) {
         errors.push({ line: i + 1, error: error.message });
@@ -485,10 +501,13 @@ function mapCSVToTrade(headers, values) {
     if (h.includes('symbol') || h.includes('instrument') || h.includes('item') || h === 'pair' || h === 'ticker') {
       trade.symbol = value.replace(/['"]/g, '');
     }
-    // Side/Direction detection
-    else if (h.includes('side') || h.includes('direction') || h.includes('type') || h.includes('action')) {
-      const v = value.toLowerCase();
-      trade.side = (v.includes('buy') || v.includes('long')) ? 'Long' : 'Short';
+    // Side/Direction detection. Order-type style columns (Market/Limit/Stop)
+    // are excluded, and only explicit buy/long/sell/short values map to a
+    // direction — anything else (balance, deposit, ...) leaves side unset.
+    else if ((h.includes('side') || h.includes('direction') || h.includes('type') || h.includes('action')) &&
+             !/order[\s_-]*type|execution[\s_-]*type/.test(h)) {
+      const side = parseTradeSide(value);
+      if (side) trade.side = side;
     }
     // Entry price
     else if ((h.includes('entry') || h.includes('open')) && h.includes('price')) {
@@ -731,10 +750,19 @@ Return the platform name and the array of trades. If you cannot find any complet
           return;
         }
 
+        const side = parseTradeSide(trade.side);
+        if (!side) {
+          errors.push({
+            line: index + 1,
+            error: 'Could not determine trade direction — row skipped'
+          });
+          return;
+        }
+
         // Normalize the trade
         const normalizedTrade = {
           symbol: trade.symbol.trim().toUpperCase(),
-          side: trade.side === 'Long' || trade.side === 'Buy' ? 'Long' : 'Short',
+          side,
           entry_date: parseStatementDate(trade.entry_date) || new Date().toISOString(),
           exit_date: parseStatementDate(trade.exit_date) || new Date().toISOString(),
           entry_price: parseMoney(trade.entry_price) ?? 0,

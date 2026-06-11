@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +14,7 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
     broker_id: 'dxtrade',
     broker_name: 'DXTrade',
     account_number: '',
+    account_id: '',
     connection_type: 'credentials',
     username: '',
     password: '',
@@ -28,6 +30,15 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
 
   const [validating, setValidating] = useState(false);
   const [validationResult, setValidationResult] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
+
+  // Internal journal accounts — synced trades get stamped with the selected
+  // account_id so the Accounts page includes them in balance/win-rate stats.
+  const { data: accounts = [] } = useQuery({
+    queryKey: ['accounts'],
+    queryFn: () => base44.entities.Account.list()
+  });
 
   const selectedBroker = useMemo(() =>
     SUPPORTED_BROKERS.find(b => b.id === formData.broker_id),
@@ -119,6 +130,7 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitError(null);
 
     const submitData = { ...formData };
     if (isDXTrade || formData.connection_type === 'dxtrade_login') {
@@ -137,18 +149,29 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
       submitData.status = formData.connection_type === 'credentials' ? 'manual' : (validationResult?.valid ? 'connected' : 'pending');
     }
 
-    // Encrypt API credentials server-side before persisting (no-op fallback
-    // if SECRET_VAULT_KEY isn't set yet — see base44/functions/helpers/secrets).
-    if (submitData.api_key || submitData.api_secret) {
+    // Encrypt ALL secret fields (api_key, api_secret, password) server-side
+    // before persisting (no-op fallback if SECRET_VAULT_KEY isn't set yet —
+    // see base44/functions/helpers/secrets). Usernames stay plaintext.
+    if (submitData.api_key || submitData.api_secret || submitData.password) {
+      setSaving(true);
       try {
         const enc = await base44.functions.invoke('encryptBrokerKey', {
           api_key: submitData.api_key,
           api_secret: submitData.api_secret,
+          password: submitData.password,
         });
         if (enc?.data?.api_key) submitData.api_key = enc.data.api_key;
         if (enc?.data?.api_secret) submitData.api_secret = enc.data.api_secret;
-      } catch (e) {
-        console.warn('[BrokerConnectionForm] secret encryption failed, persisting raw:', e?.message);
+        if (enc?.data?.password) submitData.password = enc.data.password;
+      } catch (err) {
+        // Fail CLOSED: never persist plaintext secrets when encryption fails.
+        setSubmitError(
+          `Could not encrypt your credentials (${err?.message || 'unknown error'}). ` +
+          'The connection was NOT saved — please try again.'
+        );
+        return;
+      } finally {
+        setSaving(false);
       }
     }
 
@@ -210,6 +233,38 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
                 placeholder="123456789"
                 required
               />
+            </div>
+
+            {/* Journal Account link — synced trades are stamped with this id */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Journal Account
+              </label>
+              <Select
+                value={formData.account_id || ''}
+                onValueChange={(val) => setFormData({...formData, account_id: val})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select the journal account for synced trades..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {accounts.map(acc => (
+                    <SelectItem key={acc.id} value={acc.id}>
+                      {acc.name}
+                      {acc.account_number && ` — #${acc.account_number}`}
+                      {acc.account_type && ` (${acc.account_type})`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-slate-500 mt-1">
+                Trades synced from this broker are assigned to this account so they count in your Accounts-page stats.
+              </p>
+              {accounts.length === 0 && (
+                <p className="text-xs text-amber-600 mt-1">
+                  ⚠️ No accounts found. Create an account on the Accounts page so synced trades can be linked.
+                </p>
+              )}
             </div>
 
             {/* NinjaTrader — Import Only */}
@@ -594,6 +649,14 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
               </div>
             )}
 
+            {/* Submit / encryption error — save is blocked, nothing was persisted */}
+            {submitError && (
+              <div className="p-3 rounded-lg flex items-center gap-2 bg-red-50 border border-red-200">
+                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+                <span className="text-sm text-red-800">{submitError}</span>
+              </div>
+            )}
+
             {/* Actions */}
             <div className="flex justify-end gap-3 pt-4">
               <Button type="button" variant="outline" onClick={onCancel}>
@@ -614,9 +677,11 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
               <Button
                 type="submit"
                 className="bg-blue-600 hover:bg-blue-700"
-                disabled={!isNinjaTrader && !isImportOnly && (formData.connection_type === 'api' || formData.connection_type === 'dxtrade_login' || formData.connection_type === 'tradovate_login') && !validationResult?.valid}
+                disabled={saving || (!isNinjaTrader && !isImportOnly && (formData.connection_type === 'api' || formData.connection_type === 'dxtrade_login' || formData.connection_type === 'tradovate_login') && !validationResult?.valid)}
               >
-                {isNinjaTrader ? 'Save & Go to Import' : 'Save Connection'}
+                {saving ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving...</>
+                ) : isNinjaTrader ? 'Save & Go to Import' : 'Save Connection'}
               </Button>
             </div>
           </form>

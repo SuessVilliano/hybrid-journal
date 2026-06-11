@@ -21,6 +21,10 @@ const FUTURES_SPECS = {
   MCL: { label: 'MCL — Micro Crude', pointValue: 100 }
 };
 
+// Approximate $/pip per standard lot for JPY-quoted pairs (¥1000/pip converted
+// at USD/JPY ≈ 143; the exact value varies with the USD/JPY rate)
+const JPY_PIP_VALUE_PER_LOT = 7;
+
 export default function RiskCalculator({
   accountBalance = 0,
   onCalculationComplete,
@@ -139,6 +143,21 @@ export default function RiskCalculator({
             </div>
           )}
 
+          {instrumentType === 'Forex' && (
+            <div className="space-y-2">
+              <Label className={darkMode ? 'text-slate-300' : 'text-slate-700'}>Pip Size</Label>
+              <Select value={pipSize} onValueChange={setPipSize}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0.0001">0.0001 — Standard pairs</SelectItem>
+                  <SelectItem value="0.01">0.01 — JPY pairs</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label className={darkMode ? 'text-slate-300' : 'text-slate-700'}>Risk Per Trade (%)</Label>
             <Input
@@ -188,7 +207,9 @@ export default function RiskCalculator({
               </div>
               {instrumentType === 'Forex' && (
                 <p className={`text-xs mt-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                  Assumes a USD-quoted pair ($10/pip per standard lot). JPY pairs are not yet supported.
+                  {pipSize === '0.01'
+                    ? `JPY pair: pip = 0.01, pip value approximated at $${JPY_PIP_VALUE_PER_LOT}/pip per standard lot (exact value varies with the USD/JPY rate).`
+                    : 'Standard pair: pip = 0.0001, assumes a USD-quoted pair ($10/pip per standard lot).'}
                 </p>
               )}
             </div>

@@ -108,7 +108,9 @@ export default function Backtesting() {
     };
 
     const created = await createBacktestMutation.mutateAsync(backtestData);
-    setSelectedBacktest(created);
+    // Infinity (flawless run, zero gross loss) does not survive JSON
+    // serialization — keep the in-memory profit factor for the results view
+    setSelectedBacktest({ ...created, profit_factor: result.stats.profitFactor });
     setView('results');
     setRunning(false);
   };

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Upload, FileText, AlertCircle } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
@@ -8,6 +10,14 @@ import { toast } from 'sonner';
 export default function StatementUploadModal({ isOpen, onClose, connectionId, provider }) {
   const [uploading, setUploading] = useState(false);
   const [file, setFile] = useState(null);
+  const [selectedAccount, setSelectedAccount] = useState('');
+
+  // Internal journal accounts — imported trades are stamped with the selected
+  // account_id so the Accounts page includes them in balance/win-rate stats.
+  const { data: accounts = [] } = useQuery({
+    queryKey: ['accounts'],
+    queryFn: () => base44.entities.Account.list()
+  });
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
@@ -31,7 +41,8 @@ export default function StatementUploadModal({ isOpen, onClose, connectionId, pr
       const result = await base44.functions.invoke('statementIngest', {
         fileUrl: file_url,
         connectionId,
-        provider
+        provider,
+        accountId: selectedAccount || undefined
       });
 
       toast.success(
@@ -55,6 +66,32 @@ export default function StatementUploadModal({ isOpen, onClose, connectionId, pr
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Import to journal account — trades are stamped with this id */}
+          <div>
+            <label className="block text-sm font-medium text-slate-900 mb-2">
+              Import to Account
+            </label>
+            <Select value={selectedAccount || ''} onValueChange={setSelectedAccount}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select account..." />
+              </SelectTrigger>
+              <SelectContent>
+                {accounts.map(acc => (
+                  <SelectItem key={acc.id} value={acc.id}>
+                    {acc.name}
+                    {acc.account_number && ` — #${acc.account_number}`}
+                    {acc.account_type && ` (${acc.account_type})`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {accounts.length === 0 && (
+              <p className="text-xs text-amber-600 mt-1">
+                ⚠️ No accounts found. Create an account first on the Accounts page so imported trades count in your stats.
+              </p>
+            )}
+          </div>
+
           <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center">
             <input
               type="file"

@@ -43,7 +43,9 @@ export default function PositionSizeCalculator({ accountBalance = 10000 }) {
       
       if (suggestion) {
         setStopLoss(suggestion.stopLoss.toFixed(5));
-        setRiskPercent(suggestion.positionSize);
+        // Note: suggestion.positionSize is the AI's suggested position size as
+        // % of portfolio — a different quantity from risk-per-trade %, so it
+        // must NOT overwrite riskPercent. It is shown in the suggestion panel.
       }
     } catch (error) {
       console.error('AI suggestion failed:', error);
@@ -176,6 +178,14 @@ export default function PositionSizeCalculator({ accountBalance = 10000 }) {
                   {aiSuggestion.confidence}%
                 </span>
               </div>
+              {aiSuggestion.positionSize != null && (
+                <div className="col-span-2">
+                  <span className="text-slate-600">Suggested Position Size:</span>
+                  <span className="font-bold text-purple-700 ml-2">
+                    {aiSuggestion.positionSize}% of portfolio
+                  </span>
+                </div>
+              )}
             </div>
             <div className="text-xs text-slate-600 italic mt-2">
               {aiSuggestion.reasoning}

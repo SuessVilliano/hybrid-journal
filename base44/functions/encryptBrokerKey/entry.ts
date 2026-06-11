@@ -2,9 +2,9 @@
 // BrokerConnection. Called by BrokerSetupWizard and BrokerConnectionForm
 // from the browser; the encryption key (SECRET_VAULT_KEY) stays server-side.
 //
-// Body: { api_key?: string, api_secret?: string }
+// Body: { api_key?: string, api_secret?: string, password?: string }
 // Response: { api_key?: string (encrypted), api_secret?: string (encrypted),
-//             encrypted_at_rest: boolean }
+//             password?: string (encrypted), encrypted_at_rest: boolean }
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 import { encryptSecret } from './helpers/secrets.js';
@@ -27,6 +27,7 @@ Deno.serve(async (req) => {
 
         if (body.api_key) out.api_key = await encryptSecret(String(body.api_key));
         if (body.api_secret) out.api_secret = await encryptSecret(String(body.api_secret));
+        if (body.password) out.password = await encryptSecret(String(body.password));
 
         // Whether the encryption key is actually configured. The UI can show a
         // "secrets stored in plaintext until SECRET_VAULT_KEY is set" warning.
