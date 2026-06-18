@@ -90,15 +90,11 @@
     "user_email"
   ],
   "rls": {
-    "create": {},
-    "update": {
-      "user_email": "{{user.email}}"
-    },
+    "create": null,
+    "read": null,
+    "update": null,
     "delete": {
-      "user_email": "{{user.email}}"
-    },
-    "write": {
-      "user_email": "{{user.email}}"
+      "data.user_email": "{{user.email}}"
     }
   }
 }
