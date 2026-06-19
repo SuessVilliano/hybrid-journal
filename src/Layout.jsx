@@ -64,19 +64,12 @@ export default function Layout({ children, currentPageName }) {
             return;
           }
 
-          // Check if user has completed onboarding
+          // Only redirect to onboarding if onboarding_completed is explicitly false
+          // (not missing/undefined — that means a returning user whose field wasn't set)
           const profiles = await base44.entities.TraderProfile.list();
+          const profile = profiles[0];
 
-          // Only redirect to onboarding if we got a definitive "no profile" or explicit false
-          const completed = profiles.length > 0 && profiles[0].onboarding_completed === true;
-          const hasProfile = profiles.length > 0;
-
-          if (!hasProfile) {
-            // No profile at all — redirect to onboarding
-            setNeedsOnboarding(true);
-            window.location.href = createPageUrl('Onboarding');
-          } else if (hasProfile && !completed) {
-            // Profile exists but onboarding not marked complete — redirect
+          if (profile && profile.onboarding_completed === false) {
             setNeedsOnboarding(true);
             window.location.href = createPageUrl('Onboarding');
           } else {
