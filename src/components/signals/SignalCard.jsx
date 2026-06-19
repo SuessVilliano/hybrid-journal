@@ -17,20 +17,15 @@ function formatPrice(price) {
 }
 
 // Detect browser timezone abbreviation (e.g. EDT, CDT, PDT)
-function getBrowserTzAbbr() {
-  try {
-    const parts = new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' }).formatToParts(new Date());
-    const tzPart = parts.find(p => p.type === 'timeZoneName');
-    return tzPart ? tzPart.value : '';
-  } catch { return ''; }
-}
-
 function formatLocalTime(utcTimestamp) {
   if (!utcTimestamp) return '';
   const date = new Date(utcTimestamp);
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   return date.toLocaleString('en-US', {
+    timeZone: tz,
     month: 'short', day: 'numeric',
-    hour: 'numeric', minute: '2-digit', hour12: true
+    hour: 'numeric', minute: '2-digit', hour12: true,
+    timeZoneName: 'short'
   });
 }
 
@@ -145,7 +140,6 @@ export default function SignalCard({
                 {signal.action}
               </Badge>
               <Badge variant="outline">{signal.provider}</Badge>
-              {getStatusBadge()}
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
@@ -235,24 +229,19 @@ export default function SignalCard({
             )}
 
             <div className="flex flex-col gap-1 text-xs">
-              <div className="flex items-center gap-2">
-                <span className={`font-bold ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`}>
-                  {getRelativeTime(signal.created_date)}
-                </span>
-                <span className={darkMode ? 'text-slate-600' : 'text-slate-400'}>•</span>
-                <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>
-                  {formatLocalTime(signal.created_date)} {getBrowserTzAbbr()}
+              <div className="flex items-center gap-1">
+                <span className={darkMode ? 'text-slate-500' : 'text-slate-400'}>Opened:</span>
+                <span className={`font-medium ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`}>
+                  {formatLocalTime(signal.created_date)}
                 </span>
               </div>
               {signal.resolved_at && (
                 <div className="flex items-center gap-1">
                   <span className={darkMode ? 'text-slate-500' : 'text-slate-400'}>Hit:</span>
                   <span className={`font-medium ${
-                    signal.status === 'stopped_out'
-                      ? 'text-red-500'
-                      : 'text-green-500'
+                    signal.status === 'stopped_out' ? 'text-red-500' : 'text-green-500'
                   }`}>
-                    {formatLocalTime(signal.resolved_at)} {getBrowserTzAbbr()}
+                    {formatLocalTime(signal.resolved_at)}
                   </span>
                 </div>
               )}

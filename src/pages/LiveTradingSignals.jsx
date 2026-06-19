@@ -262,17 +262,20 @@ export default function LiveTradingSignals() {
     return true;
   });
 
-  // Metrics computed from ALL sorted signals (not filtered)
+  // Metrics computed from provider-filtered signals (respects active provider tab)
   const WIN_STATUSES = ['tp1_hit', 'tp2_hit', 'tp3_hit', 'full_target'];
-  const totalSignals = sortedSignals.length;
-  const wins = sortedSignals.filter(s => WIN_STATUSES.includes(s.status)).length;
-  const losses = sortedSignals.filter(s => s.status === 'stopped_out').length;
+  const metricsSignals = providerFilter === 'all'
+    ? sortedSignals
+    : sortedSignals.filter(s => s.provider === providerFilter);
+  const totalSignals = metricsSignals.length;
+  const wins = metricsSignals.filter(s => WIN_STATUSES.includes(s.status)).length;
+  const losses = metricsSignals.filter(s => s.status === 'stopped_out').length;
   const winRate = (wins + losses) > 0 ? ((wins / (wins + losses)) * 100).toFixed(1) : '0.0';
 
   // Estimated points/pips
   let estGain = 0;
   let estLoss = 0;
-  sortedSignals.forEach(s => {
+  metricsSignals.forEach(s => {
     if (!s.price) return;
     if (WIN_STATUSES.includes(s.status)) {
       const tps = s.take_profits || [];
