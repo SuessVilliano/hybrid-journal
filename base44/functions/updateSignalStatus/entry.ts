@@ -11,7 +11,7 @@ const WEBHOOK_TOKEN = 'hj_update_9x2k_signals_2026';
 Deno.serve(async (req) => {
   try {
     const body = await req.json();
-    const { signal_id, status, token } = body;
+    const { signal_id, status, token, resolved_at } = body;
 
     // --- Webhook / token-based mode ---
     if (token !== undefined) {
@@ -38,6 +38,11 @@ Deno.serve(async (req) => {
       if (status === 'executed') {
         updateData.executed_at = new Date().toISOString();
       }
+      if (resolved_at) {
+        updateData.resolved_at = resolved_at;
+      } else if (['tp1_hit', 'tp2_hit', 'full_target', 'stopped_out'].includes(status)) {
+        updateData.resolved_at = new Date().toISOString();
+      }
 
       await base44.asServiceRole.entities.Signal.update(signal_id, updateData);
 
@@ -58,8 +63,9 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'signal_id is required' }, { status: 400 });
     }
 
-    if (!['viewed', 'ignored', 'executed'].includes(status)) {
-      return Response.json({ error: 'Invalid status. Must be: viewed, ignored, or executed' }, { status: 400 });
+    const validStatuses = ['viewed', 'ignored', 'executed', 'tp1_hit', 'tp2_hit', 'full_target', 'stopped_out'];
+    if (!validStatuses.includes(status)) {
+      return Response.json({ error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` }, { status: 400 });
     }
 
     const signals = await base44.asServiceRole.entities.Signal.filter({ id: signal_id });
@@ -76,6 +82,11 @@ Deno.serve(async (req) => {
     const updateData = { status };
     if (status === 'executed') {
       updateData.executed_at = new Date().toISOString();
+    }
+    if (resolved_at) {
+      updateData.resolved_at = resolved_at;
+    } else if (['tp1_hit', 'tp2_hit', 'full_target', 'stopped_out'].includes(status)) {
+      updateData.resolved_at = new Date().toISOString();
     }
 
     const updatedSignal = await base44.asServiceRole.entities.Signal.update(signal_id, updateData);

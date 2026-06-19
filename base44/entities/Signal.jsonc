@@ -74,6 +74,11 @@
       "format": "date-time",
       "description": "When signal was executed"
     },
+    "resolved_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the TP or SL was hit (signal resolved)"
+    },
     "trade_id": {
       "type": "string",
       "description": "Linked trade ID if executed"

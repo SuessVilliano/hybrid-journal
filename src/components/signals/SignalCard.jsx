@@ -216,6 +216,18 @@ export default function SignalCard({
                   {formatInTimezone(signal.created_date, 'America/New_York')} EST
                 </span>
               </div>
+              {signal.resolved_at && (
+                <div className="flex items-center gap-1">
+                  <span className={darkMode ? 'text-slate-500' : 'text-slate-400'}>Hit:</span>
+                  <span className={`font-medium ${
+                    signal.status === 'stopped_out'
+                      ? 'text-red-500'
+                      : 'text-green-500'
+                  }`}>
+                    {formatInTimezone(signal.resolved_at, 'America/New_York')} EST
+                  </span>
+                </div>
+              )}
               {signal.strategy && (
                 <span className={darkMode ? 'text-cyan-400' : 'text-cyan-600'}>
                   Strategy: {signal.strategy}
