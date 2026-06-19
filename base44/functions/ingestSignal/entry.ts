@@ -42,38 +42,23 @@ Deno.serve(async (req) => {
       payload = parseTextSignal(payload.body || payload.rawBody, payload);
     }
     
-    // Auto-assign provider based on symbol
+    // Provider assignment — symbol lookup is the single source of truth
     const CRYPTO_SYMBOLS = ['BTCUSD','ETHUSD','SOLUSD','XRPUSD'];
-    // Hybrid Ai: only NQ/MNQ/ES/MES/YM/MYM futures
     const HYBRID_SYMBOLS = ['NQ1','MNQ1','ES1','MES1','YM1','MYM1'];
 
     function getProviderBySymbol(sym) {
       const s = (sym || '').toUpperCase();
       if (CRYPTO_SYMBOLS.includes(s)) return 'Paradox';
-      if (HYBRID_SYMBOLS.some(f => s.includes(f))) return 'Hybrid Ai';
-      // Everything else (forex, US30USD, NAS100USD, US500USD, etc.) → Solaris
+      if (HYBRID_SYMBOLS.some(f => s === f || s.startsWith(f))) return 'Hybrid Ai';
+      // Everything else: forex, US30USD, NAS100USD, US500USD, indices → Solaris
       return 'Solaris';
     }
 
-    // Also detect from text content as fallback
-    const textContent = (payload.body || payload.rawBody || '').toLowerCase();
-    let detectedProvider = payload.provider || 'TradingView';
-    
-    if (textContent.includes('hybrid') || (textContent.includes('nq1') && textContent.includes('do not risk'))) {
-      detectedProvider = 'Hybrid Ai';
-    } else if (textContent.includes('paradox') || textContent.includes('btcusdt')) {
-      detectedProvider = 'Paradox';
-    } else if (textContent.includes('solaris') || textContent.includes('nas100usd')) {
-      detectedProvider = 'Solaris';
-    } else if (textContent && (textContent.includes('alert') || textContent.includes('symbol:'))) {
-      detectedProvider = 'Telegram';
-    }
-    
     // Extract signal data (supports TradingView format and generic format)
     const rawSymbol = payload.ticker || payload.symbol || '';
-    const symbolBasedProvider = getProviderBySymbol(rawSymbol);
     const signalData = {
-      provider: symbolBasedProvider || detectedProvider,
+      // Symbol-based provider is always authoritative — no text-content override
+      provider: getProviderBySymbol(rawSymbol),
       symbol: rawSymbol,
       action: (payload.action || payload.strategy?.order_action || '').toUpperCase(),
       price: parseFloat(payload.close || payload.price || payload.entry || 0),

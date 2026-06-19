@@ -6,7 +6,8 @@ const HYBRID_SYMBOLS = ['NQ1','MNQ1','ES1','MES1','YM1','MYM1'];
 function getProviderBySymbol(sym) {
   const s = (sym || '').toUpperCase();
   if (CRYPTO_SYMBOLS.includes(s)) return 'Paradox';
-  if (HYBRID_SYMBOLS.some(f => s.includes(f))) return 'Hybrid Ai';
+  if (HYBRID_SYMBOLS.some(f => s === f || s.startsWith(f))) return 'Hybrid Ai';
+  // Everything else: US30USD, NAS100USD, US500USD, forex → Solaris
   return 'Solaris';
 }
 
