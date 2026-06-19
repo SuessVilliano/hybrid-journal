@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import PullToRefresh from '@/components/mobile/PullToRefresh';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -238,23 +237,25 @@ export default function LiveTradingSignals() {
 
   // Only show signals from the last 30 days, and never show ignored ones in the main list
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  const activeSignals = signals.filter(s => {
-    if (s.status === 'ignored') return false;
-    const signalDate = new Date(s.created_date || s.updated_date);
+  const activeSignals = (signals || []).filter(s => {
+    if (!s || s.status === 'ignored') return false;
+    const signalDate = new Date(s.created_date || s.updated_date || Date.now());
     return signalDate >= thirtyDaysAgo;
   });
 
-  const filteredSignals = activeSignals.filter(signal => {
+  const filteredSignals = (activeSignals || []).filter(signal => {
+    if (!signal) return false;
     if (filters.symbols.length > 0 && !filters.symbols.includes(signal.symbol)) return false;
     if (filters.actions.length > 0 && !filters.actions.includes(signal.action)) return false;
     if (filters.providers.length > 0 && !filters.providers.includes(signal.provider)) return false;
-    if (signal.confidence < filters.minConfidence || signal.confidence > filters.maxConfidence) return false;
+    const confidence = signal.confidence ?? 0;
+    if (confidence < filters.minConfidence || confidence > filters.maxConfidence) return false;
     return true;
   });
 
   const today = new Date();
-  const newSignals = filteredSignals.filter(s => s.status === 'new');
-  const executedSignals = filteredSignals.filter(s => s.status === 'executed');
+  const newSignals = (filteredSignals || []).filter(s => s?.status === 'new');
+  const executedSignals = (filteredSignals || []).filter(s => s?.status === 'executed');
 
   const resetFilters = () => {
     setFilters({

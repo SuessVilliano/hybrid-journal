@@ -5,8 +5,17 @@ import { useQueryClient } from '@tanstack/react-query';
 /**
  * Browser Push Notifications Manager
  */
+const getNotificationPermission = () => {
+  try {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      return Notification.permission;
+    }
+  } catch (e) { /* restricted context */ }
+  return 'denied';
+};
+
 export function useBrowserNotifications() {
-  const [permission, setPermission] = useState(Notification.permission);
+  const [permission, setPermission] = useState(getNotificationPermission);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -68,7 +77,7 @@ export function useBrowserNotifications() {
     permission,
     requestPermission,
     showNotification,
-    isSupported: 'Notification' in window
+    isSupported: typeof window !== 'undefined' && 'Notification' in window
   };
 }
 
@@ -76,7 +85,7 @@ export function useBrowserNotifications() {
  * Signal notification helper
  */
 export async function showSignalNotification(signal, onClickUrl) {
-  if (Notification.permission !== 'granted') return;
+  if (getNotificationPermission() !== 'granted') return;
 
   // Play custom audio if set
   try {
