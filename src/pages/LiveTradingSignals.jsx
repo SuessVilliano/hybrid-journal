@@ -36,6 +36,7 @@ export default function LiveTradingSignals() {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [providerFilter, setProviderFilter] = useState('all');
   const queryClient = useQueryClient();
   const darkMode = document.documentElement.classList.contains('dark');
   const { permission, requestPermission, isSupported } = useBrowserNotifications();
@@ -250,6 +251,8 @@ export default function LiveTradingSignals() {
     } else {
       if (signal.status !== statusFilter) return false;
     }
+    // Provider tab filter
+    if (providerFilter !== 'all' && signal.provider !== providerFilter) return false;
     // Symbol/action/provider/confidence filters
     if (filters.symbols.length > 0 && !filters.symbols.includes(signal.symbol)) return false;
     if (filters.actions.length > 0 && !filters.actions.includes(signal.action)) return false;
@@ -257,6 +260,31 @@ export default function LiveTradingSignals() {
     const confidence = signal.confidence ?? 0;
     if (confidence < filters.minConfidence || confidence > filters.maxConfidence) return false;
     return true;
+  });
+
+  // Metrics computed from ALL sorted signals (not filtered)
+  const WIN_STATUSES = ['tp1_hit', 'tp2_hit', 'tp3_hit', 'full_target'];
+  const totalSignals = sortedSignals.length;
+  const wins = sortedSignals.filter(s => WIN_STATUSES.includes(s.status)).length;
+  const losses = sortedSignals.filter(s => s.status === 'stopped_out').length;
+  const winRate = (wins + losses) > 0 ? ((wins / (wins + losses)) * 100).toFixed(1) : '0.0';
+
+  // Estimated points/pips
+  let estGain = 0;
+  let estLoss = 0;
+  sortedSignals.forEach(s => {
+    if (!s.price) return;
+    if (WIN_STATUSES.includes(s.status)) {
+      const tps = s.take_profits || [];
+      let hitTp = null;
+      if (s.status === 'full_target') hitTp = tps[tps.length - 1] ?? s.take_profit;
+      else if (s.status === 'tp2_hit') hitTp = tps[1] ?? s.take_profit;
+      else if (s.status === 'tp1_hit') hitTp = tps[0] ?? s.take_profit;
+      else if (s.status === 'tp3_hit') hitTp = tps[2] ?? s.take_profit;
+      if (hitTp) estGain += Math.abs(hitTp - s.price);
+    } else if (s.status === 'stopped_out' && s.stop_loss) {
+      estLoss += Math.abs(s.price - s.stop_loss);
+    }
   });
 
   const newSignals = sortedSignals.filter(s => s?.status === 'new');
@@ -521,52 +549,42 @@ export default function LiveTradingSignals() {
           onReset={resetFilters}
         />
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className={`${darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'} ${newSignals.length > 0 ? 'ring-2 ring-cyan-500 animate-pulse' : ''}`}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>New Signals</div>
-                  <div className={`text-3xl font-bold ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`}>
-                    {newSignals.length}
-                  </div>
-                </div>
-                <Bell className={`h-8 w-8 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`} />
-              </div>
-            </CardContent>
-          </Card>
+        {/* Provider Filter Tabs */}
+        <div className={`flex items-center gap-2 p-1 rounded-xl border ${darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}`}>
+          {['all', 'Hybrid Ai', 'Solaris', 'Paradox'].map(p => (
+            <button
+              key={p}
+              onClick={() => setProviderFilter(p)}
+              className={`flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+                providerFilter === p
+                  ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white shadow'
+                  : darkMode
+                    ? 'text-slate-400 hover:text-cyan-400'
+                    : 'text-slate-600 hover:text-cyan-700'
+              }`}
+            >
+              {p === 'all' ? 'All Providers' : p}
+            </button>
+          ))}
+        </div>
 
-          <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Executed</div>
-                  <div className={`text-3xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
-                    {executedSignals.length}
-                  </div>
-                </div>
-                <Check className={`h-8 w-8 ${darkMode ? 'text-green-400' : 'text-green-600'}`} />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Total Today</div>
-                  <div className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                    {sortedSignals.filter(s => {
-                      const signalDate = new Date(s.created_date);
-                      return signalDate.toDateString() === today.toDateString();
-                    }).length}
-                  </div>
-                </div>
-                <Zap className={`h-8 w-8 ${darkMode ? 'text-purple-400' : 'text-purple-600'}`} />
-              </div>
-            </CardContent>
-          </Card>
+        {/* Metrics Summary Bar */}
+        <div className={`grid grid-cols-2 md:grid-cols-5 gap-3`}>
+          {[
+            { label: 'Total Signals', value: totalSignals, color: darkMode ? 'text-white' : 'text-slate-900' },
+            { label: 'Wins', value: wins, color: 'text-green-500' },
+            { label: 'Losses', value: losses, color: 'text-red-500' },
+            { label: 'Win Rate', value: `${winRate}%`, color: parseFloat(winRate) >= 50 ? 'text-green-500' : 'text-red-400' },
+            { label: 'Est. Gain', value: estGain > 0 ? `+${estGain.toFixed(2)}` : '—', subValue: estLoss > 0 ? `-${estLoss.toFixed(2)}` : null, color: 'text-green-500' },
+          ].map(stat => (
+            <Card key={stat.label} className={`${darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}`}>
+              <CardContent className="p-4">
+                <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'} mb-1`}>{stat.label}</div>
+                <div className={`text-xl font-bold ${stat.color}`}>{stat.value}</div>
+                {stat.subValue && <div className="text-xs font-medium text-red-500">{stat.subValue} loss</div>}
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
         {/* Signals List */}

@@ -6,6 +6,23 @@ import { TrendingUp, TrendingDown, X, Check, Eye, Zap, Brain, Copy, Loader2 } fr
 import { formatInTimezone, getRelativeTime } from '@/components/utils/timezoneHelper';
 import { toast } from 'sonner';
 
+// Instruments that use full decimal precision (no $ prefix)
+const FOREX_SYMBOLS = ['EURUSD','GBPUSD','USDJPY','AUDUSD','USDCAD','NZDUSD','USDCHF','GBPJPY','EURJPY','XAUUSD'];
+const FUTURES_SYMBOLS = ['NQ1','MNQ1','ES1','MES1','YM1','MYM1','NAS100USD','US30USD','US500USD'];
+
+function formatPrice(price, symbol) {
+  if (!price && price !== 0) return 'N/A';
+  const sym = (symbol || '').toUpperCase();
+  const isForex = FOREX_SYMBOLS.includes(sym);
+  const isFutures = FUTURES_SYMBOLS.some(f => sym.includes(f)) || /NQ|MNQ|^ES|^YM/.test(sym);
+  if (isForex || isFutures) {
+    // No $ prefix, full precision
+    return String(price);
+  }
+  // Default: $ with 2 decimal places for stocks/crypto
+  return `$${price.toFixed(2)}`;
+}
+
 export default function SignalCard({ 
   signal, 
   user,
@@ -125,7 +142,7 @@ export default function SignalCard({
                 <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'} mb-1`}>Entry Price</div>
                 <div className="flex items-center gap-2">
                   <div className={`font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                    ${signal.price?.toFixed(2) || 'N/A'}
+                    {formatPrice(signal.price, signal.symbol)}
                   </div>
                   {signal.price && (
                     <button
@@ -142,7 +159,7 @@ export default function SignalCard({
                   <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'} mb-1`}>Stop Loss</div>
                   <div className="flex items-center gap-2">
                     <div className="font-bold text-red-500">
-                      ${signal.stop_loss.toFixed(2)}
+                      {formatPrice(signal.stop_loss, signal.symbol)}
                     </div>
                     <button
                       onClick={(e) => copyToClipboard(e, signal.stop_loss, 'Stop Loss')}
@@ -174,7 +191,7 @@ export default function SignalCard({
                         TP{idx + 1}:
                       </span>
                       <span className="ml-1 font-bold text-green-500">
-                        ${tp.toFixed(2)}
+                        {formatPrice(tp, signal.symbol)}
                       </span>
                       <button
                         onClick={(e) => copyToClipboard(e, tp, `TP${idx + 1}`)}
@@ -194,7 +211,7 @@ export default function SignalCard({
                 <div className={`text-xs mb-2 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Take Profit</div>
                 <div className={`px-3 py-1.5 rounded-lg inline-flex items-center gap-2 ${darkMode ? 'bg-green-900/30' : 'bg-green-50'}`}>
                   <span className="font-bold text-green-500">
-                    ${signal.take_profit.toFixed(2)}
+                    {formatPrice(signal.take_profit, signal.symbol)}
                   </span>
                   <button
                     onClick={(e) => copyToClipboard(e, signal.take_profit, 'Take Profit')}

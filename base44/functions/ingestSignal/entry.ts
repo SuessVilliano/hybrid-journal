@@ -42,25 +42,39 @@ Deno.serve(async (req) => {
       payload = parseTextSignal(payload.body || payload.rawBody, payload);
     }
     
-    // Auto-detect provider from text content if not already correctly set
+    // Auto-assign provider based on symbol (takes priority over text detection)
+    const CRYPTO_SYMBOLS = ['BTCUSD','ETHUSD','SOLUSD','XRPUSD'];
+    const FOREX_SYMBOLS = ['EURUSD','GBPUSD','USDJPY','AUDUSD','USDCAD','NZDUSD','USDCHF','GBPJPY','EURJPY','XAUUSD'];
+    const FUTURES_KEYWORDS = ['NQ1','MNQ1','ES1','MES1','YM1','MYM1','NAS100USD','US30USD','US500USD'];
+
+    function getProviderBySymbol(sym) {
+      const s = (sym || '').toUpperCase();
+      if (CRYPTO_SYMBOLS.includes(s)) return 'Paradox';
+      if (FOREX_SYMBOLS.includes(s)) return 'Solaris';
+      if (FUTURES_KEYWORDS.some(f => s.includes(f)) || /NQ|MNQ|^ES|^YM/.test(s)) return 'Hybrid Ai';
+      return null;
+    }
+
+    // Also detect from text content as fallback
     const textContent = (payload.body || payload.rawBody || '').toLowerCase();
     let detectedProvider = payload.provider || 'TradingView';
     
     if (textContent.includes('hybrid') || (textContent.includes('nq1') && textContent.includes('do not risk'))) {
-      detectedProvider = 'Hybrid AI';
+      detectedProvider = 'Hybrid Ai';
     } else if (textContent.includes('paradox') || textContent.includes('btcusdt')) {
       detectedProvider = 'Paradox';
     } else if (textContent.includes('solaris') || textContent.includes('nas100usd')) {
       detectedProvider = 'Solaris';
     } else if (textContent && (textContent.includes('alert') || textContent.includes('symbol:'))) {
-      // Generic text-based signal
       detectedProvider = 'Telegram';
     }
     
     // Extract signal data (supports TradingView format and generic format)
+    const rawSymbol = payload.ticker || payload.symbol || '';
+    const symbolBasedProvider = getProviderBySymbol(rawSymbol);
     const signalData = {
-      provider: detectedProvider,
-      symbol: payload.ticker || payload.symbol || '',
+      provider: symbolBasedProvider || detectedProvider,
+      symbol: rawSymbol,
       action: (payload.action || payload.strategy?.order_action || '').toUpperCase(),
       price: parseFloat(payload.close || payload.price || payload.entry || 0),
       stop_loss: parseFloat(payload.stop_loss || payload.sl || 0),
