@@ -42,17 +42,17 @@ Deno.serve(async (req) => {
       payload = parseTextSignal(payload.body || payload.rawBody, payload);
     }
     
-    // Auto-assign provider based on symbol (takes priority over text detection)
+    // Auto-assign provider based on symbol
     const CRYPTO_SYMBOLS = ['BTCUSD','ETHUSD','SOLUSD','XRPUSD'];
-    const FOREX_SYMBOLS = ['EURUSD','GBPUSD','USDJPY','AUDUSD','USDCAD','NZDUSD','USDCHF','GBPJPY','EURJPY','XAUUSD'];
-    const FUTURES_KEYWORDS = ['NQ1','MNQ1','ES1','MES1','YM1','MYM1','NAS100USD','US30USD','US500USD'];
+    // Hybrid Ai: only NQ/MNQ/ES/MES/YM/MYM futures
+    const HYBRID_SYMBOLS = ['NQ1','MNQ1','ES1','MES1','YM1','MYM1'];
 
     function getProviderBySymbol(sym) {
       const s = (sym || '').toUpperCase();
       if (CRYPTO_SYMBOLS.includes(s)) return 'Paradox';
-      if (FOREX_SYMBOLS.includes(s)) return 'Solaris';
-      if (FUTURES_KEYWORDS.some(f => s.includes(f)) || /NQ|MNQ|^ES|^YM/.test(s)) return 'Hybrid Ai';
-      return null;
+      if (HYBRID_SYMBOLS.some(f => s.includes(f))) return 'Hybrid Ai';
+      // Everything else (forex, US30USD, NAS100USD, US500USD, etc.) → Solaris
+      return 'Solaris';
     }
 
     // Also detect from text content as fallback

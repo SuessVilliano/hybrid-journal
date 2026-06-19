@@ -1,15 +1,13 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
 const CRYPTO_SYMBOLS = ['BTCUSD','ETHUSD','SOLUSD','XRPUSD'];
-const FOREX_SYMBOLS = ['EURUSD','GBPUSD','USDJPY','AUDUSD','USDCAD','NZDUSD','USDCHF','GBPJPY','EURJPY','XAUUSD'];
-const FUTURES_KEYWORDS = ['NQ1','MNQ1','ES1','MES1','YM1','MYM1','NAS100USD','US30USD','US500USD'];
+const HYBRID_SYMBOLS = ['NQ1','MNQ1','ES1','MES1','YM1','MYM1'];
 
 function getProviderBySymbol(sym) {
   const s = (sym || '').toUpperCase();
   if (CRYPTO_SYMBOLS.includes(s)) return 'Paradox';
-  if (FOREX_SYMBOLS.includes(s)) return 'Solaris';
-  if (FUTURES_KEYWORDS.some(f => s.includes(f)) || /NQ|MNQ|^ES|^YM/.test(s)) return 'Hybrid Ai';
-  return null;
+  if (HYBRID_SYMBOLS.some(f => s.includes(f))) return 'Hybrid Ai';
+  return 'Solaris';
 }
 
 Deno.serve(async (req) => {
@@ -28,7 +26,6 @@ Deno.serve(async (req) => {
 
     for (const signal of allSignals) {
       const correctProvider = getProviderBySymbol(signal.symbol);
-      if (!correctProvider) { skipped++; continue; }
       if (signal.provider === correctProvider) { skipped++; continue; }
 
       await base44.asServiceRole.entities.Signal.update(signal.id, { provider: correctProvider });

@@ -3,24 +3,35 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, X, Check, Eye, Zap, Brain, Copy, Loader2 } from 'lucide-react';
-import { formatInTimezone, getRelativeTime } from '@/components/utils/timezoneHelper';
+import { getRelativeTime } from '@/components/utils/timezoneHelper';
 import { toast } from 'sonner';
 
-// Instruments that use full decimal precision (no $ prefix)
-const FOREX_SYMBOLS = ['EURUSD','GBPUSD','USDJPY','AUDUSD','USDCAD','NZDUSD','USDCHF','GBPJPY','EURJPY','XAUUSD'];
-const FUTURES_SYMBOLS = ['NQ1','MNQ1','ES1','MES1','YM1','MYM1','NAS100USD','US30USD','US500USD'];
+function formatPrice(price) {
+  if (price === null || price === undefined || price === '') return 'N/A';
+  const n = Number(price);
+  if (isNaN(n)) return 'N/A';
+  if (n >= 1000) return n.toFixed(1);
+  if (n >= 10)   return n.toFixed(2);
+  if (n >= 1)    return n.toFixed(4);
+  return n.toFixed(5);
+}
 
-function formatPrice(price, symbol) {
-  if (!price && price !== 0) return 'N/A';
-  const sym = (symbol || '').toUpperCase();
-  const isForex = FOREX_SYMBOLS.includes(sym);
-  const isFutures = FUTURES_SYMBOLS.some(f => sym.includes(f)) || /NQ|MNQ|^ES|^YM/.test(sym);
-  if (isForex || isFutures) {
-    // No $ prefix, full precision
-    return String(price);
-  }
-  // Default: $ with 2 decimal places for stocks/crypto
-  return `$${price.toFixed(2)}`;
+// Detect browser timezone abbreviation (e.g. EDT, CDT, PDT)
+function getBrowserTzAbbr() {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' }).formatToParts(new Date());
+    const tzPart = parts.find(p => p.type === 'timeZoneName');
+    return tzPart ? tzPart.value : '';
+  } catch { return ''; }
+}
+
+function formatLocalTime(utcTimestamp) {
+  if (!utcTimestamp) return '';
+  const date = new Date(utcTimestamp);
+  return date.toLocaleString('en-US', {
+    month: 'short', day: 'numeric',
+    hour: 'numeric', minute: '2-digit', hour12: true
+  });
 }
 
 export default function SignalCard({ 
@@ -142,7 +153,7 @@ export default function SignalCard({
                 <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'} mb-1`}>Entry Price</div>
                 <div className="flex items-center gap-2">
                   <div className={`font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                    {formatPrice(signal.price, signal.symbol)}
+                    {formatPrice(signal.price)}
                   </div>
                   {signal.price && (
                     <button
@@ -159,7 +170,7 @@ export default function SignalCard({
                   <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'} mb-1`}>Stop Loss</div>
                   <div className="flex items-center gap-2">
                     <div className="font-bold text-red-500">
-                      {formatPrice(signal.stop_loss, signal.symbol)}
+                      {formatPrice(signal.stop_loss)}
                     </div>
                     <button
                       onClick={(e) => copyToClipboard(e, signal.stop_loss, 'Stop Loss')}
@@ -191,7 +202,7 @@ export default function SignalCard({
                         TP{idx + 1}:
                       </span>
                       <span className="ml-1 font-bold text-green-500">
-                        {formatPrice(tp, signal.symbol)}
+                        {formatPrice(tp)}
                       </span>
                       <button
                         onClick={(e) => copyToClipboard(e, tp, `TP${idx + 1}`)}
@@ -211,7 +222,7 @@ export default function SignalCard({
                 <div className={`text-xs mb-2 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Take Profit</div>
                 <div className={`px-3 py-1.5 rounded-lg inline-flex items-center gap-2 ${darkMode ? 'bg-green-900/30' : 'bg-green-50'}`}>
                   <span className="font-bold text-green-500">
-                    {formatPrice(signal.take_profit, signal.symbol)}
+                    {formatPrice(signal.take_profit)}
                   </span>
                   <button
                     onClick={(e) => copyToClipboard(e, signal.take_profit, 'Take Profit')}
@@ -230,7 +241,7 @@ export default function SignalCard({
                 </span>
                 <span className={darkMode ? 'text-slate-600' : 'text-slate-400'}>•</span>
                 <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>
-                  {formatInTimezone(signal.created_date, 'America/New_York')} EST
+                  {formatLocalTime(signal.created_date)} {getBrowserTzAbbr()}
                 </span>
               </div>
               {signal.resolved_at && (
@@ -241,7 +252,7 @@ export default function SignalCard({
                       ? 'text-red-500'
                       : 'text-green-500'
                   }`}>
-                    {formatInTimezone(signal.resolved_at, 'America/New_York')} EST
+                    {formatLocalTime(signal.resolved_at)} {getBrowserTzAbbr()}
                   </span>
                 </div>
               )}
