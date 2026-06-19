@@ -19,10 +19,12 @@ function formatPrice(price) {
 // Detect browser timezone abbreviation (e.g. EDT, CDT, PDT)
 function formatLocalTime(utcTimestamp) {
   if (!utcTimestamp) return '';
-  const date = new Date(utcTimestamp);
-  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  // Ensure the string is treated as UTC by appending Z if missing
+  const normalized = utcTimestamp.endsWith('Z') || utcTimestamp.includes('+') ? utcTimestamp : utcTimestamp + 'Z';
+  const date = new Date(normalized);
+  if (isNaN(date.getTime())) return '';
   return date.toLocaleString('en-US', {
-    timeZone: tz,
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     month: 'short', day: 'numeric',
     hour: 'numeric', minute: '2-digit', hour12: true,
     timeZoneName: 'short'
@@ -378,11 +380,6 @@ export default function SignalCard({
             {['executed', 'full_target', 'tp1_hit', 'tp2_hit', 'stopped_out', 'ignored'].includes(signal.status) && (
               <div className="flex flex-col items-center gap-2 py-2">
                 {getStatusBadge()}
-                {signal.executed_at && (
-                  <span className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                    {new Date(signal.executed_at).toLocaleString()}
-                  </span>
-                )}
               </div>
             )}
           </div>
