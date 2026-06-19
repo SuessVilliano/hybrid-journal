@@ -60,7 +60,11 @@
         "new",
         "viewed",
         "executed",
-        "ignored"
+        "ignored",
+        "tp1_hit",
+        "tp2_hit",
+        "full_target",
+        "stopped_out"
       ],
       "default": "new",
       "description": "Signal status"

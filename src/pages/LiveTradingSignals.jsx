@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Bell, TrendingUp, TrendingDown, X, Check, Eye, Zap, Brain, RefreshCw, FileText, CheckSquare, Square, Trash2, EyeOff } from 'lucide-react';
+import { Bell, TrendingUp, TrendingDown, X, Check, Eye, Zap, Brain, RefreshCw, FileText, CheckSquare, Square, Trash2, EyeOff, Filter } from 'lucide-react';
 import { format } from 'date-fns';
 import WebhookSettings from '@/components/profile/WebhookSettings';
 import AISignalAnalysis from '@/components/signals/AISignalAnalysis';
@@ -35,6 +35,7 @@ export default function LiveTradingSignals() {
   const [isMutating, setIsMutating] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
   const queryClient = useQueryClient();
   const darkMode = document.documentElement.classList.contains('dark');
   const { permission, requestPermission, isSupported } = useBrowserNotifications();
@@ -235,16 +236,21 @@ export default function LiveTradingSignals() {
     }
   });
 
-  // Only show signals from the last 30 days, and never show ignored ones in the main list
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  const activeSignals = (signals || []).filter(s => {
-    if (!s || s.status === 'ignored') return false;
-    const signalDate = new Date(s.created_date || s.updated_date || Date.now());
-    return signalDate >= thirtyDaysAgo;
-  });
+  // Sort all signals by created_date descending, exclude ignored unless specifically filtered
+  const today = new Date();
+  const sortedSignals = (signals || [])
+    .filter(s => !!s)
+    .sort((a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0));
 
-  const filteredSignals = (activeSignals || []).filter(signal => {
+  const filteredSignals = sortedSignals.filter(signal => {
     if (!signal) return false;
+    // Status filter
+    if (statusFilter === 'all') {
+      if (signal.status === 'ignored') return false; // hide ignored by default
+    } else {
+      if (signal.status !== statusFilter) return false;
+    }
+    // Symbol/action/provider/confidence filters
     if (filters.symbols.length > 0 && !filters.symbols.includes(signal.symbol)) return false;
     if (filters.actions.length > 0 && !filters.actions.includes(signal.action)) return false;
     if (filters.providers.length > 0 && !filters.providers.includes(signal.provider)) return false;
@@ -253,9 +259,8 @@ export default function LiveTradingSignals() {
     return true;
   });
 
-  const today = new Date();
-  const newSignals = (filteredSignals || []).filter(s => s?.status === 'new');
-  const executedSignals = (filteredSignals || []).filter(s => s?.status === 'executed');
+  const newSignals = sortedSignals.filter(s => s?.status === 'new');
+  const executedSignals = sortedSignals.filter(s => s?.status === 'executed');
 
   const resetFilters = () => {
     setFilters({
@@ -476,6 +481,39 @@ export default function LiveTradingSignals() {
           </Card>
         )}
 
+        {/* Status Filter Dropdown */}
+        <div className={`flex items-center gap-3 p-4 rounded-xl border ${darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}`}>
+          <Filter className={`h-4 w-4 flex-shrink-0 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`} />
+          <span className={`text-sm font-medium ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>Status:</span>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { value: 'all', label: 'All Active' },
+              { value: 'new', label: 'New' },
+              { value: 'viewed', label: 'Viewed' },
+              { value: 'executed', label: 'Executed' },
+              { value: 'tp1_hit', label: 'TP1 Hit' },
+              { value: 'tp2_hit', label: 'TP2 Hit' },
+              { value: 'full_target', label: 'Full Target' },
+              { value: 'stopped_out', label: 'Stopped Out' },
+              { value: 'ignored', label: 'Ignored' },
+            ].map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => setStatusFilter(opt.value)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+                  statusFilter === opt.value
+                    ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white border-transparent'
+                    : darkMode
+                      ? 'border-slate-700 text-slate-400 hover:border-cyan-500/40 hover:text-cyan-400'
+                      : 'border-slate-200 text-slate-600 hover:border-cyan-400 hover:text-cyan-700'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Filters */}
         <SignalFilters 
           filters={filters} 
@@ -519,7 +557,7 @@ export default function LiveTradingSignals() {
                 <div>
                   <div className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Total Today</div>
                   <div className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                    {activeSignals.filter(s => {
+                    {sortedSignals.filter(s => {
                       const signalDate = new Date(s.created_date);
                       return signalDate.toDateString() === today.toDateString();
                     }).length}

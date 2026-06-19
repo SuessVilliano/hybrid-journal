@@ -51,7 +51,6 @@ export default function SignalCard({
     toast.success(`${label} copied!`);
   };
 
-  // Determine card styling based on status
   const getCardStyles = () => {
     const base = darkMode ? 'bg-slate-950/80' : 'bg-white';
     switch (signal.status) {
@@ -61,10 +60,40 @@ export default function SignalCard({
         return `${base} ${darkMode ? 'border-slate-600/40 opacity-75' : 'border-slate-300 opacity-80'}`;
       case 'executed':
         return `${base} ${darkMode ? 'border-green-500/40' : 'border-green-300'} ring-1 ring-green-500/50`;
+      case 'full_target':
+        return `${base} ${darkMode ? 'border-green-500/60' : 'border-green-400'} ring-2 ring-green-500/60`;
+      case 'tp1_hit':
+      case 'tp2_hit':
+        return `${base} ${darkMode ? 'border-yellow-500/50' : 'border-yellow-400'} ring-1 ring-yellow-500/50`;
+      case 'stopped_out':
+        return `${base} ${darkMode ? 'border-red-500/50' : 'border-red-300'} ring-1 ring-red-500/40`;
       case 'ignored':
         return `${base} ${darkMode ? 'border-slate-700/40 opacity-50' : 'border-slate-200 opacity-60'}`;
       default:
         return `${base} ${darkMode ? 'border-cyan-500/20' : 'border-cyan-500/30'}`;
+    }
+  };
+
+  const getStatusBadge = () => {
+    switch (signal.status) {
+      case 'new':
+        return <Badge className="bg-slate-500 animate-pulse">NEW</Badge>;
+      case 'viewed':
+        return <Badge variant="outline" className="bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"><Eye className="h-3 w-3 mr-1" />VIEWED</Badge>;
+      case 'executed':
+        return <Badge className="bg-green-600"><Check className="h-3 w-3 mr-1" />EXECUTED</Badge>;
+      case 'full_target':
+        return <Badge className="bg-green-500 text-white">🎯 FULL TARGET</Badge>;
+      case 'tp1_hit':
+        return <Badge className="bg-yellow-500 text-white">TP1 HIT</Badge>;
+      case 'tp2_hit':
+        return <Badge className="bg-orange-500 text-white">TP2 HIT</Badge>;
+      case 'stopped_out':
+        return <Badge className="bg-red-600 text-white">STOPPED OUT</Badge>;
+      case 'ignored':
+        return <Badge variant="outline" className="bg-slate-200 text-slate-400 dark:bg-slate-700 dark:text-slate-500"><X className="h-3 w-3 mr-1" />IGNORED</Badge>;
+      default:
+        return null;
     }
   };
 
@@ -88,27 +117,7 @@ export default function SignalCard({
                 {signal.action}
               </Badge>
               <Badge variant="outline">{signal.provider}</Badge>
-              {signal.status === 'new' && (
-                <Badge className="bg-cyan-500 animate-pulse">NEW</Badge>
-              )}
-              {signal.status === 'viewed' && (
-                <Badge variant="outline" className="bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                  <Eye className="h-3 w-3 mr-1" />
-                  VIEWED
-                </Badge>
-              )}
-              {signal.status === 'executed' && (
-                <Badge className="bg-green-500">
-                  <Check className="h-3 w-3 mr-1" />
-                  EXECUTED
-                </Badge>
-              )}
-              {signal.status === 'ignored' && (
-                <Badge variant="outline" className="bg-slate-200 text-slate-400 dark:bg-slate-700 dark:text-slate-500">
-                  <X className="h-3 w-3 mr-1" />
-                  IGNORED
-                </Badge>
-              )}
+              {getStatusBadge()}
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
@@ -337,25 +346,14 @@ export default function SignalCard({
                 </Button>
               </>
             )}
-            {signal.status === 'executed' && (
+            {['executed', 'full_target', 'tp1_hit', 'tp2_hit', 'stopped_out', 'ignored'].includes(signal.status) && (
               <div className="flex flex-col items-center gap-2 py-2">
-                <Badge className="bg-green-500 px-4 py-1">
-                  <Check className="h-4 w-4 mr-1" />
-                  Executed
-                </Badge>
+                {getStatusBadge()}
                 {signal.executed_at && (
                   <span className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
                     {new Date(signal.executed_at).toLocaleString()}
                   </span>
                 )}
-              </div>
-            )}
-            {signal.status === 'ignored' && (
-              <div className="flex flex-col items-center gap-2 py-2">
-                <Badge variant="outline" className="px-4 py-1 text-slate-400">
-                  <X className="h-4 w-4 mr-1" />
-                  Ignored
-                </Badge>
               </div>
             )}
           </div>
