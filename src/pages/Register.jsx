@@ -109,7 +109,7 @@ export default function Register() {
           </InputOTP>
         </div>
         <Button
-          className="w-full h-12 font-medium"
+          className="w-full h-12 font-medium bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 border-0"
           onClick={handleVerify}
           disabled={loading || otpCode.length < 6}
         >
@@ -122,9 +122,9 @@ export default function Register() {
             "Verify"
           )}
         </Button>
-        <p className="text-center text-sm text-muted-foreground mt-4">
+        <p className="text-center text-sm text-slate-400 mt-4">
           Didn't receive the code?{" "}
-          <button onClick={handleResend} className="text-primary font-medium hover:underline">
+          <button onClick={handleResend} className="text-cyan-400 font-medium hover:underline">
             Resend
           </button>
         </p>
@@ -146,10 +146,16 @@ export default function Register() {
         </>
       }
     >
+      <style>{`
+        #email, #password, #confirm { color: white !important; background: rgba(255,255,255,0.05) !important; border-color: rgba(6,182,212,0.3) !important; }
+        #email::placeholder, #password::placeholder, #confirm::placeholder { color: rgba(148,163,184,0.6) !important; }
+        label { color: #94a3b8 !important; }
+        a { color: #22d3ee !important; }
+      `}</style>
       <div className="space-y-3 mb-6">
         <Button
           variant="outline"
-          className="w-full h-12 text-sm font-medium"
+          className="w-full h-12 text-sm font-medium bg-white/5 border-white/20 text-white hover:bg-white/10"
           onClick={handleGoogle}
         >
           <GoogleIcon className="w-5 h-5 mr-2" />
@@ -157,7 +163,7 @@ export default function Register() {
         </Button>
         <Button
           variant="outline"
-          className="w-full h-12 text-sm font-medium"
+          className="w-full h-12 text-sm font-medium bg-white/5 border-white/20 text-white hover:bg-white/10"
           onClick={handleMicrosoft}
         >
           <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -170,7 +176,7 @@ export default function Register() {
         </Button>
         <Button
           variant="outline"
-          className="w-full h-12 text-sm font-medium"
+          className="w-full h-12 text-sm font-medium bg-white/5 border-white/20 text-white hover:bg-white/10"
           onClick={handleFacebook}
         >
           <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="#1877F2" xmlns="http://www.w3.org/2000/svg">
@@ -185,7 +191,7 @@ export default function Register() {
           <div className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-3 text-muted-foreground">or</span>
+          <span className="bg-transparent px-3 text-slate-500">or</span>
         </div>
       </div>
 
@@ -245,7 +251,7 @@ export default function Register() {
             />
           </div>
         </div>
-        <Button type="submit" className="w-full h-12 font-medium" disabled={loading}>
+        <Button type="submit" className="w-full h-12 font-medium bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 border-0" disabled={loading}>
           {loading ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />

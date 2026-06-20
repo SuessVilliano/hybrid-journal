@@ -38,6 +38,7 @@ export default function LiveTradingSignals() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [providerFilter, setProviderFilter] = useState('all');
   const [hideDuplicates, setHideDuplicates] = useState(true);
+  const [showRoutingRules, setShowRoutingRules] = useState(false);
   const queryClient = useQueryClient();
   const darkMode = document.documentElement.classList.contains('dark');
   const { permission, requestPermission, isSupported } = useBrowserNotifications();
@@ -475,14 +476,22 @@ export default function LiveTradingSignals() {
               <Zap className="h-4 w-4 mr-1" />
               <span className="text-xs md:text-sm">Webhook Setup</span>
             </Button>
+            <Button
+              onClick={() => setShowRoutingRules(!showRoutingRules)}
+              variant="outline"
+              size="sm"
+            >
+              <Filter className="h-4 w-4 mr-1" />
+              <span className="text-xs md:text-sm">{showRoutingRules ? 'Hide' : 'Routing'} Rules</span>
+            </Button>
           </div>
         </div>
 
         {/* Webhook Info */}
         {showWebhookInfo && <WebhookSettings />}
 
-        {/* Routing Rules */}
-        <RoutingRuleManager />
+        {/* Routing Rules — collapsed by default */}
+        {showRoutingRules && <RoutingRuleManager />}
 
         {/* Sync Logs */}
         {showLogs && (

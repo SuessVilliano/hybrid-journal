@@ -6,6 +6,16 @@ import { TrendingUp, TrendingDown, X, Check, Eye, Zap, Brain, Copy, Loader2 } fr
 import { getRelativeTime } from '@/components/utils/timezoneHelper';
 import { toast } from 'sonner';
 
+// Infer default timeframe by provider when not explicitly set
+function inferTimeframe(signal) {
+  if (signal.timeframe) return signal.timeframe;
+  const provider = (signal.provider || '').toLowerCase();
+  if (provider.includes('hybrid')) return '10m';
+  if (provider.includes('paradox')) return '30m';
+  if (provider.includes('solaris')) return '5m';
+  return null;
+}
+
 function formatPrice(price) {
   if (price === null || price === undefined || price === '') return 'N/A';
   const n = Number(price);
@@ -142,6 +152,11 @@ export default function SignalCard({
                 {signal.action}
               </Badge>
               <Badge variant="outline">{signal.provider}</Badge>
+              {inferTimeframe(signal) && (
+                <Badge className={`${darkMode ? 'bg-purple-900/60 text-purple-300 border-purple-500/40' : 'bg-purple-100 text-purple-700 border-purple-300'} border text-xs font-mono`}>
+                  {inferTimeframe(signal)}
+                </Badge>
+              )}
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
@@ -177,14 +192,7 @@ export default function SignalCard({
                   </div>
                 </div>
               )}
-              {signal.timeframe && (
-                <div>
-                  <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Timeframe</div>
-                  <div className={`font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                    {signal.timeframe}
-                  </div>
-                </div>
-              )}
+
             </div>
 
             {/* Multiple Take Profits with individual copy buttons */}
