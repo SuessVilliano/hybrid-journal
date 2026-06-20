@@ -13,6 +13,7 @@ import RoutingRuleManager from '@/components/signals/RoutingRuleManager';
 import { useBrowserNotifications, showSignalNotification } from '@/components/notifications/BrowserNotifications';
 import { formatInTimezone } from '@/components/utils/timezoneHelper';
 import SignalCard from '@/components/signals/SignalCard';
+import SignalPerformancePanel from '@/components/signals/SignalPerformancePanel';
 import { toast } from 'sonner';
 
 export default function LiveTradingSignals() {
@@ -632,6 +633,9 @@ export default function LiveTradingSignals() {
             </Card>
           ))}
         </div>
+
+        {/* Points & Pips Performance Tracker */}
+        <SignalPerformancePanel signals={sortedSignals} darkMode={darkMode} />
 
         {/* Signals List */}
         <div className="space-y-4">

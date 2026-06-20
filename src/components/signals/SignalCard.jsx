@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, X, Check, Eye, Zap, Brain, Copy, Loader2 } from 'lucide-react';
 import { getRelativeTime } from '@/components/utils/timezoneHelper';
 import { toast } from 'sonner';
+import { calcPipsOrPoints } from './signalMath';
 
 // Infer default timeframe by provider when not explicitly set
 function inferTimeframe(signal) {
@@ -388,6 +389,20 @@ export default function SignalCard({
             {['executed', 'full_target', 'tp1_hit', 'tp2_hit', 'stopped_out', 'ignored'].includes(signal.status) && (
               <div className="flex flex-col items-center gap-2 py-2">
                 {getStatusBadge()}
+                {(() => {
+                  const result = calcPipsOrPoints(signal);
+                  if (!result) return null;
+                  const isPos = result.value >= 0;
+                  return (
+                    <div className={`px-3 py-1.5 rounded-lg text-sm font-bold border ${
+                      isPos
+                        ? darkMode ? 'bg-green-900/30 border-green-500/40 text-green-400' : 'bg-green-50 border-green-300 text-green-700'
+                        : darkMode ? 'bg-red-900/30 border-red-500/40 text-red-400' : 'bg-red-50 border-red-300 text-red-700'
+                    }`}>
+                      {result.formatted}
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>
