@@ -37,6 +37,7 @@ export default function LiveTradingSignals() {
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
   const [providerFilter, setProviderFilter] = useState('all');
+  const [hideDuplicates, setHideDuplicates] = useState(true);
   const queryClient = useQueryClient();
   const darkMode = document.documentElement.classList.contains('dark');
   const { permission, requestPermission, isSupported } = useBrowserNotifications();
@@ -238,10 +239,29 @@ export default function LiveTradingSignals() {
   });
 
   // Sort all signals by created_date descending, exclude ignored unless specifically filtered
-  const today = new Date();
+  const DEDUP_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
   const sortedSignals = (signals || [])
     .filter(s => !!s)
     .sort((a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0));
+
+  // Client-side dedup: for each signal, mark it as a duplicate if a newer signal
+  // with the same symbol+action+price exists within the 15-min window
+  const duplicateIds = new Set();
+  if (hideDuplicates) {
+    for (let i = 0; i < sortedSignals.length; i++) {
+      if (duplicateIds.has(sortedSignals[i].id)) continue;
+      for (let j = i + 1; j < sortedSignals.length; j++) {
+        const a = sortedSignals[i];
+        const b = sortedSignals[j];
+        const diffMs = Math.abs(new Date(a.created_date) - new Date(b.created_date));
+        if (diffMs > DEDUP_WINDOW_MS) break; // sorted desc, so no more within window
+        if (a.symbol === b.symbol && a.action === b.action && a.price === b.price) {
+          duplicateIds.add(b.id); // b is older, mark it as duplicate
+        }
+      }
+    }
+  }
 
   const filteredSignals = sortedSignals.filter(signal => {
     if (!signal) return false;
@@ -253,6 +273,8 @@ export default function LiveTradingSignals() {
     }
     // Provider tab filter
     if (providerFilter !== 'all' && signal.provider !== providerFilter) return false;
+    // Hide duplicates
+    if (hideDuplicates && duplicateIds.has(signal.id)) return false;
     // Symbol/action/provider/confidence filters
     if (filters.symbols.length > 0 && !filters.symbols.includes(signal.symbol)) return false;
     if (filters.actions.length > 0 && !filters.actions.includes(signal.action)) return false;
@@ -513,7 +535,7 @@ export default function LiveTradingSignals() {
         )}
 
         {/* Status Filter Dropdown */}
-        <div className={`flex items-center gap-3 p-4 rounded-xl border ${darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}`}>
+        <div className={`flex flex-wrap items-center gap-3 p-4 rounded-xl border ${darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}`}>
           <Filter className={`h-4 w-4 flex-shrink-0 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`} />
           <span className={`text-sm font-medium ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>Status:</span>
           <div className="flex flex-wrap gap-2">
@@ -543,6 +565,18 @@ export default function LiveTradingSignals() {
               </button>
             ))}
           </div>
+          <button
+            onClick={() => setHideDuplicates(v => !v)}
+            className={`ml-auto px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+              hideDuplicates
+                ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white border-transparent'
+                : darkMode
+                  ? 'border-slate-700 text-slate-400 hover:border-orange-500/40 hover:text-orange-400'
+                  : 'border-slate-200 text-slate-600 hover:border-orange-400 hover:text-orange-600'
+            }`}
+          >
+            {hideDuplicates ? `Hide Dupes (${duplicateIds.size})` : 'Show Dupes'}
+          </button>
         </div>
 
         {/* Filters */}

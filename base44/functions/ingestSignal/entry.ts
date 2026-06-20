@@ -95,8 +95,8 @@ Deno.serve(async (req) => {
       timestamp: new Date().toISOString()
     });
 
-    // Check for duplicate signals within last 10 minutes (same symbol + action + price)
-    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    // Check for duplicate signals within last 15 minutes (same symbol + action + price)
+    const tenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
     const recentSignals = await base44.asServiceRole.entities.Signal.filter({
       user_email: user.email,
       symbol: signalData.symbol,
