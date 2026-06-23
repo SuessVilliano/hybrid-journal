@@ -198,9 +198,9 @@ export default function Layout({ children, currentPageName }) {
     { id: 'summaries', name: 'Summaries', page: 'TradingSummaries', icon: FileText },
     { id: 'coach', name: 'AI Coach', page: 'TradingCoach', icon: MessageSquare },
     { id: 'calculators', name: 'Calculators', page: 'Calculators', icon: Shield },
-    { id: 'strategies', name: 'Strategies & Automation', page: 'Strategies', icon: Layers },
+    { id: 'strategies', name: 'Strategies & Automation', page: 'Strategies', icon: Layers, comingSoon: true },
     { id: 'broker', name: 'Broker Sync', page: 'BrokerConnections', icon: LinkIcon, adminOnly: true },
-    { id: 'backtesting', name: 'Backtesting', page: 'Backtesting', icon: Play, adminOnly: true },
+    { id: 'backtesting', name: 'Backtesting', page: 'Backtesting', icon: Play, adminOnly: true, comingSoon: true },
     { id: 'imports', name: 'Imports', page: 'Imports', icon: Upload },
     { id: 'community', name: 'Community', page: 'SocialFeed', icon: Users },
     { id: 'media', name: 'Media Library', page: 'MediaLibrary', icon: ImageIcon },
@@ -208,7 +208,7 @@ export default function Layout({ children, currentPageName }) {
     { id: 'admin-messaging', name: 'Send Messages', page: 'AdminMessaging', icon: MessageSquare, adminOnly: true },
     { id: 'notifications', name: 'Notifications', page: 'Notifications', icon: Bell },
     { id: 'profile', name: 'My Profile', page: 'MyProfile', icon: User },
-    { id: 'achievements', name: 'Achievements', page: 'Achievements', icon: Trophy },
+    { id: 'achievements', name: 'Achievements', page: 'Achievements', icon: Trophy, comingSoon: true },
     { id: 'help', name: 'Help & Docs', page: 'Help', icon: HelpCircle },
     { id: 'pricing', name: 'Pricing & Upgrade', page: 'Pricing', icon: Zap },
     { id: 'funded', name: 'Get Funded', external: 'https://hybridfunding.co', icon: TrendingUp },
@@ -479,7 +479,7 @@ export default function Layout({ children, currentPageName }) {
                             className={snapshot.isDragging ? 'opacity-50' : ''}
                           >
                             <Link
-                              to={createPageUrl(item.page)}
+                              to={item.comingSoon ? `${createPageUrl('ComingSoon')}?feature=${encodeURIComponent(item.name)}` : createPageUrl(item.page)}
                               className={`
                                 flex items-center justify-center gap-3 rounded-lg transition-all group relative overflow-hidden
                                 ${sidebarOpen ? 'px-4 py-3' : 'p-3 mx-auto w-12 h-12'}
@@ -512,7 +512,12 @@ export default function Layout({ children, currentPageName }) {
                                 isActive && 'drop-shadow-[0_0_8px_rgba(0,240,255,0.8)]'
                               }`} />
                               {sidebarOpen && <span className="font-medium relative z-10 flex-1">{item.name}</span>}
-                              {sidebarOpen && (
+                              {sidebarOpen && item.comingSoon && (
+                                <span className="relative z-10 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                                  SOON
+                                </span>
+                              )}
+                              {sidebarOpen && !item.comingSoon && (
                                 <button
                                   onClick={(e) => { e.preventDefault(); toggleFavorite(item.id); }}
                                   className="relative z-10"

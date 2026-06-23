@@ -15,6 +15,7 @@ import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
+import ComingSoon from '@/pages/ComingSoon';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -98,6 +99,14 @@ const AuthenticatedApp = () => {
             }
           />
         ))}
+        <Route
+          path="/comingsoon"
+          element={
+            <LayoutWrapper currentPageName="ComingSoon">
+              <ComingSoon />
+            </LayoutWrapper>
+          }
+        />
       </Route>
 
       <Route path="*" element={<PageNotFound />} />
