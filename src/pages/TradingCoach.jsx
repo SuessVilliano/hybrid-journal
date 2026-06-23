@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Send, Loader2, MessageSquare, Sparkles, TrendingUp, Target, Brain, BarChart3 } from 'lucide-react';
+import { Send, Loader2, MessageSquare, Sparkles, TrendingUp, Target, Brain, BarChart3, Mic } from 'lucide-react';
 import MessageBubble from '@/components/coach/MessageBubble';
 import AnalysisPanel from '@/components/coach/AnalysisPanel';
+import VoiceCoach from '@/components/voice/VoiceCoach';
 
 export default function TradingCoach() {
   const [conversation, setConversation] = useState(null);
@@ -86,8 +87,12 @@ export default function TradingCoach() {
           </p>
         </div>
 
-        <Tabs defaultValue="chat" className="space-y-6">
+        <Tabs defaultValue="voice" className="space-y-6">
           <TabsList className={darkMode ? 'bg-slate-950/80 border border-cyan-500/20' : 'bg-white'}>
+            <TabsTrigger value="voice" className={darkMode ? 'data-[state=active]:bg-cyan-500/20' : ''}>
+              <Mic className="h-4 w-4 mr-2" />
+              Voice
+            </TabsTrigger>
             <TabsTrigger value="chat" className={darkMode ? 'data-[state=active]:bg-cyan-500/20' : ''}>
               <MessageSquare className="h-4 w-4 mr-2" />
               Chat
@@ -97,6 +102,10 @@ export default function TradingCoach() {
               Deep Analysis
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="voice" className="space-y-6">
+            <VoiceCoach />
+          </TabsContent>
 
           <TabsContent value="chat" className="space-y-6">
             <Card className={`${darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200'}`}>
