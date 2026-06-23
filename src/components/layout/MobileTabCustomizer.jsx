@@ -9,7 +9,7 @@ const ALL_OPTIONS = [
   { id: 'journal',      name: 'Journal',   page: 'Journal' },
   { id: 'signals',      name: 'Signals',   page: 'LiveTradingSignals' },
   { id: 'coach',        name: 'Coach',     page: 'TradingCoach' },
-  { id: 'analytics',    name: 'Analytics', page: 'Analytics' },
+  { id: 'reports',      name: 'Reports',   page: 'Reports' },
   { id: 'market',       name: 'Markets',   page: 'MarketData' },
   { id: 'accounts',     name: 'Accounts',  page: 'Accounts' },
   { id: 'community',    name: 'Social',    page: 'SocialFeed' },
