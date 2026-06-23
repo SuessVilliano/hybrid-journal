@@ -194,8 +194,7 @@ export default function Layout({ children, currentPageName }) {
     { id: 'market', name: 'Live Market', page: 'MarketData', icon: TrendingUp },
 
     { id: 'signals', name: 'Trading Signals', page: 'LiveTradingSignals', icon: Zap },
-    { id: 'analytics', name: 'Analytics', page: 'Analytics', icon: BarChart3 },
-    { id: 'summaries', name: 'Summaries', page: 'TradingSummaries', icon: FileText },
+    { id: 'reports', name: 'Reports', page: 'Reports', icon: FileText },
     { id: 'coach', name: 'AI Coach', page: 'TradingCoach', icon: MessageSquare },
     { id: 'calculators', name: 'Calculators', page: 'Calculators', icon: Shield },
     { id: 'strategies', name: 'Strategies & Automation', page: 'Strategies', icon: Layers, comingSoon: true },

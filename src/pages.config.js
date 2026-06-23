@@ -51,6 +51,7 @@ import Accounts from './pages/Accounts';
 import Achievements from './pages/Achievements';
 import AdminMessaging from './pages/AdminMessaging';
 import Analytics from './pages/Analytics';
+import Reports from './pages/Reports';
 import Automation from './pages/Automation';
 import Backtesting from './pages/Backtesting';
 import BrokerConnections from './pages/BrokerConnections';
@@ -92,6 +93,7 @@ export const PAGES = {
     "Achievements": Achievements,
     "AdminMessaging": AdminMessaging,
     "Analytics": Analytics,
+    "Reports": Reports,
     "Automation": Automation,
     "Backtesting": Backtesting,
     "BrokerConnections": BrokerConnections,
