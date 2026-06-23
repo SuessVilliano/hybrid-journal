@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,15 +6,29 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Zap, ArrowRight, ArrowLeft, Check } from 'lucide-react';
+import { Zap, ArrowRight, ArrowLeft, Check, AlertCircle } from 'lucide-react';
 import { createPageUrl } from '../utils';
 
+const FALLBACK_TIMEZONES = [
+  'America/New_York', 'America/Chicago', 'America/Los_Angeles',
+  'Europe/London', 'Europe/Paris', 'Europe/Berlin',
+  'Asia/Tokyo', 'Asia/Singapore', 'Asia/Dubai',
+  'Australia/Sydney', 'Pacific/Auckland'
+];
+
+// Auto-detect the browser timezone and make sure it appears in the picker
+const detectedTimezone = (() => {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (_) { return null; }
+})();
+const timezones = detectedTimezone && !FALLBACK_TIMEZONES.includes(detectedTimezone)
+  ? [detectedTimezone, ...FALLBACK_TIMEZONES]
+  : FALLBACK_TIMEZONES;
+
 export default function Onboarding() {
-  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     preferred_name: '',
-    timezone: 'America/New_York',
+    timezone: detectedTimezone || 'America/New_York',
     location: '',
     trader_type: '',
     experience_level: '',
@@ -43,53 +56,45 @@ export default function Onboarding() {
   });
   const [customInput, setCustomInput] = useState('');
 
-  const totalSteps = 8;
-  const progress = (step / totalSteps) * 100;
+  // Clear any leftover custom-input text whenever the step changes so text
+  // typed on one step can't accidentally be added to a different field.
+  useEffect(() => { setCustomInput(''); }, [step]);
 
   const saveMutation = useMutation({
     mutationFn: async (data) => {
-      try {
-        // Create trader profile with cleaned data
-        const profileData = {
-          onboarding_completed: true,
-          preferred_name: data.preferred_name || '',
-          timezone: data.timezone || 'America/New_York',
-          location: data.location || '',
-          trader_type: data.trader_type || '',
-          experience_level: data.experience_level || '',
-          primary_markets: data.primary_markets || [],
-          primary_goals: data.primary_goals || [],
-          trading_session: data.trading_session || [],
-          risk_tolerance: data.risk_tolerance || '',
-          account_size: data.account_size || '',
-          strategies: data.strategies || [],
-          main_challenges: data.main_challenges || [],
-          prop_firm_trader: data.prop_firm_trader || false,
-          prop_firm_name: data.prop_firm_name || '',
-          ai_coaching_preferences: data.ai_coaching_preferences || {
-            proactive_alerts: true,
-            rule_enforcement: true,
-            performance_feedback: true,
-            emotional_check_ins: true
-          },
-          notification_preferences: data.notification_preferences || {
-            rule_violations: true,
-            milestone_achievements: true,
-            daily_reminders: true,
-            risk_warnings: true
-          }
-        };
-
-        await base44.entities.TraderProfile.create(profileData);
-        
-        return { success: true };
-      } catch (error) {
-        console.error('Profile creation error:', error);
-        throw new Error('Failed to save profile: ' + error.message);
-      }
+      const profileData = {
+        onboarding_completed: true,
+        preferred_name: data.preferred_name || '',
+        timezone: data.timezone || 'America/New_York',
+        location: data.location || '',
+        trader_type: data.trader_type || '',
+        experience_level: data.experience_level || '',
+        primary_markets: data.primary_markets || [],
+        primary_goals: data.primary_goals || [],
+        trading_session: data.trading_session || [],
+        risk_tolerance: data.risk_tolerance || '',
+        account_size: data.account_size || '',
+        strategies: data.strategies || [],
+        main_challenges: data.main_challenges || [],
+        prop_firm_trader: data.prop_firm_trader || false,
+        prop_firm_name: data.prop_firm_name || '',
+        ai_coaching_preferences: data.ai_coaching_preferences || {
+          proactive_alerts: true,
+          rule_enforcement: true,
+          performance_feedback: true,
+          emotional_check_ins: true
+        },
+        notification_preferences: data.notification_preferences || {
+          rule_violations: true,
+          milestone_achievements: true,
+          daily_reminders: true,
+          risk_warnings: true
+        }
+      };
+      await base44.entities.TraderProfile.create(profileData);
+      return { success: true };
     },
     onSuccess: () => {
-      // Small delay to ensure data is saved
       setTimeout(() => {
         window.location.href = createPageUrl('PlatformTour');
       }, 500);
@@ -116,22 +121,16 @@ export default function Onboarding() {
     saveMutation.mutate(formData);
   };
 
-  const timezones = [
-    'America/New_York', 'America/Chicago', 'America/Los_Angeles', 
-    'Europe/London', 'Europe/Paris', 'Europe/Berlin',
-    'Asia/Tokyo', 'Asia/Singapore', 'Asia/Dubai',
-    'Australia/Sydney', 'Pacific/Auckland'
-  ];
-
   const steps = [
     {
       title: "Let's get to know you!",
       description: "Help us personalize your experience",
+      validate: () => formData.preferred_name.trim().length > 0,
       content: (
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-400 mb-2">
-              What should we call you?
+              What should we call you? <span className="text-cyan-400">*</span>
             </label>
             <Input
               value={formData.preferred_name}
@@ -161,7 +160,7 @@ export default function Onboarding() {
               className="w-full p-3 rounded-lg bg-slate-900/50 border border-cyan-500/20 text-white"
             >
               {timezones.map(tz => (
-                <option key={tz} value={tz}>{tz}</option>
+                <option key={tz} value={tz}>{tz}{tz === detectedTimezone ? ' (detected)' : ''}</option>
               ))}
             </select>
           </div>
@@ -171,6 +170,7 @@ export default function Onboarding() {
     {
       title: "What's your trading style?",
       description: "Help us understand how you trade",
+      validate: () => formData.trader_type !== '',
       content: (
         <div className="space-y-3">
           {['Day Trader', 'Swing Trader', 'Scalper', 'Position Trader', 'Algorithmic Trader', 'Beginner'].map((type) => (
@@ -192,6 +192,7 @@ export default function Onboarding() {
     {
       title: "What's your experience level?",
       description: "This helps us calibrate our guidance",
+      validate: () => formData.experience_level !== '',
       content: (
         <div className="space-y-3">
           {['Beginner (0-6 months)', 'Intermediate (6 months - 2 years)', 'Advanced (2-5 years)', 'Expert (5+ years)'].map((level) => (
@@ -232,6 +233,27 @@ export default function Onboarding() {
       )
     },
     {
+      title: "When do you trade?",
+      description: "Select all sessions that apply",
+      content: (
+        <div className="grid grid-cols-2 gap-3">
+          {['Asian', 'London', 'New York', 'After Hours'].map((session) => (
+            <button
+              key={session}
+              onClick={() => toggleSelection('trading_session', session)}
+              className={`p-4 rounded-lg transition-all ${
+                formData.trading_session.includes(session)
+                  ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white'
+                  : 'bg-slate-900/50 border border-cyan-500/20 text-white hover:border-cyan-500/50'
+              }`}
+            >
+              {session}
+            </button>
+          ))}
+        </div>
+      )
+    },
+    {
       title: "What are your main goals?",
       description: "Tell us what you're working towards",
       content: (
@@ -256,7 +278,7 @@ export default function Onboarding() {
               value={customInput}
               onChange={(e) => setCustomInput(e.target.value)}
               placeholder="Add custom goal..."
-              onKeyPress={(e) => e.key === 'Enter' && addCustomItem('primary_goals')}
+              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCustomItem('primary_goals'))}
               className="bg-slate-900/50 border-cyan-500/20 text-white"
             />
             <Button onClick={() => addCustomItem('primary_goals')} variant="outline">Add</Button>
@@ -265,8 +287,42 @@ export default function Onboarding() {
       )
     },
     {
+      title: "What are your biggest challenges?",
+      description: "So our coaching can focus on what matters most",
+      content: (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-3">
+            {['Overtrading', 'Revenge trading', 'Cutting winners short', 'Holding losers too long', 'Inconsistent discipline', 'Fear of missing out', 'Poor risk management', 'Lack of a trading plan'].map((challenge) => (
+              <button
+                key={challenge}
+                onClick={() => toggleSelection('main_challenges', challenge)}
+                className={`p-3 rounded-lg text-left transition-all ${
+                  formData.main_challenges.includes(challenge)
+                    ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white'
+                    : 'bg-slate-900/50 border border-cyan-500/20 text-white hover:border-cyan-500/50'
+                }`}
+              >
+                {challenge}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <Input
+              value={customInput}
+              onChange={(e) => setCustomInput(e.target.value)}
+              placeholder="Add custom challenge..."
+              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCustomItem('main_challenges'))}
+              className="bg-slate-900/50 border-cyan-500/20 text-white"
+            />
+            <Button onClick={() => addCustomItem('main_challenges')} variant="outline">Add</Button>
+          </div>
+        </div>
+      )
+    },
+    {
       title: "What's your risk tolerance?",
       description: "How much do you risk per trade?",
+      validate: () => formData.risk_tolerance !== '',
       content: (
         <div className="space-y-3">
           {['Conservative (0.5-1% per trade)', 'Moderate (1-2% per trade)', 'Aggressive (2-3% per trade)', 'Very Aggressive (3%+ per trade)'].map((risk) => (
@@ -282,6 +338,71 @@ export default function Onboarding() {
               {risk}
             </button>
           ))}
+        </div>
+      )
+    },
+    {
+      title: "What's your account size?",
+      description: "This calibrates your risk and position-sizing tools",
+      validate: () => formData.account_size !== '',
+      content: (
+        <div className="space-y-3">
+          {['Under $1,000', '$1,000 - $5,000', '$5,000 - $25,000', '$25,000 - $100,000', 'Over $100,000', 'Prefer not to say'].map((size) => (
+            <button
+              key={size}
+              onClick={() => setFormData({ ...formData, account_size: size })}
+              className={`w-full p-4 rounded-lg text-left transition-all ${
+                formData.account_size === size
+                  ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white'
+                  : 'bg-slate-900/50 border border-cyan-500/20 text-white hover:border-cyan-500/50'
+              }`}
+            >
+              {size}
+            </button>
+          ))}
+        </div>
+      )
+    },
+    {
+      title: "Are you trading with a prop firm?",
+      description: "We'll tailor rules and drawdown tracking if so",
+      content: (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => setFormData({ ...formData, prop_firm_trader: true })}
+              className={`p-4 rounded-lg transition-all ${
+                formData.prop_firm_trader
+                  ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white'
+                  : 'bg-slate-900/50 border border-cyan-500/20 text-white hover:border-cyan-500/50'
+              }`}
+            >
+              <div className="font-medium">Yes</div>
+            </button>
+            <button
+              onClick={() => setFormData({ ...formData, prop_firm_trader: false, prop_firm_name: '' })}
+              className={`p-4 rounded-lg transition-all ${
+                !formData.prop_firm_trader
+                  ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white'
+                  : 'bg-slate-900/50 border border-cyan-500/20 text-white hover:border-cyan-500/50'
+              }`}
+            >
+              <div className="font-medium">No</div>
+            </button>
+          </div>
+          {formData.prop_firm_trader && (
+            <div>
+              <label className="block text-sm font-medium text-slate-400 mb-2">
+                Which prop firm?
+              </label>
+              <Input
+                value={formData.prop_firm_name}
+                onChange={(e) => setFormData({ ...formData, prop_firm_name: e.target.value })}
+                placeholder="e.g., Hybrid Funding, FTMO, Topstep..."
+                className="bg-slate-900/50 border-cyan-500/20 text-white"
+              />
+            </div>
+          )}
         </div>
       )
     },
@@ -310,7 +431,7 @@ export default function Onboarding() {
               value={customInput}
               onChange={(e) => setCustomInput(e.target.value)}
               placeholder="Add custom strategy..."
-              onKeyPress={(e) => e.key === 'Enter' && addCustomItem('strategies')}
+              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCustomItem('strategies'))}
               className="bg-slate-900/50 border-cyan-500/20 text-white"
             />
             <Button onClick={() => addCustomItem('strategies')} variant="outline">Add</Button>
@@ -322,43 +443,84 @@ export default function Onboarding() {
       title: "AI Coaching Preferences",
       description: "How would you like our AI to help you?",
       content: (
-        <div className="space-y-4">
-          <div className="space-y-3">
-            {[
-              { key: 'proactive_alerts', label: 'Proactive Alerts', desc: 'Get notified before potential mistakes' },
-              { key: 'rule_enforcement', label: 'Rule Enforcement', desc: 'Alert me when I break my trading rules' },
-              { key: 'performance_feedback', label: 'Performance Feedback', desc: 'Daily insights on my trading performance' },
-              { key: 'emotional_check_ins', label: 'Emotional Check-ins', desc: 'Monitor and improve emotional discipline' }
-            ].map((pref) => (
-              <button
-                key={pref.key}
-                onClick={() => setFormData({
-                  ...formData,
-                  ai_coaching_preferences: {
-                    ...formData.ai_coaching_preferences,
-                    [pref.key]: !formData.ai_coaching_preferences[pref.key]
-                  }
-                })}
-                className={`w-full p-4 rounded-lg text-left transition-all ${
-                  formData.ai_coaching_preferences[pref.key]
-                    ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white'
-                    : 'bg-slate-900/50 border border-cyan-500/20 text-white hover:border-cyan-500/50'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">{pref.label}</div>
-                    <div className="text-sm opacity-80">{pref.desc}</div>
-                  </div>
-                  {formData.ai_coaching_preferences[pref.key] && <Check className="h-5 w-5" />}
+        <div className="space-y-3">
+          {[
+            { key: 'proactive_alerts', label: 'Proactive Alerts', desc: 'Get notified before potential mistakes' },
+            { key: 'rule_enforcement', label: 'Rule Enforcement', desc: 'Alert me when I break my trading rules' },
+            { key: 'performance_feedback', label: 'Performance Feedback', desc: 'Daily insights on my trading performance' },
+            { key: 'emotional_check_ins', label: 'Emotional Check-ins', desc: 'Monitor and improve emotional discipline' }
+          ].map((pref) => (
+            <button
+              key={pref.key}
+              onClick={() => setFormData({
+                ...formData,
+                ai_coaching_preferences: {
+                  ...formData.ai_coaching_preferences,
+                  [pref.key]: !formData.ai_coaching_preferences[pref.key]
+                }
+              })}
+              className={`w-full p-4 rounded-lg text-left transition-all ${
+                formData.ai_coaching_preferences[pref.key]
+                  ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white'
+                  : 'bg-slate-900/50 border border-cyan-500/20 text-white hover:border-cyan-500/50'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-medium">{pref.label}</div>
+                  <div className="text-sm opacity-80">{pref.desc}</div>
                 </div>
-              </button>
-            ))}
-          </div>
+                {formData.ai_coaching_preferences[pref.key] && <Check className="h-5 w-5" />}
+              </div>
+            </button>
+          ))}
+        </div>
+      )
+    },
+    {
+      title: "Notification Preferences",
+      description: "What should we ping you about?",
+      content: (
+        <div className="space-y-3">
+          {[
+            { key: 'rule_violations', label: 'Rule Violations', desc: 'When a trading rule is broken' },
+            { key: 'milestone_achievements', label: 'Milestone Achievements', desc: 'Badges, streaks, and goals reached' },
+            { key: 'daily_reminders', label: 'Daily Reminders', desc: 'Plan and journal nudges each day' },
+            { key: 'risk_warnings', label: 'Risk Warnings', desc: 'When drawdown or exposure gets high' }
+          ].map((pref) => (
+            <button
+              key={pref.key}
+              onClick={() => setFormData({
+                ...formData,
+                notification_preferences: {
+                  ...formData.notification_preferences,
+                  [pref.key]: !formData.notification_preferences[pref.key]
+                }
+              })}
+              className={`w-full p-4 rounded-lg text-left transition-all ${
+                formData.notification_preferences[pref.key]
+                  ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white'
+                  : 'bg-slate-900/50 border border-cyan-500/20 text-white hover:border-cyan-500/50'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-medium">{pref.label}</div>
+                  <div className="text-sm opacity-80">{pref.desc}</div>
+                </div>
+                {formData.notification_preferences[pref.key] && <Check className="h-5 w-5" />}
+              </div>
+            </button>
+          ))}
         </div>
       )
     }
   ];
+
+  const totalSteps = steps.length;
+  const progress = (step / totalSteps) * 100;
+  const currentStep = steps[step - 1];
+  const canProceed = !currentStep.validate || currentStep.validate();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-6">
@@ -385,11 +547,18 @@ export default function Onboarding() {
 
         <CardContent className="space-y-6">
           <div>
-            <CardTitle className="text-2xl text-white mb-2">{steps[step - 1].title}</CardTitle>
-            <p className="text-slate-400">{steps[step - 1].description}</p>
+            <CardTitle className="text-2xl text-white mb-2">{currentStep.title}</CardTitle>
+            <p className="text-slate-400">{currentStep.description}</p>
           </div>
 
-          {steps[step - 1].content}
+          {currentStep.content}
+
+          {saveMutation.isError && (
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+              <AlertCircle className="h-4 w-4 flex-shrink-0" />
+              <span>Couldn't save your profile: {saveMutation.error?.message || 'Please try again.'}</span>
+            </div>
+          )}
 
           <div className="flex justify-between pt-4">
             <Button
@@ -422,6 +591,7 @@ export default function Onboarding() {
             ) : (
               <Button
                 onClick={() => setStep(step + 1)}
+                disabled={!canProceed}
                 className="bg-gradient-to-r from-cyan-500 to-purple-600"
               >
                 Next
@@ -429,6 +599,9 @@ export default function Onboarding() {
               </Button>
             )}
           </div>
+          {currentStep.validate && !canProceed && step !== totalSteps && (
+            <p className="text-xs text-cyan-400/70 text-right">Please make a selection to continue</p>
+          )}
         </CardContent>
       </Card>
     </div>
