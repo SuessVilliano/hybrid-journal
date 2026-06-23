@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { base44 } from '@/api/base44Client';
-import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText, Menu, X, Wallet, Sun, Moon, Home, Users, User, Brain, GripVertical, Star, Clock, List, Bell, HelpCircle, UserCheck, Image as ImageIcon, Trophy, Filter, FileCheck, Activity } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Target, BarChart3, Zap, Layers, Play, Upload, TrendingUp, Link as LinkIcon, Bot, MessageSquare, Shield, FileText, Menu, X, Wallet, Sun, Moon, Home, Users, User, Brain, GripVertical, Star, Clock, List, Bell, HelpCircle, UserCheck, Image as ImageIcon, Trophy, Filter, FileCheck } from 'lucide-react';
 import FloatingAIAssistant from '@/components/ai/FloatingAIAssistant';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import MobileHeader from '@/components/layout/MobileHeader';
@@ -194,7 +194,6 @@ export default function Layout({ children, currentPageName }) {
     { id: 'market', name: 'Live Market', page: 'MarketData', icon: TrendingUp },
 
     { id: 'signals', name: 'Trading Signals', page: 'LiveTradingSignals', icon: Zap },
-    { id: 'signal-monitor', name: 'Signal Monitor', page: 'SignalMonitor', icon: Activity },
     { id: 'reports', name: 'Reports', page: 'Reports', icon: FileText },
     { id: 'coach', name: 'AI Coach', page: 'TradingCoach', icon: MessageSquare },
     { id: 'calculators', name: 'Calculators', page: 'Calculators', icon: Shield },
@@ -202,7 +201,7 @@ export default function Layout({ children, currentPageName }) {
     { id: 'broker', name: 'Broker Sync', page: 'BrokerConnections', icon: LinkIcon, adminOnly: true },
     { id: 'backtesting', name: 'Backtesting', page: 'Backtesting', icon: Play, adminOnly: true, comingSoon: true },
     { id: 'imports', name: 'Imports', page: 'Imports', icon: Upload },
-    { id: 'doc-audit', name: 'Doc Auditor', page: 'DocumentAuditor', icon: FileCheck },
+    { id: 'doc-audit', name: 'Doc Auditor', page: 'DocumentAuditor', icon: FileCheck, adminOnly: true },
     { id: 'community', name: 'Community', page: 'SocialFeed', icon: Users },
     { id: 'media', name: 'Media Library', page: 'MediaLibrary', icon: ImageIcon },
     { id: 'shared', name: 'Shared Access', page: 'SharedAccess', icon: UserCheck, adminOnly: true },

@@ -1,5 +1,4 @@
 {
-  "name": "pdf_auditor",
   "description": "AI audit agent that reads and audits imported documents (PDFs, CSVs, Excel broker statements) for accurate data extraction. It extracts trade records, validates required fields, detects duplicates, and flags totals mismatches.",
   "instructions": "You are a meticulous document audit agent for a trading journal platform. Your job is to read imported documents (PDF, CSV, XLSX broker/trade statements) and verify that the data extracted from them is accurate and complete.\n\n**WHEN A USER PROVIDES A DOCUMENT:**\n1. Call the `auditDocument` backend function with the document's file_url (and optional doc_type) to extract and validate trade records.\n2. Interpret the structured findings and present them clearly.\n\n**REPORT TO THE USER:**\n- How many records were extracted and how many were clean.\n- Per-record issues: missing symbol, side, entry date, entry price, or pnl.\n- Duplicate records detected.\n- Totals mismatches: stated total P&L vs computed, stated trade count vs extracted.\n- A clear accuracy verdict (e.g., 'Clean import', '3 rows need fixing', 'Totals don't reconcile').\n- Recommended next steps (re-import, fix specific rows, review a broker's fills).\n\n**WHEN COMPARING TO STORED DATA:**\nUse the Trade entity read tool to compare extracted records against already-imported trades if the user asks whether an import landed correctly.\n\nBe precise and always cite numbers. Keep findings actionable.",
   "tool_configs": [
@@ -17,7 +16,25 @@
     },
     {
       "function_name": "auditDocument",
-      "description": "Extract and audit trade records from an uploaded document file_url for accuracy issues (missing fields, duplicates, totals mismatches)"
+      "description": "Extract and audit trade records from an uploaded document for accuracy issues"
     }
-  ]
+  ],
+  "context_files": [],
+  "app_user_connector_configs": [],
+  "selected_skill_names": [],
+  "selected_workspace_skill_ids": [],
+  "model": "automatic",
+  "whatsapp_greeting": null,
+  "telegram_greeting": null,
+  "line_greeting": null,
+  "memory_config": {
+    "enabled": true,
+    "scope": "both",
+    "include_other_conversation_context": false,
+    "instructions": null
+  },
+  "voice_config": {
+    "voice_id": null
+  },
+  "name": "pdf_auditor"
 }
