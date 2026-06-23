@@ -16,6 +16,8 @@ import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import ComingSoon from '@/pages/ComingSoon';
+import DocumentAuditor from '@/pages/DocumentAuditor';
+import SignalMonitor from '@/pages/SignalMonitor';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -104,6 +106,22 @@ const AuthenticatedApp = () => {
           element={
             <LayoutWrapper currentPageName="ComingSoon">
               <ComingSoon />
+            </LayoutWrapper>
+          }
+        />
+        <Route
+          path="/documentauditor"
+          element={
+            <LayoutWrapper currentPageName="DocumentAuditor">
+              <DocumentAuditor />
+            </LayoutWrapper>
+          }
+        />
+        <Route
+          path="/signalmonitor"
+          element={
+            <LayoutWrapper currentPageName="SignalMonitor">
+              <SignalMonitor />
             </LayoutWrapper>
           }
         />
