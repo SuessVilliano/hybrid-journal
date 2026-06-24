@@ -100,12 +100,8 @@
   ],
   "rls": {
     "create": null,
-    "read": {
-      "user_email": "{{user.email}}"
-    },
-    "update": {
-      "user_email": "{{user.email}}"
-    },
+    "read": null,
+    "update": null,
     "delete": {
       "user_email": "{{user.email}}"
     }
