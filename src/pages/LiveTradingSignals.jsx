@@ -56,32 +56,15 @@ export default function LiveTradingSignals() {
   const { data: signals = [], isLoading: isLoadingSignals, refetch: refetchSignals } = useQuery({
     queryKey: ['signals', user?.email],
     queryFn: async () => {
-      if (!user?.email) {
-        console.log('⚠️ No user email for signal query');
-        return [];
-      }
-      console.log('🔍 Fetching signals for user:', user.email);
-      
       try {
-        const results = await base44.entities.Signal.filter({ user_email: user.email }, '-created_date', 500);
-        console.log('📊 Signals fetched (filter by user_email):', results.length, 'signals');
-        
-        if (results.length > 0) {
-          console.log('✅ Sample signal:', {
-            user_email: results[0].user_email,
-            created_by: results[0].created_by,
-            symbol: results[0].symbol,
-            provider: results[0].provider
-          });
-        }
-        
+        // RLS automatically scopes signals to the logged-in user (user_email match)
+        const results = await base44.entities.Signal.list('-created_date', 500);
         return results;
       } catch (error) {
         console.error('❌ Signal query error:', error);
         return [];
       }
     },
-    enabled: !!user?.email,
     refetchInterval: isMutating ? false : 10000, // Pause refetch during mutations, slower interval
     onSuccess: (newSignals) => {
       // Check for new signals and show browser notification
@@ -101,10 +84,14 @@ export default function LiveTradingSignals() {
   const { data: syncLogs = [], refetch: refetchLogs } = useQuery({
     queryKey: ['syncLogs', user?.email],
     queryFn: async () => {
-      if (!user?.email) return [];
-      return await base44.entities.SyncLog.filter({ user_email: user.email, sync_type: 'webhook_signal' }, '-created_date', 20);
-    },
-    enabled: !!user?.email
+      try {
+        // RLS scopes SyncLog to the logged-in user
+        return await base44.entities.SyncLog.filter({ sync_type: 'webhook_signal' }, '-created_date', 20);
+      } catch (error) {
+        console.error('SyncLog query error:', error);
+        return [];
+      }
+    }
   });
 
   const isLoading = isLoadingUser || isLoadingSignals;
