@@ -16,15 +16,13 @@
     "trader_profile_id"
   ],
   "rls": {
-    "create": {
-      "trader_profile_id": "{{user.profile_id}}"
-    },
+    "create": {},
     "read": {},
     "update": {
-      "trader_profile_id": "{{user.profile_id}}"
+      "created_by": "{{user.email}}"
     },
     "delete": {
-      "trader_profile_id": "{{user.profile_id}}"
+      "created_by": "{{user.email}}"
     }
   }
 }
