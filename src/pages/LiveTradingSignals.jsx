@@ -40,6 +40,7 @@ export default function LiveTradingSignals() {
   const [providerFilter, setProviderFilter] = useState('all');
   const [hideDuplicates, setHideDuplicates] = useState(true);
   const [showRoutingRules, setShowRoutingRules] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const queryClient = useQueryClient();
   const darkMode = document.documentElement.classList.contains('dark');
   const { permission, requestPermission, isSupported } = useBrowserNotifications();
@@ -357,6 +358,33 @@ export default function LiveTradingSignals() {
     }
   };
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      // 1. Trigger the monitor function to check live prices & update statuses
+      const result = await base44.functions.invoke('monitorSignalTargets', {
+        token: 'hj_update_9x2k_signals_2026'
+      });
+      const updated = result?.data?.updated || 0;
+      if (updated > 0) {
+        toast.success(`${updated} signal${updated > 1 ? 's' : ''} updated with live prices`);
+      }
+    } catch (error) {
+      console.error('Monitor failed:', error);
+      // Don't show error toast — still refetch below as fallback
+    } finally {
+      // 2. Always refetch signals & logs from the database
+      try {
+        await Promise.all([refetchSignals(), refetchLogs()]);
+        queryClient.invalidateQueries({ queryKey: ['signals'] });
+        queryClient.invalidateQueries({ queryKey: ['syncLogs'] });
+      } catch (error) {
+        console.error('Refresh failed:', error);
+      }
+      setIsRefreshing(false);
+    }
+  };
+
   const handleBulkDelete = async () => {
     if (selectedIds.size === 0) return;
     setIsBulkProcessing(true);
@@ -429,24 +457,14 @@ export default function LiveTradingSignals() {
               </Button>
             )}
             <Button
-              onClick={async () => {
-                try {
-                  await Promise.all([
-                    refetchSignals(),
-                    refetchLogs()
-                  ]);
-                  queryClient.invalidateQueries({ queryKey: ['signals'] });
-                  queryClient.invalidateQueries({ queryKey: ['syncLogs'] });
-                } catch (error) {
-                  console.error('Refresh failed:', error);
-                }
-              }}
+              onClick={handleRefresh}
+              disabled={isRefreshing}
               variant="outline"
               size="sm"
               className={darkMode ? 'text-cyan-400 border-cyan-500/30' : 'text-cyan-700 border-cyan-500/30'}
             >
-              <RefreshCw className="h-4 w-4 mr-1" />
-              <span className="text-xs md:text-sm">Refresh</span>
+              <RefreshCw className={`h-4 w-4 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span className="text-xs md:text-sm">{isRefreshing ? 'Updating...' : 'Refresh'}</span>
             </Button>
             <Button
               onClick={() => setShowLogs(!showLogs)}
