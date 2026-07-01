@@ -26,6 +26,12 @@ const FUTURES_SYMBOLS = [
   'NQZ', 'ESZ', 'NQH', 'ESH', 'NQM', 'ESM', 'NQU', 'ESU', // quarterly contracts
 ];
 
+// Index CFDs (broker-style tickers) — treated as points, same as futures
+const INDEX_SYMBOLS = [
+  'US30', 'NAS100', 'US100', 'SPX500', 'GER30', 'UK100', 'JPN225',
+  'FRA40', 'AUS200', 'ESP35', 'HKG33', 'US2000',
+];
+
 // JPY forex pairs
 const JPY_PAIRS = ['JPY', 'USDJPY', 'EURJPY', 'GBPJPY', 'AUDJPY', 'CADJPY', 'CHFJPY', 'NZDJPY'];
 
@@ -41,6 +47,9 @@ export function classifySymbol(symbol) {
 
   // Check futures first (most specific)
   if (FUTURES_SYMBOLS.some(f => s.startsWith(f) || s === f)) return 'futures';
+
+  // Index CFDs (US30USD, NAS100USD, SPX500USD, etc.)
+  if (INDEX_SYMBOLS.some(ix => s.startsWith(ix))) return 'futures';
 
   // Crypto check
   if (CRYPTO_SYMBOLS.some(c => s.startsWith(c))) return 'crypto';
@@ -66,7 +75,8 @@ export function calcPipsOrPoints(signal) {
   if (!price || price === 0) return null;
 
   const type = classifySymbol(symbol);
-  const WIN_STATUSES = ['tp1_hit', 'tp2_hit', 'tp3_hit', 'full_target', 'executed'];
+  // 'executed' = open trade, not a resolved win — excluded to avoid inflating gains
+  const WIN_STATUSES = ['tp1_hit', 'tp2_hit', 'tp3_hit', 'full_target'];
   const isWin = WIN_STATUSES.includes(status);
   const isLoss = status === 'stopped_out';
 
@@ -80,7 +90,6 @@ export function calcPipsOrPoints(signal) {
     else if (status === 'tp3_hit') exitPrice = tps[2] ?? take_profit;
     else if (status === 'tp2_hit') exitPrice = tps[1] ?? take_profit;
     else if (status === 'tp1_hit') exitPrice = tps[0] ?? take_profit;
-    else if (status === 'executed') exitPrice = tps[0] ?? take_profit; // estimate
   } else if (isLoss && stop_loss) {
     exitPrice = stop_loss;
   }
@@ -132,22 +141,34 @@ function formatPtsOrPips(value, unit) {
  * Returns { gained: number, lost: number, net: number, unit: string, winCount, lossCount }
  */
 export function aggregateSignals(signals) {
-  let gained = 0, lost = 0, winCount = 0, lossCount = 0;
-  // Track dominant unit
-  const unitCounts = {};
+  // Separate by unit — pips and points must never be summed together
+  const buckets = { pts: { gained: 0, lost: 0, winCount: 0, lossCount: 0 }, pips: { gained: 0, lost: 0, winCount: 0, lossCount: 0 } };
 
   signals.forEach(s => {
     const result = calcPipsOrPoints(s);
     if (!result) return;
-    const u = result.unit;
-    unitCounts[u] = (unitCounts[u] || 0) + 1;
-    if (result.value > 0) { gained += result.value; winCount++; }
-    else if (result.value < 0) { lost += Math.abs(result.value); lossCount++; }
+    const u = result.unit === 'pips' ? 'pips' : 'pts';
+    if (result.value > 0) { buckets[u].gained += result.value; buckets[u].winCount++; }
+    else if (result.value < 0) { buckets[u].lost += Math.abs(result.value); buckets[u].lossCount++; }
   });
 
-  const unit = Object.entries(unitCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'pts';
-  const net = gained - lost;
-  return { gained, lost, net, unit, winCount, lossCount };
+  // Pick the dominant bucket (most resolved signals)
+  const ptsTotal = buckets.pts.winCount + buckets.pts.lossCount;
+  const pipsTotal = buckets.pips.winCount + buckets.pips.lossCount;
+  const dominant = pipsTotal > ptsTotal ? 'pips' : 'pts';
+  const b = buckets[dominant];
+
+  return {
+    gained: b.gained,
+    lost: b.lost,
+    net: b.gained - b.lost,
+    unit: dominant,
+    winCount: b.winCount,
+    lossCount: b.lossCount,
+    // Expose both buckets for UI that wants to show them separately
+    ptsBucket: buckets.pts,
+    pipsBucket: buckets.pips
+  };
 }
 
 /**
