@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookOpen, MessageCircle, Video, FileText, Mail, ExternalLink, Smartphone } from 'lucide-react';
+import { BookOpen, MessageCircle, Video, FileText, Mail, ExternalLink, Smartphone, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -128,6 +128,42 @@ export default function Help() {
     {
       q: 'What do the Market Cause scores mean?',
       a: 'Macro Score: rate/dollar/VIX pressure on assets. Positioning Score: where stops are, squeeze potential. Catalyst Score: upcoming event risk in 48h. Sector Score: symbol-specific macro sensitivity. Composite: overall pressure (0-40=RISK-ON, 40-60=NEUTRAL, 60-75=CAUTION, 75+=RISK-OFF). Different symbols react differently - crypto/tech hate high rates, gold loves weak dollar.'
+    },
+    {
+      q: 'What is the QQE Engine?',
+      a: 'QQE stands for Quantitative-Qualitative Engine. It generates a daily trade briefing that combines real-time macro data (Treasury yields, VIX, DXY, Fed balance sheet from FRED), overnight price action (Yahoo Finance), economic calendar (Finnhub), and AI synthesis into an actionable trade plan. Unlike traditional technical analysis, QQE focuses on the WHY — the cause behind market movements — not just the pattern.'
+    },
+    {
+      q: 'How do I use the QQE Engine?',
+      a: 'Navigate to QQE Engine in the sidebar. Select your instrument (MNQ, NQ, ES, EURUSD, BTCUSD, etc.) and click "Generate Briefing." The engine fetches all data layers in parallel, scores 14 factors, identifies the current regime template, searches historical briefings for similar "rhymes," and produces a complete briefing with directional bias, cause analysis, specific entry/stop/target levels, avoid list, and invalidation criteria.'
+    },
+    {
+      q: 'How do I read the Session Score and Grade?',
+      a: 'The 14-factor session score ranges 0-14. Grade A (11+): High-quality setup — all conditions align for sweep reversal trading. Grade B (8-10): Good conditions — proceed with standard risk. Grade C (5-7): Marginal — reduce position size or wait for better setup. Grade F (under 5): Do not trade — conditions are unfavorable (low volume, no sweep, bad VIX regime, etc.).'
+    },
+    {
+      q: 'What are the 14 factors the QQE Engine scores?',
+      a: '1) Session type (overnight/pre-market), 2) Sweep occurred, 3) Reversal quality, 4) VIX regime (12-25 ideal), 5) Day of week (Tue-Thu best), 6) Consecutive direction days (1-3 good, 4+ overextended), 7) Gap alignment with sweep reversal, 8) Range quality (moderate is best), 9) Volume confirmation, 10) Sweep timing, 11) DXY direction, 12) Yield trend, 13) Economic event proximity, 14) VIX not in panic mode. Each factor scores 0 or 1.'
+    },
+    {
+      q: 'What are the regime templates?',
+      a: 'Fed Pivot: Yields falling, VIX low, dollar weak → bullish for risk assets. Inflation Scare: Yields high, VIX elevated, dollar strong → bearish bias. Tech Earnings Crush: Positive earnings news driving mega-cap strength → bullish. Liquidity Crisis: VIX above 35 → normal sweep rules DO NOT apply, wait for VIX to peak. Normal Market: No strong template signal → use standard scoring. The engine identifies which template matches current conditions with HIGH/MODERATE/LOW confidence.'
+    },
+    {
+      q: 'What are "Historical Rhymes"?',
+      a: 'Every QQE briefing is saved to your history. When you generate a new briefing, the engine searches past briefings for similar conditions (matching VIX, DXY, yields, regime template, and sweep type) and surfaces the top 3 matches with similarity scores. This shows you what happened last time the market "rhymed" with today — helping you learn from past setups and avoid repeating mistakes.'
+    },
+    {
+      q: 'What is the difference between QQE Engine and Market Cause Engine?',
+      a: 'Market Cause Engine scores WHY a specific symbol is moving right now (macro pressure, positioning risk, catalyst threats) and assigns a regime (RISK-ON to RISK-OFF). QQE Engine goes further — it combines that macro data with overnight price action, 14-factor session scoring, regime template identification, and AI synthesis to produce a complete daily trade plan with entry/stop/target levels. Use Market Cause Engine for quick regime checks; use QQE Engine for a full pre-market briefing.'
+    },
+    {
+      q: 'How often should I generate a QQE briefing?',
+      a: 'Generate once before the trading session starts (pre-market). The data is real-time, so each briefing reflects current conditions. Every briefing is saved, building your historical pattern database for better "rhyme" matching over time. You can also regenerate intraday if market conditions shift dramatically (e.g., VIX spikes or a major catalyst hits).'
+    },
+    {
+      q: 'Can I ask the QQE agent questions in the AI Coach?',
+      a: 'Yes — the QQE agent is available through the AI assistant. Ask things like "Generate a QQE briefing for NQ", "Why is the market moving today?", "What regime are we in?", or "Find historical rhymes for today\'s conditions." The agent can access your saved briefings and the market cause engine for deeper analysis.'
     }
   ];
 
@@ -305,6 +341,114 @@ export default function Help() {
 
         <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
           <CardHeader>
+            <CardTitle className={`flex items-center gap-2 ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
+              <Brain className="h-5 w-5" />
+              QQE Engine — Quantitative-Qualitative Engine
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className={`p-4 rounded-lg ${darkMode ? 'bg-purple-900/20 border border-purple-500/30' : 'bg-purple-50 border border-purple-200'}`}>
+              <h3 className={`font-bold mb-2 ${darkMode ? 'text-purple-300' : 'text-purple-900'}`}>🧬 What It Does</h3>
+              <p className={`text-sm mb-3 ${darkMode ? 'text-purple-300/80' : 'text-purple-900/80'}`}>
+                Generates a complete daily trade briefing that answers <strong>WHY</strong> the market is where it is — not just what it's doing. Combines 4 real-time data layers with AI synthesis to produce an actionable trade plan.
+              </p>
+              <div className={`space-y-2 text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                <div>
+                  <strong className={darkMode ? 'text-purple-400' : 'text-purple-700'}>Data Sources:</strong>
+                  <ul className="ml-4 mt-1 space-y-1">
+                    <li>• <strong>FRED API</strong> — 10Y/2Y Treasury yields, VIX, DXY, Fed balance sheet</li>
+                    <li>• <strong>Yahoo Finance</strong> — Overnight high/low, sweep detection, gap, volume, consecutive direction</li>
+                    <li>• <strong>Finnhub</strong> — Economic calendar (today's events), market news with sentiment analysis</li>
+                    <li>• <strong>Historical Briefings</strong> — Your saved QQE briefings for pattern "rhyme" matching</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className={`p-4 rounded-lg ${darkMode ? 'bg-cyan-900/20 border border-cyan-500/30' : 'bg-cyan-50 border border-cyan-200'}`}>
+              <h3 className={`font-bold mb-2 ${darkMode ? 'text-cyan-300' : 'text-cyan-900'}`}>📊 How to Read the Briefing</h3>
+              <div className={`space-y-3 text-sm ${darkMode ? 'text-cyan-300/80' : 'text-cyan-900/80'}`}>
+                <div>
+                  <strong className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>Session Score (0-14) & Grade:</strong>
+                  <ul className="ml-4 mt-1 space-y-1">
+                    <li>• <strong>A (11-14):</strong> High-quality setup — all conditions align for sweep reversal</li>
+                    <li>• <strong>B (8-10):</strong> Good conditions — proceed with standard risk</li>
+                    <li>• <strong>C (5-7):</strong> Marginal — reduce size or wait for better setup</li>
+                    <li>• <strong>F (0-4):</strong> Do not trade — conditions unfavorable</li>
+                  </ul>
+                </div>
+                <div>
+                  <strong className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>Regime Template:</strong> Identifies which historical pattern matches today: <em>Fed Pivot</em> (bullish risk), <em>Inflation Scare</em> (bearish), <em>Tech Earnings Crush</em> (bullish mega-cap), <em>Liquidity Crisis</em> (VIX 35+ — normal rules off), or <em>Normal Market</em>.
+                </div>
+                <div>
+                  <strong className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>Directional Bias & Conviction:</strong> LONG/SHORT/NEUTRAL with HIGH/MODERATE/LOW conviction. Higher conviction = larger position justified.
+                </div>
+                <div>
+                  <strong className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>Cause Analysis:</strong> The core QQE differentiator — 2-3 sentences explaining <strong>WHY</strong> the market is here today. The cause determines whether a pattern continues or reverses.
+                </div>
+                <div>
+                  <strong className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>Trade Plan:</strong> Specific entry level, entry trigger, stop loss, TP1, TP2, position size, and R:R ratio. Actionable — not vague.
+                </div>
+                <div>
+                  <strong className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>Avoid List:</strong> Times/conditions to NOT trade today. Respect these.
+                </div>
+                <div>
+                  <strong className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>Invalidation:</strong> The specific condition that flips the bias. If this happens, exit or reverse.
+                </div>
+                <div>
+                  <strong className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>Historical Rhymes:</strong> Top 3 past briefings with similar VIX/DXY/yield/template/sweep conditions. Shows what happened last time the market "rhymed" — learn from it.
+                </div>
+              </div>
+            </div>
+
+            <div className={`p-4 rounded-lg ${darkMode ? 'bg-green-900/20 border border-green-500/30' : 'bg-green-50 border border-green-200'}`}>
+              <h3 className={`font-bold mb-2 ${darkMode ? 'text-green-300' : 'text-green-900'}`}>🎯 QQE Key Principles</h3>
+              <ul className={`space-y-2 text-sm ${darkMode ? 'text-green-300/80' : 'text-green-900/80'} list-disc list-inside`}>
+                <li>The <strong>cause</strong> determines whether a pattern will <strong>continue</strong> or <strong>break</strong></li>
+                <li><strong>Temporary causes</strong> (stop hunting, event uncertainty) → expect reversal</li>
+                <li><strong>Structural causes</strong> (Fed policy shifts, earnings trends) → expect continuation</li>
+                <li>Never trade a pattern without understanding the cause behind it</li>
+                <li>Risk management is not optional — it <strong>IS</strong> the edge</li>
+                <li>If the regime template is "Liquidity Crisis," normal sweep-and-reverse rules do NOT apply</li>
+              </ul>
+            </div>
+
+            <div className={`p-4 rounded-lg ${darkMode ? 'bg-yellow-900/20 border border-yellow-500/30' : 'bg-yellow-50 border border-yellow-200'}`}>
+              <h3 className={`font-bold mb-2 ${darkMode ? 'text-yellow-300' : 'text-yellow-900'}`}>⚡ Quick Workflow</h3>
+              <ol className={`space-y-1 text-sm ${darkMode ? 'text-yellow-300/80' : 'text-yellow-900/80'} list-decimal list-inside`}>
+                <li>Open QQE Engine page before market open</li>
+                <li>Select your instrument (MNQ, NQ, ES, EURUSD, BTCUSD, etc.)</li>
+                <li>Click "Generate Briefing" — takes ~15 seconds</li>
+                <li>Check the Session Grade (A/B/C/F) — skip if C or F</li>
+                <li>Read the Cause Analysis — understand the WHY</li>
+                <li>Review the Trade Plan — note entry, stop, targets</li>
+                <li>Check Historical Rhymes — what happened last time?</li>
+                <li>Respect the Avoid List and Invalidation criteria</li>
+                <li>Generate a new briefing if conditions shift dramatically intraday</li>
+              </ol>
+            </div>
+
+            <div className={`p-4 rounded-lg ${darkMode ? 'bg-indigo-900/20 border border-indigo-500/30' : 'bg-indigo-50 border border-indigo-200'}`}>
+              <h3 className={`font-bold mb-2 ${darkMode ? 'text-indigo-300' : 'text-indigo-900'}`}>🤖 Using the QQE Agent</h3>
+              <p className={`text-sm mb-2 ${darkMode ? 'text-indigo-300/80' : 'text-indigo-900/80'}`}>
+                The QQE agent is available through the AI assistant. It can generate briefings, answer market causality questions, and search historical patterns.
+              </p>
+              <div className={`space-y-1 text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                <strong className={darkMode ? 'text-indigo-400' : 'text-indigo-700'}>Try asking:</strong>
+                <ul className="ml-4 mt-1 space-y-1">
+                  <li>• "Generate a QQE briefing for NQ"</li>
+                  <li>• "Why is the market moving today?"</li>
+                  <li>• "What regime are we in?"</li>
+                  <li>• "Find historical rhymes for today's conditions"</li>
+                  <li>• "Should I trade ES right now based on QQE?"</li>
+                </ul>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
+          <CardHeader>
             <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>
               Frequently Asked Questions
             </CardTitle>
@@ -336,6 +480,10 @@ export default function Help() {
                 <div>
                   <strong className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>🧠 Market Cause Engine:</strong>
                   <p className="mt-1">Live Market → Market Intelligence tab → Search any symbol (ES, NQ, BTCUSD, etc.) → View real-time regime analysis, causality scores, and upcoming catalysts. Each symbol gets custom scoring based on its macro sensitivities.</p>
+                </div>
+                <div>
+                  <strong className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>🧬 QQE Engine (Daily Briefing):</strong>
+                  <p className="mt-1">QQE Engine page → Select instrument (MNQ, NQ, ES, EURUSD, BTCUSD) → "Generate Briefing" → Review 14-factor session score (A/B/C/F grade), regime template, cause analysis, trade plan with entry/stop/targets, avoid list, and historical rhymes. Generate pre-market daily. Each briefing is saved for future pattern matching.</p>
                 </div>
               </div>
             </div>
