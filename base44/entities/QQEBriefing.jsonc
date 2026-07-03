@@ -1,0 +1,184 @@
+{
+  "name": "QQEBriefing",
+  "type": "object",
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Trading date for this briefing"
+    },
+    "symbol": {
+      "type": "string",
+      "default": "MNQ",
+      "description": "Instrument analyzed (MNQ, NQ, ES, etc.)"
+    },
+    "session_score": {
+      "type": "number",
+      "description": "14-factor session score (0-14)"
+    },
+    "session_grade": {
+      "type": "string",
+      "enum": [
+        "A",
+        "B",
+        "C",
+        "F"
+      ],
+      "description": "Session grade derived from score"
+    },
+    "regime_template": {
+      "type": "string",
+      "enum": [
+        "Fed Pivot",
+        "Inflation Scare",
+        "Tech Earnings Crush",
+        "Liquidity Crisis",
+        "Normal Market"
+      ],
+      "description": "Which historical template matches current conditions"
+    },
+    "template_confidence": {
+      "type": "string",
+      "enum": [
+        "HIGH",
+        "MODERATE",
+        "LOW"
+      ],
+      "description": "Confidence in template identification"
+    },
+    "directional_bias": {
+      "type": "string",
+      "enum": [
+        "LONG",
+        "SHORT",
+        "NEUTRAL"
+      ],
+      "description": "QQE directional bias for the session"
+    },
+    "conviction": {
+      "type": "string",
+      "enum": [
+        "HIGH",
+        "MODERATE",
+        "LOW"
+      ],
+      "description": "Conviction level on the bias"
+    },
+    "vix_level": {
+      "type": "number",
+      "description": "VIX at time of briefing"
+    },
+    "vix_regime": {
+      "type": "string",
+      "description": "VIX regime label (Extreme Complacency, Normal Low Vol, etc.)"
+    },
+    "dxy_level": {
+      "type": "number",
+      "description": "Dollar index level"
+    },
+    "yield_10y": {
+      "type": "number",
+      "description": "10-year Treasury yield"
+    },
+    "overnight_high": {
+      "type": "number",
+      "description": "Overnight session high"
+    },
+    "overnight_low": {
+      "type": "number",
+      "description": "Overnight session low"
+    },
+    "current_price": {
+      "type": "number",
+      "description": "Current price at briefing time"
+    },
+    "sweep_detected": {
+      "type": "string",
+      "description": "NONE, HIGH, or LOW \u2014 whether an overnight sweep occurred"
+    },
+    "briefing_markdown": {
+      "type": "string",
+      "description": "Full QQE Daily Briefing in markdown format (the template output)"
+    },
+    "cause_analysis": {
+      "type": "string",
+      "description": "The WHY behind today's market action"
+    },
+    "trade_plan": {
+      "type": "object",
+      "properties": {
+        "primary_setup": {
+          "type": "string"
+        },
+        "entry_window": {
+          "type": "string"
+        },
+        "key_level": {
+          "type": "string"
+        },
+        "entry_trigger": {
+          "type": "string"
+        },
+        "stop_loss": {
+          "type": "string"
+        },
+        "tp1": {
+          "type": "string"
+        },
+        "tp2": {
+          "type": "string"
+        },
+        "position_size": {
+          "type": "string"
+        },
+        "rr_ratio": {
+          "type": "string"
+        }
+      },
+      "description": "Structured trade plan from the briefing"
+    },
+    "avoid_list": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Times/conditions to avoid trading"
+    },
+    "invalidation": {
+      "type": "string",
+      "description": "Condition that flips the bias"
+    },
+    "catalysts_today": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "Today's economic events and Fed speakers"
+    },
+    "factor_scores": {
+      "type": "object",
+      "description": "Individual 14-factor scores (0 or 1 each)"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "User who owns this briefing"
+    }
+  },
+  "required": [
+    "date",
+    "symbol",
+    "user_email"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "data.user_email": "{{user.email}}"
+    },
+    "update": {
+      "data.user_email": "{{user.email}}"
+    },
+    "delete": {
+      "data.user_email": "{{user.email}}"
+    }
+  }
+}

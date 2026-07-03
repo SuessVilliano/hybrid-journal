@@ -75,6 +75,7 @@ import PlatformTour from './pages/PlatformTour';
 import Pricing from './pages/Pricing';
 import PropFirmSettings from './pages/PropFirmSettings';
 import PublicDashboard from './pages/PublicDashboard';
+import QQEngine from './pages/QQEngine';
 import RiskManagement from './pages/RiskManagement';
 import SharedAccess from './pages/SharedAccess';
 import SocialFeed from './pages/SocialFeed';
@@ -117,6 +118,7 @@ export const PAGES = {
     "Pricing": Pricing,
     "PropFirmSettings": PropFirmSettings,
     "PublicDashboard": PublicDashboard,
+    "QQEngine": QQEngine,
     "RiskManagement": RiskManagement,
     "SharedAccess": SharedAccess,
     "SocialFeed": SocialFeed,
