@@ -13,6 +13,7 @@ const ALL_OPTIONS = [
   { id: 'market',       name: 'Markets',   page: 'MarketData' },
   { id: 'accounts',     name: 'Accounts',  page: 'Accounts' },
   { id: 'community',    name: 'Social',    page: 'SocialFeed' },
+  { id: 'bible',        name: 'Bible',     page: 'TradingBible' },
   { id: 'profile',      name: 'Profile',   page: 'MyProfile' },
   { id: 'notifications',name: 'Alerts',    page: 'Notifications' },
   { id: 'calculators',  name: 'Calc',      page: 'Calculators' },

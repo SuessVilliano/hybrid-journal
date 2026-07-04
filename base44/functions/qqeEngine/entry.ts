@@ -24,8 +24,23 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { action, symbol } = await req.json().catch(() => ({ action: 'briefing', symbol: 'MNQ' }));
+    const { action, symbol, bible_id, use_bible } = await req.json().catch(() => ({ action: 'briefing', symbol: 'MNQ', bible_id: null, use_bible: false }));
     const targetSymbol = (symbol || 'MNQ').toUpperCase();
+
+    // Fetch user's Trading Bible if requested
+    let userBible = null;
+    if (use_bible || bible_id) {
+      try {
+        if (bible_id) {
+          userBible = await base44.entities.TradingBible.get(bible_id);
+        } else {
+          const bibles = await base44.entities.TradingBible.list('-created_date', 50);
+          userBible = bibles.find(b => b.is_default && b.created_by === user.email) || bibles.find(b => b.created_by === user.email);
+        }
+      } catch (err) {
+        console.error('[QQE Bible fetch error]', err.message);
+      }
+    }
 
     // Fetch all data layers in parallel
     const [macro, priceAction, catalysts, newsData] = await Promise.all([
@@ -51,7 +66,7 @@ Deno.serve(async (req) => {
       macro, priceAction, catalysts, newsData,
       factorScores, sessionScore, sessionGrade,
       templateResult, historicalBriefings,
-      symbol: targetSymbol, user
+      symbol: targetSymbol, user, userBible
     }, base44);
 
     // Save briefing entity for future pattern matching
@@ -516,7 +531,7 @@ function findSimilarRhymes(currentBriefing, historicalBriefings) {
 // ═══════════════════════════════════════════════════════════
 
 async function generateQQEBriefing(ctx, base44) {
-  const { macro, priceAction, catalysts, newsData, factorScores, sessionScore, sessionGrade, templateResult, historicalBriefings, symbol, user } = ctx;
+  const { macro, priceAction, catalysts, newsData, factorScores, sessionScore, sessionGrade, templateResult, historicalBriefings, symbol, user, userBible } = ctx;
 
   // Find historical "rhymes"
   const rhymes = findSimilarRhymes(
@@ -535,6 +550,29 @@ async function generateQQEBriefing(ctx, base44) {
   const newsSummary = newsData.top_headline
     ? `Top headline: "${newsData.top_headline}"\nSentiment: ${newsData.sentiment} (${newsData.bullish_signals} bullish / ${newsData.bearish_signals} bearish signals)`
     : 'No major news';
+
+  const bibleSection = userBible ? `
+═══ USER'S TRADING BIBLE (Personal Edge) ═══
+Bible Name: ${userBible.name}
+Symbol: ${userBible.symbol}
+Preferred Setups: ${(userBible.preferred_setups || []).join(', ') || 'None specified'}
+Entry Rules: ${(userBible.entry_rules || []).join('; ') || 'None specified'}
+Exit Rules: ${(userBible.exit_rules || []).join('; ') || 'None specified'}
+Risk Per Trade: ${userBible.risk_per_trade || 'Not specified'}
+Volatility Filter: ${userBible.volatility_filter || 'Not specified'}
+Session Windows: ${(userBible.session_windows || []).join(', ') || 'Not specified'}
+Avoid Conditions: ${(userBible.avoid_conditions || []).join('; ') || 'None specified'}
+Qualitative Logic (The "Why"): ${userBible.qualitative_logic || 'Not specified'}
+Invalidation Logic: ${userBible.invalidation_logic || 'Not specified'}
+
+IMPORTANT: Evaluate today's market against this Bible. Specifically address:
+1. Does today's environment match the Bible's volatility filter and session windows?
+2. Are any of the Bible's avoid conditions present today?
+3. Does the Bible's directional edge align with the QQE regime template?
+4. If the Bible's invalidation logic is triggered, explicitly warn the user.
+
+The trade plan you generate should respect the Bible's entry rules, exit rules, and risk parameters where possible.
+` : '';
 
   const prompt = `You are the QQE (Quantitative-Qualitative Engine) for ${symbol} trading. Generate a comprehensive Daily Briefing following the QQE Framework.
 
@@ -599,7 +637,8 @@ Based on ALL of this data, generate a complete QQE Daily Briefing. You must retu
    - Invalidation
    - Historical Rhymes (if any matched)
 
-Be specific with price levels. This is an actionable trade briefing, not a general overview. If the template is "Liquidity Crisis", explicitly warn that normal sweep rules do not apply.`;
+Be specific with price levels. This is an actionable trade briefing, not a general overview. If the template is "Liquidity Crisis", explicitly warn that normal sweep rules do not apply.
+${bibleSection}`;
 
   const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
     prompt,

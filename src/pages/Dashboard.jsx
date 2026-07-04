@@ -24,6 +24,7 @@ import CompoundCalculatorWidget from '@/components/dashboard/CompoundCalculatorW
 import HybridScoreWidget from '@/components/dashboard/HybridScoreWidget';
 import TodaysPlanWidget from '@/components/planning/TodaysPlanWidget';
 import GlobalAccountSelector from '@/components/accounts/GlobalAccountSelector';
+import TemplatePicker from '@/components/dashboard/TemplatePicker';
 
 export default function Dashboard() {
   const [timeframe, setTimeframe] = useState('all');
@@ -177,7 +178,8 @@ export default function Dashboard() {
                 : 'Track your performance and grow consistently'}
             </p>
           </div>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3 items-center">
+            <TemplatePicker />
             <Link to={createPageUrl('Journal')}>
               <Button className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700">
                 <BookOpen className="h-4 w-4 mr-2" />

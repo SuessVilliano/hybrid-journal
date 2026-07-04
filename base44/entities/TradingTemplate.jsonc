@@ -1,0 +1,78 @@
+{
+  "name": "TradingTemplate",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Template name (e.g. 'LIV8 MNQ Baseline', 'Forex Scalper Setup')"
+    },
+    "description": {
+      "type": "string",
+      "description": "Short description of this template"
+    },
+    "bible_id": {
+      "type": "string",
+      "description": "Reference to the TradingBible entity used in this template"
+    },
+    "bible_name": {
+      "type": "string",
+      "description": "Cached bible name for quick display"
+    },
+    "symbol": {
+      "type": "string",
+      "description": "Primary symbol for this template"
+    },
+    "dashboard_widgets": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Enabled dashboard widget IDs"
+    },
+    "engine_settings": {
+      "type": "object",
+      "properties": {
+        "auto_generate_briefing": {
+          "type": "boolean",
+          "default": false
+        },
+        "use_bible_in_briefing": {
+          "type": "boolean",
+          "default": true
+        },
+        "default_symbol": {
+          "type": "string"
+        }
+      },
+      "description": "QQE engine preferences for this template"
+    },
+    "is_default": {
+      "type": "boolean",
+      "default": false,
+      "description": "Auto-load this template on login"
+    },
+    "is_shared": {
+      "type": "boolean",
+      "default": false,
+      "description": "Available as a community starting template"
+    },
+    "creator_email": {
+      "type": "string",
+      "description": "Email of the template creator"
+    }
+  },
+  "required": [
+    "name",
+    "symbol"
+  ],
+  "rls": {
+    "create": {},
+    "read": {},
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

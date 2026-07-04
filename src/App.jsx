@@ -17,6 +17,7 @@ import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import ComingSoon from '@/pages/ComingSoon';
 import DocumentAuditor from '@/pages/DocumentAuditor';
+import TradingBible from '@/pages/TradingBible';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -113,6 +114,14 @@ const AuthenticatedApp = () => {
           element={
             <LayoutWrapper currentPageName="DocumentAuditor">
               <DocumentAuditor />
+            </LayoutWrapper>
+          }
+        />
+        <Route
+          path="/tradingbible"
+          element={
+            <LayoutWrapper currentPageName="TradingBible">
+              <TradingBible />
             </LayoutWrapper>
           }
         />

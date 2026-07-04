@@ -1,0 +1,110 @@
+{
+  "name": "TradingBible",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "User-facing name for this bible (e.g. 'LIV8 MNQ Bible')"
+    },
+    "symbol": {
+      "type": "string",
+      "description": "Primary symbol this bible is built for (MNQ, ES, EURUSD, etc.)"
+    },
+    "instrument_type": {
+      "type": "string",
+      "enum": [
+        "Futures",
+        "Forex",
+        "Crypto",
+        "Stocks",
+        "Commodities",
+        "CFD"
+      ],
+      "description": "Instrument category"
+    },
+    "preferred_setups": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Setup types the user trades (e.g. 'Overnight Sweep Reversal', 'ORB', 'Pullback')"
+    },
+    "entry_rules": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Quantitative entry criteria (e.g. 'Price must sweep overnight low', 'VIX between 12-25')"
+    },
+    "exit_rules": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Quantitative exit criteria (e.g. 'Take profit at 50% of range', 'Trail stop after TP1')"
+    },
+    "risk_per_trade": {
+      "type": "string",
+      "description": "Risk per trade (e.g. '1% of account', '0.5% per trade')"
+    },
+    "session_windows": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Preferred trading sessions (e.g. 'London Open', 'NY Open 9:30-11am')"
+    },
+    "volatility_filter": {
+      "type": "string",
+      "description": "Volatility conditions required (e.g. 'VIX 12-25', 'ATR > 20-day average')"
+    },
+    "avoid_conditions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Conditions to avoid trading (e.g. 'No trading 15min before/after FOMC', 'No trading after 11am')"
+    },
+    "qualitative_logic": {
+      "type": "string",
+      "description": "Free-text 'why' section \u2014 the user's core reasoning and philosophy"
+    },
+    "invalidation_logic": {
+      "type": "string",
+      "description": "What invalidates the edge (e.g. 'VIX > 30 = stop trading sweep reversals')"
+    },
+    "is_default": {
+      "type": "boolean",
+      "default": false,
+      "description": "Auto-load this bible on login"
+    },
+    "is_published_template": {
+      "type": "boolean",
+      "default": false,
+      "description": "Shared as a community starting template"
+    },
+    "trade_count_at_creation": {
+      "type": "number",
+      "description": "Number of trades user had when creating this bible (for graduation tracking)"
+    },
+    "graduation_override": {
+      "type": "boolean",
+      "default": false,
+      "description": "Manually unlocked full engine before 100 trades"
+    }
+  },
+  "required": [
+    "name",
+    "symbol"
+  ],
+  "rls": {
+    "create": {},
+    "read": {},
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

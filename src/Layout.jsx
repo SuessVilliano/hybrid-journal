@@ -193,6 +193,7 @@ export default function Layout({ children, currentPageName }) {
     { id: 'accounts', name: 'Accounts', page: 'Accounts', icon: Wallet },
     { id: 'market', name: 'Live Market', page: 'MarketData', icon: TrendingUp },
     { id: 'qqe', name: 'QQE Engine', page: 'QQEngine', icon: Brain },
+    { id: 'bible', name: 'Trading Bible', page: 'TradingBible', icon: BookOpen },
     { id: 'signals', name: 'Trading Signals', page: 'LiveTradingSignals', icon: Zap },
     { id: 'reports', name: 'Reports', page: 'Reports', icon: FileText },
     { id: 'coach', name: 'AI Coach', page: 'TradingCoach', icon: MessageSquare },

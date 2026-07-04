@@ -3,8 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { base44 } from '@/api/base44Client';
-import { Brain, Zap, RefreshCw, Loader2, History, AlertTriangle, TrendingUp, TrendingDown, Minus, ChevronRight } from 'lucide-react';
+import { Brain, Zap, RefreshCw, Loader2, History, AlertTriangle, TrendingUp, TrendingDown, Minus, ChevronRight, BookOpen } from 'lucide-react';
 import QQEBriefingView from '@/components/qqe/QQEBriefingView';
+import { CURATED_SYMBOLS } from '@/lib/symbolRegistry';
+import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 export default function QQEngine() {
@@ -14,9 +16,18 @@ export default function QQEngine() {
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [selectedSymbol, setSelectedSymbol] = useState('MNQ');
   const [showHistory, setShowHistory] = useState(false);
+  const [useBible, setUseBible] = useState(true);
   const darkMode = document.documentElement.classList.contains('dark');
 
-  const symbols = ['MNQ', 'NQ', 'ES', 'YM', 'RTY', 'EURUSD', 'BTCUSD'];
+  const symbols = Object.keys(CURATED_SYMBOLS);
+
+  const { data: defaultBible } = useQuery({
+    queryKey: ['defaultBible'],
+    queryFn: async () => {
+      const bibles = await base44.entities.TradingBible.list('-created_date', 50);
+      return bibles.find(b => b.is_default) || bibles[0] || null;
+    }
+  });
 
   useEffect(() => {
     loadHistory();
@@ -39,7 +50,9 @@ export default function QQEngine() {
     try {
       const response = await base44.functions.invoke('qqeEngine', {
         action: 'briefing',
-        symbol: selectedSymbol
+        symbol: selectedSymbol,
+        use_bible: useBible && !!defaultBible,
+        bible_id: useBible ? defaultBible?.id : null
       });
       if (response.data?.success) {
         setBriefing(response.data.briefing);
@@ -108,8 +121,24 @@ export default function QQEngine() {
                 ))}
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  onClick={() => setShowHistory(!showHistory)}
+                {defaultBible && (
+                  <button
+                    onClick={() => setUseBible(!useBible)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      useBible
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg'
+                        : darkMode
+                          ? 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                    title={defaultBible.name}
+                  >
+                    <BookOpen className="h-3 w-3" />
+                    {useBible ? 'Bible: ON' : 'Bible: OFF'}
+                  </button>
+                )}
+                 <Button
+                   onClick={() => setShowHistory(!showHistory)}
                   variant="outline"
                   size="sm"
                   className={darkMode ? 'border-cyan-500/30 text-cyan-400' : 'border-cyan-500/30 text-cyan-700'}
