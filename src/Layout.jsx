@@ -20,8 +20,8 @@ export default function Layout({ children, currentPageName }) {
     if (saved) {
       return saved === 'dark';
     }
-    // Auto-detect system preference
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    // Default to light theme
+    return false;
   });
   const [menuOrder, setMenuOrder] = useState([]);
   const [loadingMenu, setLoadingMenu] = useState(true);
