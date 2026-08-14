@@ -148,6 +148,73 @@ function checkSignalHit(signal, currentPrice) {
   return null;
 }
 
+const HIT_LABELS = {
+  tp1_hit: { label: '🎯 TP1 Hit', priority: 'high' },
+  tp2_hit: { label: '🎯 TP2 Hit', priority: 'high' },
+  full_target: { label: '🎯 Full Target Hit', priority: 'urgent' },
+  stopped_out: { label: '🛑 Stopped Out', priority: 'high' },
+};
+
+/**
+ * Send in-app + mobile push notifications for signals that hit TP/SL.
+ * Mobile push fails gracefully if no native mobile build is configured.
+ */
+async function sendHitNotifications(base44, userCache, hitEvents) {
+  let notified = 0;
+  for (const ev of hitEvents) {
+    if (!ev.signal.user_email) continue;
+    const meta = HIT_LABELS[ev.newStatus];
+    if (!meta) continue;
+
+    // Look up user (cached) for push notifications
+    let user = userCache[ev.signal.user_email];
+    if (user === undefined) {
+      try {
+        const found = await base44.asServiceRole.entities.User.filter({ email: ev.signal.user_email });
+        user = found?.[0] || null;
+      } catch {
+        user = null;
+      }
+      userCache[ev.signal.user_email] = user;
+    }
+
+    const title = `${meta.label}: ${ev.signal.symbol} ${ev.signal.action}`;
+    const hitType = ev.newStatus === 'stopped_out' ? 'SL' : 'TP';
+    const message = `Entry: ${ev.signal.price} → ${hitType} hit at ${ev.currentPrice}${ev.signal.provider ? ` | ${ev.signal.provider}` : ''}`;
+
+    // In-app notification (always works)
+    try {
+      await base44.asServiceRole.entities.Notification.create({
+        recipient_email: ev.signal.user_email,
+        type: 'trade_alert',
+        title,
+        message,
+        link: `/LiveTradingSignals?signal=${ev.signal.id}`,
+        priority: meta.priority,
+      });
+      notified++;
+    } catch (e) {
+      console.error(`[monitorSignalTargets] Notification create failed for ${ev.signal.user_email}:`, e.message);
+    }
+
+    // Mobile push (native app only; fails gracefully if not configured)
+    if (user?.id) {
+      try {
+        await base44.asServiceRole.integrations.Core.SendPushNotification({
+          user_id: user.id,
+          title,
+          content: message,
+          action_label: 'View Signal',
+          action_url: `/LiveTradingSignals?signal=${ev.signal.id}`,
+        });
+      } catch (e) {
+        console.log(`[monitorSignalTargets] Push skipped for ${ev.signal.user_email}: ${e.message}`);
+      }
+    }
+  }
+  return notified;
+}
+
 Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
@@ -196,6 +263,7 @@ Deno.serve(async (req) => {
 
     // 4. Check each signal and update if hit
     const updates = [];
+    const hitEvents = [];
     let tp1Count = 0, tp2Count = 0, fullTargetCount = 0, stoppedOutCount = 0;
     const skippedSymbols = [];
 
@@ -219,6 +287,7 @@ Deno.serve(async (req) => {
       try {
         await base44.asServiceRole.entities.Signal.update(signal.id, updateData);
         updates.push({ id: signal.id, symbol: signal.symbol, from: signal.status, to: newStatus, price: currentPrice });
+        hitEvents.push({ signal, newStatus, currentPrice });
 
         if (newStatus === 'tp1_hit') tp1Count++;
         else if (newStatus === 'tp2_hit') tp2Count++;
@@ -231,11 +300,20 @@ Deno.serve(async (req) => {
 
     console.log(`[monitorSignalTargets] Updated ${updates.length} signals: ${tp1Count} tp1, ${tp2Count} tp2, ${fullTargetCount} full_target, ${stoppedOutCount} stopped_out`);
 
+    // Send notifications for signals that just hit TP/SL
+    let notified = 0;
+    if (hitEvents.length > 0) {
+      const userCache = {};
+      notified = await sendHitNotifications(base44, userCache, hitEvents);
+      console.log(`[monitorSignalTargets] Sent ${notified} notifications for ${hitEvents.length} hit signals`);
+    }
+
     return Response.json({
       success: true,
       checked: activeSignals.length,
       pricesFound: Object.keys(prices).length,
       updated: updates.length,
+      notified,
       breakdown: { tp1_hit: tp1Count, tp2_hit: tp2Count, full_target: fullTargetCount, stopped_out: stoppedOutCount },
       updates,
       skippedSymbols: skippedSymbols.length > 0 ? skippedSymbols : undefined,
