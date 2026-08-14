@@ -18,6 +18,7 @@ import ResetPassword from '@/pages/ResetPassword';
 import ComingSoon from '@/pages/ComingSoon';
 import DocumentAuditor from '@/pages/DocumentAuditor';
 import TradingBible from '@/pages/TradingBible';
+import OAuthConsent from '@/pages/OAuthConsent';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -69,6 +70,7 @@ const AuthenticatedApp = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/oauth/consent" element={<OAuthConsent />} />
 
       {/* Public pages — accessible without login */}
       {publicPageEntries.map(([path, Page]) => (

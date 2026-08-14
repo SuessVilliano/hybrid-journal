@@ -1,0 +1,103 @@
+{
+  "auth": "oauth",
+  "tools": {
+    "functions": [
+      {
+        "name": "generate_qqe_briefing",
+        "title": "Generate QQE Daily Briefing",
+        "description": "Run the Quantitative-Qualitative Engine for a symbol to produce a daily market briefing with 14-factor session score, regime template, cause analysis and a structured trade plan. Saves the briefing. Call when the user wants a daily trading briefing or market read for a symbol.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "symbol": { "type": "string", "description": "Trading symbol e.g. MNQ, NQ, ES, EURUSD, BTCUSD. Defaults to MNQ." },
+            "bible_id": { "type": "string", "description": "Optional Trading Bible id to personalize the briefing." },
+            "use_bible": { "type": "boolean", "description": "If true, inject the user's default Trading Bible rules into the briefing." }
+          }
+        },
+        "handler": "qqeEngine",
+        "annotations": { "read_only_hint": false, "destructive_hint": false, "idempotent_hint": false }
+      },
+      {
+        "name": "run_market_cause_engine",
+        "title": "Run Market Cause Engine",
+        "description": "Compute the real-time market cause/regime snapshot (macro, positioning, catalyst scores) for a symbol, with optional AI causality analysis. Call when the user wants the current market regime or cause analysis.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "symbol": { "type": "string", "description": "Trading symbol e.g. ES, NQ, EURUSD, BTCUSD. Defaults to ES." },
+            "action": { "type": "string", "description": "Set to 'analyze' to include AI causality analysis; omit for scores only." }
+          }
+        },
+        "handler": "marketCauseEngine",
+        "annotations": { "read_only_hint": false, "destructive_hint": false, "idempotent_hint": false }
+      },
+      {
+        "name": "analyze_my_trades",
+        "title": "Analyze Trade Performance",
+        "description": "AI analysis of the signed-in user's trade history by strategy, emotion, risk, or weekly summary. Call when the user asks for a performance review, strategy breakdown, emotion correlation, risk check, or weekly summary.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "analysisType": { "type": "string", "description": "One of: performance_by_strategy, emotion_correlation, risk_management, weekly_summary." },
+            "dateRange": { "type": "object", "description": "Optional { start, end } ISO dates to bound the trades analyzed.", "properties": { "start": { "type": "string" }, "end": { "type": "string" } } },
+            "filters": { "type": "object", "description": "Optional { strategy, setup, source } to filter trades.", "properties": { "strategy": { "type": "string" }, "setup": { "type": "string" }, "source": { "type": "string" } } }
+          }
+        },
+        "handler": "aiAnalyzeTrades",
+        "annotations": { "read_only_hint": true, "destructive_hint": false, "idempotent_hint": true }
+      },
+      {
+        "name": "trigger_broker_sync",
+        "title": "Trigger Broker Sync",
+        "description": "Trigger a manual sync for one of the user's broker connections. Call when the user wants to refresh/pull latest trades or account data from a connected broker.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "connectionId": { "type": "string", "description": "The BrokerConnection id to sync." }
+          },
+          "required": ["connectionId"]
+        },
+        "handler": "manualSync",
+        "annotations": { "read_only_hint": false, "destructive_hint": false, "idempotent_hint": true }
+      },
+      {
+        "name": "ctrader_mcp",
+        "title": "Call cTrader MCP Tool",
+        "description": "Bridge to the user's connected cTrader account via cTrader's Remote MCP server. Calls a cTrader MCP tool such as get_balance, get_positions, get_deals, get_symbol_price, get_trendbars, create_order, cancel_order, close_position, modify_order. The cTrader connection must have its MCP URL (and token) configured. Use list_tools=true to discover available cTrader tools.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "connection_id": { "type": "string", "description": "The user's cTrader BrokerConnection id." },
+            "tool": { "type": "string", "description": "cTrader MCP tool name, e.g. get_balance, get_positions, get_deals, create_order, cancel_order." },
+            "arguments": { "type": "object", "description": "Arguments object for the cTrader tool (e.g. {symbol, side, volume, stop_loss, take_profit} for create_order)." },
+            "list_tools": { "type": "boolean", "description": "If true, list the cTrader tools available instead of calling one." }
+          },
+          "required": ["connection_id"]
+        },
+        "handler": "ctraderMcp",
+        "annotations": { "read_only_hint": false, "destructive_hint": false, "idempotent_hint": false }
+      },
+      {
+        "name": "place_trade",
+        "title": "Place Trade from Text",
+        "description": "Place a trade on the user's connected cTrader account from natural language or structured fields. Parses free text (e.g. 'buy 0.1 EURUSD with SL 1.10 TP 1.13') into an order and sends it to cTrader via MCP. Set dry_run=true to preview the parsed order without sending. Call when the user asks to buy/sell a symbol from text.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "text": { "type": "string", "description": "Natural-language order, e.g. 'Buy 0.1 EURUSD with SL 1.1050 and TP 1.1300'." },
+            "symbol": { "type": "string", "description": "Trading symbol e.g. EURUSD. Used directly if provided; otherwise parsed from text." },
+            "side": { "type": "string", "description": "BUY or SELL." },
+            "volume": { "type": "number", "description": "Position size in lots." },
+            "stop_loss": { "type": "number", "description": "Stop loss price, optional." },
+            "take_profit": { "type": "number", "description": "Take profit price, optional." },
+            "order_type": { "type": "string", "description": "MARKET, LIMIT, or STOP. Defaults to MARKET." },
+            "connection_id": { "type": "string", "description": "Optional cTrader BrokerConnection id. If omitted, uses the user's connected cTrader account." },
+            "dry_run": { "type": "boolean", "description": "If true, return the parsed order without sending it." }
+          }
+        },
+        "handler": "placeTrade",
+        "annotations": { "read_only_hint": false, "destructive_hint": false, "idempotent_hint": false }
+      }
+    ]
+  }
+}
