@@ -67,6 +67,14 @@
       "type": "string",
       "description": "Reference to encrypted secrets (never store raw keys here)"
     },
+    "mcp_url": {
+      "type": "string",
+      "description": "cTrader Remote MCP server URL (from cTrader Web \u2192 Remote MCP setup). Enables AI clients + in-app coach to read the account and trade from text."
+    },
+    "mcp_token": {
+      "type": "string",
+      "description": "Bearer token for the cTrader Remote MCP server."
+    },
     "last_sync_at": {
       "type": "string",
       "format": "date-time",

@@ -72,25 +72,26 @@ Deno.serve(async (req) => {
       conn = conns[0];
     } else {
       const conns = await base44.entities.BrokerConnection.filter({
-        provider: 'cTrader',
+        broker_id: 'ctrader',
         created_by: user.email,
-        status: 'connected',
       });
-      if (!conns.length) {
+      const ctraderConn = conns.find((c) => c.mcp_url || c.settings_json?.mcp_url) || conns[0];
+      if (!ctraderConn) {
         return Response.json(
           { error: 'No connected cTrader account. Connect cTrader in Broker Sync and add its MCP URL.' },
           { status: 400 }
         );
       }
-      conn = conns[0];
+      conn = ctraderConn;
       connection_id = conn.id;
     }
-    if (conn.provider !== 'cTrader') {
+    const isCTrader = conn.broker_id === 'ctrader' || conn.provider === 'cTrader';
+    if (!isCTrader) {
       return Response.json({ error: 'Trade-from-text routes to cTrader connections only' }, { status: 400 });
     }
 
-    const mcpUrl = conn.settings_json?.mcp_url;
-    const mcpToken = conn.settings_json?.mcp_token || conn.secret_ref || null;
+    const mcpUrl = conn.mcp_url || conn.settings_json?.mcp_url;
+    const mcpToken = conn.mcp_token || conn.settings_json?.mcp_token || conn.secret_ref || conn.api_secret || null;
     if (!mcpUrl) {
       return Response.json(
         { error: 'No cTrader MCP URL on this connection. Add it in Broker Sync.' },

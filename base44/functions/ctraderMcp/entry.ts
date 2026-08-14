@@ -31,12 +31,13 @@ Deno.serve(async (req) => {
     });
     if (!conns.length) return Response.json({ error: 'Connection not found' }, { status: 404 });
     const conn = conns[0];
-    if (conn.provider !== 'cTrader') {
+    const isCTrader = conn.broker_id === 'ctrader' || conn.provider === 'cTrader';
+    if (!isCTrader) {
       return Response.json({ error: 'Connection is not a cTrader connection' }, { status: 400 });
     }
 
-    const mcpUrl = conn.settings_json?.mcp_url;
-    const mcpToken = conn.settings_json?.mcp_token || conn.secret_ref || null;
+    const mcpUrl = conn.mcp_url || conn.settings_json?.mcp_url;
+    const mcpToken = conn.mcp_token || conn.settings_json?.mcp_token || conn.secret_ref || conn.api_secret || null;
     if (!mcpUrl) {
       return Response.json(
         {

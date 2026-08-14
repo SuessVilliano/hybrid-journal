@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Brain, X, Minimize2, Maximize2, Send, Loader2, Sparkles, Mic, MicOff, Paperclip, Image as ImageIcon, Expand } from 'lucide-react';
 import MessageBubble from '../coach/MessageBubble';
+import TradeIntentConfirm from './TradeIntentConfirm';
 
 export default function FloatingAIAssistant({ isOpen, onClose }) {
   const [conversation, setConversation] = useState(null);
@@ -24,6 +25,8 @@ export default function FloatingAIAssistant({ isOpen, onClose }) {
   const messagesEndRef = useRef(null);
   const cardRef = useRef(null);
   const queryClient = useQueryClient();
+  const [pendingTrade, setPendingTrade] = useState(null);
+  const [executingTrade, setExecutingTrade] = useState(false);
 
   useEffect(() => {
     if (isOpen && !conversation) {
@@ -116,6 +119,8 @@ export default function FloatingAIAssistant({ isOpen, onClose }) {
     }
   };
 
+  const isTradeIntent = (text) => /\b(buy|sell|long|short)\b[^a-z]{0,6}\d+(\.\d+)?/i.test(text || '');
+
   const sendMessage = async () => {
     if ((!input.trim() && uploadedFiles.length === 0) || !conversation) return;
 
@@ -129,6 +134,23 @@ export default function FloatingAIAssistant({ isOpen, onClose }) {
       setIsRecording(false);
     }
 
+    // Trade-from-text: detect an order intent and route to a confirm step
+    if (filesToSend.length === 0 && userMessage.trim() && isTradeIntent(userMessage)) {
+      setPendingTrade({ text: userMessage, parsed: null, error: null });
+      try {
+        const res = await base44.functions.invoke('placeTrade', { text: userMessage, dry_run: true });
+        const data = res?.data || res;
+        if (data?.success && data?.order) {
+          setPendingTrade({ text: userMessage, parsed: data.order, error: null });
+        } else {
+          setPendingTrade({ text: userMessage, parsed: null, error: data?.error || 'Could not parse this as a trade order.' });
+        }
+      } catch (e) {
+        setPendingTrade({ text: userMessage, parsed: null, error: e?.response?.data?.error || e.message });
+      }
+      return;
+    }
+
     try {
       await base44.agents.addMessage(conversation, {
         role: 'user',
@@ -137,6 +159,41 @@ export default function FloatingAIAssistant({ isOpen, onClose }) {
       });
     } catch (error) {
       console.error('Failed to send message:', error);
+    }
+  };
+
+  const confirmExecuteTrade = async () => {
+    if (!pendingTrade?.parsed || !conversation) return;
+    setExecutingTrade(true);
+    try {
+      const res = await base44.functions.invoke('placeTrade', { text: pendingTrade.text, dry_run: false });
+      const data = res?.data || res;
+      if (data?.success) {
+        const o = data.order;
+        await base44.agents.addMessage(conversation, {
+          role: 'user',
+          content: `✅ Trade executed via cTrader MCP: ${o.side} ${o.volume} ${o.symbol}${o.stop_loss ? ` SL ${o.stop_loss}` : ''}${o.take_profit ? ` TP ${o.take_profit}` : ''}`,
+        });
+        setPendingTrade(null);
+      } else {
+        setPendingTrade({ ...pendingTrade, error: data?.error || 'Trade failed' });
+      }
+    } catch (e) {
+      setPendingTrade({ ...pendingTrade, error: e?.response?.data?.error || e.message });
+    } finally {
+      setExecutingTrade(false);
+    }
+  };
+
+  const cancelTrade = async () => {
+    const text = pendingTrade?.text;
+    setPendingTrade(null);
+    if (text && conversation) {
+      try {
+        await base44.agents.addMessage(conversation, { role: 'user', content: text });
+      } catch (e) {
+        console.error('Failed to send message:', e);
+      }
     }
   };
 
@@ -342,6 +399,7 @@ export default function FloatingAIAssistant({ isOpen, onClose }) {
             </div>
           </div>
         </div>
+        <TradeIntentConfirm pending={pendingTrade} executing={executingTrade} onExecute={confirmExecuteTrade} onCancel={cancelTrade} />
       </div>
     );
   }
@@ -513,6 +571,7 @@ export default function FloatingAIAssistant({ isOpen, onClose }) {
           </>
         )}
       </Card>
+      <TradeIntentConfirm pending={pendingTrade} executing={executingTrade} onExecute={confirmExecuteTrade} onCancel={cancelTrade} />
     </div>
   );
 }

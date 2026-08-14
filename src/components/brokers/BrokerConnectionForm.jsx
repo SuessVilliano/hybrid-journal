@@ -23,7 +23,9 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
     server: '',
     auto_sync: false,
     sync_interval: 3600,
-    notes: ''
+    notes: '',
+    mcp_url: '',
+    mcp_token: ''
   });
 
   const [validating, setValidating] = useState(false);
@@ -39,6 +41,7 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
   const isTradovate = formData.broker_id === 'tradovate';
   const isKraken = formData.broker_id === 'kraken';
   const isNinjaTrader = formData.broker_id === 'ninjatrader';
+  const isCTrader = formData.broker_id === 'ctrader';
   const supportsAutoSync = selectedBroker?.supportsAutoSync || isDXTrade;
   const isImportOnly = selectedBroker?.importOnly || isNinjaTrader;
 
@@ -133,6 +136,9 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
       submitData.status = 'manual';
     } else if (formData.broker_id === 'crosstrade') {
       submitData.status = validationResult?.valid ? 'connected' : 'pending';
+    } else if (isCTrader) {
+      submitData.connection_type = 'mcp';
+      submitData.status = formData.mcp_url ? 'connected' : 'pending';
     } else {
       submitData.status = formData.connection_type === 'credentials' ? 'manual' : (validationResult?.valid ? 'connected' : 'pending');
     }
@@ -208,9 +214,43 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
                 value={formData.account_number}
                 onChange={(e) => setFormData({...formData, account_number: e.target.value})}
                 placeholder="123456789"
-                required
+                required={!isCTrader}
               />
             </div>
+
+            {/* cTrader MCP Setup (AI Trading) */}
+            {isCTrader && (
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 space-y-3">
+                <div className="flex items-start gap-2">
+                  <Zap className="h-5 w-5 text-purple-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-purple-900">cTrader MCP Server (AI Trading)</p>
+                    <p className="text-xs text-purple-700 mt-1">
+                      Open cTrader Web → Remote MCP setup, copy the MCP server URL and token, and paste them below.
+                      This lets AI clients (Claude/ChatGPT/Cursor) and your in-app coach read your account and place
+                      trades from text. The Hybrid Copy → journal data sync keeps working independently.
+                    </p>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">MCP Server URL *</label>
+                  <Input
+                    value={formData.mcp_url || ''}
+                    onChange={(e) => setFormData({ ...formData, mcp_url: e.target.value })}
+                    placeholder="https://mcp.ctrader.com/..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">MCP Token</label>
+                  <Input
+                    type="password"
+                    value={formData.mcp_token || ''}
+                    onChange={(e) => setFormData({ ...formData, mcp_token: e.target.value })}
+                    placeholder="Bearer token from cTrader Web Remote MCP setup"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* NinjaTrader — Import Only */}
             {isNinjaTrader && (

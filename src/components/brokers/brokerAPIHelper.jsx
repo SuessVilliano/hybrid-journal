@@ -23,8 +23,8 @@ export const SUPPORTED_BROKERS = [
     name: 'cTrader', 
     type: 'forex', 
     requiresCredentials: true,
-    fields: ['account_number', 'api_key', 'api_secret'],
-    instructions: 'Generate API credentials in cTrader Settings > API Access'
+    fields: ['account_number', 'mcp_url', 'mcp_token'],
+    instructions: 'cTrader MCP (AI trading): open cTrader Web → Remote MCP setup, copy the MCP server URL and token, then paste them below. This lets AI clients and your in-app coach read your account and place trades from text.'
   },
   {
     id: 'dxtrade',
