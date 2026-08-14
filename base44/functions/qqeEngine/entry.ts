@@ -577,6 +577,7 @@ The trade plan you generate should respect the Bible's entry rules, exit rules, 
   const prompt = `You are the QQE (Quantitative-Qualitative Engine) for ${symbol} trading. Generate a comprehensive Daily Briefing following the QQE Framework.
 
 REAL-TIME DATA:
+- Today's Date: ${new Date().toISOString().split('T')[0]}
 - Symbol: ${symbol}
 - Current Price: ${priceAction.current_price?.toFixed(2)}
 - Previous Close: ${priceAction.prev_close?.toFixed(2)}
@@ -625,7 +626,7 @@ Based on ALL of this data, generate a complete QQE Daily Briefing. You must retu
 5. "avoid_list": array of 2-3 strings — times/conditions to avoid trading today
 6. "invalidation": string — the specific condition that would flip the bias
 7. "markdown": the FULL QQE Daily Briefing in markdown format, following this template structure:
-   - Header with date, symbol, session score
+   - Header with today's date (${new Date().toISOString().split('T')[0]}), symbol, session score
    - Overnight Recap
    - Macro Context (VIX, DXY, Yields, Asia/Europe if known)
    - Today's Events

@@ -17,6 +17,7 @@ export default function QQEngine() {
   const [selectedSymbol, setSelectedSymbol] = useState('MNQ');
   const [showHistory, setShowHistory] = useState(false);
   const [useBible, setUseBible] = useState(true);
+  const [stale, setStale] = useState(false);
   const darkMode = document.documentElement.classList.contains('dark');
 
   const symbols = Object.keys(CURATED_SYMBOLS);
@@ -29,9 +30,47 @@ export default function QQEngine() {
     }
   });
 
+  const today = new Date().toLocaleDateString('en-CA');
+
   useEffect(() => {
+    loadLatestBriefing();
     loadHistory();
-  }, []);
+  }, [selectedSymbol]);
+
+  const loadLatestBriefing = async () => {
+    try {
+      const records = await base44.entities.QQEBriefing.filter(
+        { symbol: selectedSymbol },
+        '-created_date',
+        1
+      );
+      const latest = records?.[0];
+      if (latest) {
+        setBriefing({
+          id: latest.id,
+          date: latest.date,
+          symbol: latest.symbol,
+          sessionScore: latest.session_score,
+          session_grade: latest.session_grade,
+          directional_bias: latest.directional_bias,
+          conviction: latest.conviction,
+          template: { template: latest.regime_template, confidence: latest.template_confidence },
+          macro: { vix: latest.vix_level, dxy: latest.dxy_level, yield_10y: latest.yield_10y },
+          cause_analysis: latest.cause_analysis,
+          trade_plan: latest.trade_plan,
+          avoid_list: latest.avoid_list,
+          invalidation: latest.invalidation,
+          markdown: latest.briefing_markdown
+        });
+        setStale(latest.date !== today);
+      } else {
+        setBriefing(null);
+        setStale(false);
+      }
+    } catch (error) {
+      console.error('Failed to load latest briefing:', error);
+    }
+  };
 
   const loadHistory = async () => {
     setLoadingHistory(true);
@@ -56,6 +95,7 @@ export default function QQEngine() {
       });
       if (response.data?.success) {
         setBriefing(response.data.briefing);
+        setStale(false);
         loadHistory();
         toast.success('QQE Daily Briefing generated');
       } else {
@@ -159,6 +199,32 @@ export default function QQEngine() {
           </CardContent>
         </Card>
 
+        {/* Stale Briefing Banner */}
+        {!loading && briefing && stale && (
+          <Card className="border-amber-300 bg-amber-50 dark:bg-amber-950/30">
+            <CardContent className="p-4 flex flex-col md:flex-row md:items-center gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0" />
+              <div className="flex-1">
+                <p className={`text-sm font-semibold ${darkMode ? 'text-amber-300' : 'text-amber-900'}`}>
+                  This briefing is from {briefing.date} — not today ({today}).
+                </p>
+                <p className={`text-xs ${darkMode ? 'text-amber-400/80' : 'text-amber-700'}`}>
+                  Click “Generate Briefing” to pull current market data for today.
+                </p>
+              </div>
+              <Button
+                onClick={generateBriefing}
+                disabled={loading}
+                size="sm"
+                className="bg-amber-600 hover:bg-amber-700 text-white"
+              >
+                {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                Generate Today's
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* History Panel */}
         {showHistory && (
           <Card className={`${darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}`}>
@@ -189,6 +255,9 @@ export default function QQEngine() {
                         }`}
                         onClick={() => {
                           setBriefing({
+                            id: h.id,
+                            date: h.date,
+                            symbol: h.symbol,
                             sessionScore: h.session_score,
                             session_grade: h.session_grade,
                             directional_bias: h.directional_bias,
@@ -201,6 +270,7 @@ export default function QQEngine() {
                             invalidation: h.invalidation,
                             markdown: h.briefing_markdown
                           });
+                          setStale(h.date !== today);
                           setShowHistory(false);
                           window.scrollTo({ top: 0, behavior: 'smooth' });
                         }}
