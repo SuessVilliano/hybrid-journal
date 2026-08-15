@@ -1,71 +1,8 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Plus, X, BarChart3, TrendingUp, Flame, DollarSign, Newspaper, Calendar, ChevronDown, Brain, Filter } from 'lucide-react';
-import ForexScreener from '@/components/screeners/ForexScreener';
-import StockScreener from '@/components/screeners/StockScreener';
-import CryptoScreener from '@/components/screeners/CryptoScreener';
-import ETFScreener from '@/components/screeners/ETFScreener';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import LivePriceTicker from '@/components/market/LivePriceTicker';
-import TradingChart from '@/components/market/TradingChart';
-import QuickTradePanel from '@/components/market/QuickTradePanel';
-import TradingViewWidget from '@/components/market/TradingViewWidget';
-import ResizableWidget from '@/components/market/ResizableWidget';
-import MarketCauseEngine from '@/components/market/MarketCauseEngine';
-
-const SCREENER_TABS = [
-  { id: 'forex',  label: '💱 Forex',  Component: ForexScreener },
-  { id: 'stocks', label: '📈 Stocks', Component: StockScreener },
-  { id: 'crypto', label: '₿ Crypto',  Component: CryptoScreener },
-  { id: 'etf',    label: '🏦 ETF',    Component: ETFScreener },
-];
-
-function ScreenersPanel({ darkMode }) {
-  const [activeScreener, setActiveScreener] = React.useState('forex');
-  const Active = SCREENER_TABS.find(t => t.id === activeScreener)?.Component;
-  return (
-    <div className="space-y-3">
-      <div className="flex gap-2 flex-wrap">
-        {SCREENER_TABS.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveScreener(tab.id)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeScreener === tab.id
-                ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white shadow-lg shadow-cyan-500/20'
-                : darkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-      <div className={`rounded-xl overflow-hidden border ${darkMode ? 'border-cyan-500/20 bg-slate-950/80' : 'border-cyan-500/30 bg-white'} p-2`}>
-        {Active && <Active darkMode={darkMode} />}
-      </div>
-    </div>
-  );
-}
+import React from 'react';
+import { BarChart3 } from 'lucide-react';
+import MarketDashboard from '@/components/market/MarketDashboard';
 
 export default function MarketData() {
-  const [watchlist, setWatchlist] = useState([
-    'EURUSD',
-    'GBPUSD',
-    'USDJPY',
-    'BTCUSD',
-    'ETHUSD',
-    'AAPL',
-    'NAS100',
-    'ES'
-  ]);
-  const [newSymbol, setNewSymbol] = useState('');
-  const [selectedSymbol, setSelectedSymbol] = useState('EURUSD');
-  const [showTradePanel, setShowTradePanel] = useState(false);
-  const [tradePanelData, setTradePanelData] = useState(null);
-  const [selectedPlatform, setSelectedPlatform] = useState('dxtrade');
   const darkMode = document.documentElement.classList.contains('dark');
 
   const platforms = [
@@ -80,26 +17,10 @@ export default function MarketData() {
     { id: 'volumetrica', name: 'Volumetrica', url: 'https://my.deepcharts.com/identity/account/login', color: 'from-teal-500 to-cyan-600' },
   ];
 
-  const addSymbol = () => {
-    if (newSymbol && !watchlist.includes(newSymbol.toUpperCase())) {
-      setWatchlist([...watchlist, newSymbol.toUpperCase()]);
-      setNewSymbol('');
-    }
-  };
-
-  const removeSymbol = (symbol) => {
-    setWatchlist(watchlist.filter(s => s !== symbol));
-  };
-
-  const handleTrade = (symbol, price) => {
-    setTradePanelData({ symbol, price });
-    setShowTradePanel(true);
-  };
-
   return (
     <div className={`min-h-screen p-4 md:p-6 transition-colors ${
-      darkMode 
-        ? 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900' 
+      darkMode
+        ? 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900'
         : 'bg-gradient-to-br from-cyan-50 via-purple-50 to-pink-50'
     }`}>
       <div className="max-w-7xl mx-auto space-y-6">
@@ -111,7 +32,7 @@ export default function MarketData() {
             Live Market Data
           </h1>
           <p className={darkMode ? 'text-cyan-400/70 mt-1' : 'text-cyan-700/70 mt-1'}>
-            Real-time quotes, charts, and market insights
+            Real-time quotes, charts, and market insights — build your own workspace
           </p>
         </div>
 
@@ -131,186 +52,8 @@ export default function MarketData() {
           ))}
         </div>
 
-        {/* Main Tabs */}
-        <Tabs defaultValue="charts" className="space-y-6">
-          <TabsList className={darkMode ? 'bg-slate-950/80 border border-cyan-500/20' : 'bg-white border border-cyan-500/30'}>
-            <TabsTrigger value="charts" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Charts
-            </TabsTrigger>
-            <TabsTrigger value="heatmaps" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
-              <Flame className="h-4 w-4 mr-2" />
-              Heatmaps
-            </TabsTrigger>
-            <TabsTrigger value="forex" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
-              <DollarSign className="h-4 w-4 mr-2" />
-              Forex
-            </TabsTrigger>
-            <TabsTrigger value="news" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
-              <Newspaper className="h-4 w-4 mr-2" />
-              News
-            </TabsTrigger>
-            <TabsTrigger value="calendar" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
-              <Calendar className="h-4 w-4 mr-2" />
-              Calendar
-            </TabsTrigger>
-            <TabsTrigger value="intelligence" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
-              <Brain className="h-4 w-4 mr-2" />
-              Market Intelligence
-            </TabsTrigger>
-            <TabsTrigger value="screeners" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
-              <Filter className="h-4 w-4 mr-2" />
-              Screeners
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Charts Tab */}
-          <TabsContent value="charts" className="space-y-6">
-            <Card className={darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}>
-              <CardHeader>
-                <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>My Watchlist</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-2 mb-4">
-                  <Input
-                    value={newSymbol}
-                    onChange={(e) => setNewSymbol(e.target.value.toUpperCase())}
-                    placeholder="Add symbol (e.g., EURUSD, AAPL, BTCUSD)"
-                    onKeyPress={(e) => e.key === 'Enter' && addSymbol()}
-                  />
-                  <Button onClick={addSymbol} className="bg-gradient-to-r from-cyan-500 to-purple-600">
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {watchlist.map(symbol => (
-                    <div
-                      key={symbol}
-                      className={`flex items-center gap-2 px-3 py-1 rounded-full ${
-                        darkMode ? 'bg-slate-800' : 'bg-slate-100'
-                      }`}
-                    >
-                      <button
-                        onClick={() => setSelectedSymbol(symbol)}
-                        className={`font-medium ${
-                          selectedSymbol === symbol 
-                            ? 'text-cyan-500' 
-                            : darkMode ? 'text-slate-300' : 'text-slate-700'
-                        }`}
-                      >
-                        {symbol}
-                      </button>
-                      <button
-                        onClick={() => removeSymbol(symbol)}
-                        className={`${darkMode ? 'text-slate-500 hover:text-red-400' : 'text-slate-400 hover:text-red-600'}`}
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <ResizableWidget 
-              title={`${selectedSymbol} Chart`}
-              defaultHeight="900px"
-              minHeight={500}
-              maxHeight={2000}
-            >
-              <TradingViewWidget 
-                type="chart" 
-                symbol={selectedSymbol === 'NAS100' ? 'OANDA:NAS100USD' : `OANDA:${selectedSymbol}`}
-                height="100%"
-              />
-            </ResizableWidget>
-          </TabsContent>
-
-          {/* Heatmaps Tab */}
-          <TabsContent value="heatmaps" className="space-y-6">
-            <ResizableWidget 
-              title="Stock Market Heatmap"
-              defaultHeight="900px"
-              minHeight={600}
-              maxHeight={2000}
-            >
-              <TradingViewWidget type="stockHeatmap" height="100%" />
-            </ResizableWidget>
-
-            <ResizableWidget 
-              title="Crypto Heatmap"
-              defaultHeight="900px"
-              minHeight={600}
-              maxHeight={2000}
-            >
-              <TradingViewWidget type="cryptoHeatmap" height="100%" />
-            </ResizableWidget>
-          </TabsContent>
-
-          {/* Forex Tab */}
-          <TabsContent value="forex" className="space-y-6">
-            <ResizableWidget 
-              title="Forex Cross Rates"
-              defaultHeight="800px"
-              minHeight={600}
-              maxHeight={2000}
-            >
-              <TradingViewWidget type="forexCross" height="100%" />
-            </ResizableWidget>
-
-            <ResizableWidget 
-              title="Forex Heatmap"
-              defaultHeight="900px"
-              minHeight={600}
-              maxHeight={2000}
-            >
-              <TradingViewWidget type="forexHeatmap" height="100%" />
-            </ResizableWidget>
-          </TabsContent>
-
-          {/* News Tab */}
-          <TabsContent value="news">
-            <ResizableWidget 
-              title="Market News & Updates"
-              defaultHeight="1100px"
-              minHeight={700}
-              maxHeight={2000}
-            >
-              <TradingViewWidget type="news" height="100%" />
-            </ResizableWidget>
-          </TabsContent>
-
-          {/* Calendar Tab */}
-          <TabsContent value="calendar">
-            <ResizableWidget 
-              title="Economic Calendar"
-              defaultHeight="1100px"
-              minHeight={700}
-              maxHeight={2000}
-            >
-              <TradingViewWidget type="calendar" height="100%" />
-            </ResizableWidget>
-          </TabsContent>
-
-          {/* Market Intelligence Tab */}
-          <TabsContent value="intelligence">
-            <MarketCauseEngine />
-          </TabsContent>
-
-          {/* Screeners Tab */}
-          <TabsContent value="screeners" className="space-y-4">
-            <ScreenersPanel darkMode={darkMode} />
-          </TabsContent>
-        </Tabs>
-
-        {/* Quick Trade Panel */}
-        {showTradePanel && tradePanelData && (
-          <QuickTradePanel
-            symbol={tradePanelData.symbol}
-            currentPrice={tradePanelData.price}
-            onClose={() => setShowTradePanel(false)}
-          />
-        )}
+        {/* Customizable Dashboard */}
+        <MarketDashboard darkMode={darkMode} />
       </div>
     </div>
   );
