@@ -90,6 +90,10 @@
         "type": "string"
       },
       "description": "Globally selected trading account IDs across all pages"
+    },
+    "default_market_symbol": {
+      "type": "string",
+      "description": "Per-user default symbol for the Live Market dashboard's primary chart (e.g. NAS100, EURUSD)"
     }
   },
   "required": [],

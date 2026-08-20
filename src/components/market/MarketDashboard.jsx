@@ -3,7 +3,9 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus, X, BarChart3, TrendingUp, Flame, DollarSign, Newspaper, Calendar, Brain, Filter, RotateCcw } from 'lucide-react';
+import { Plus, X, BarChart3, TrendingUp, Flame, DollarSign, Newspaper, Calendar, Brain, Filter, RotateCcw, Star } from 'lucide-react';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { base44 } from '@/api/base44Client';
 import TradingViewWidget from '@/components/market/TradingViewWidget';
 import MarketCauseEngine from '@/components/market/MarketCauseEngine';
 import ForexScreener from '@/components/screeners/ForexScreener';
@@ -103,8 +105,98 @@ function WatchlistWidget({ darkMode, widget, updateWidget, setChartSymbol }) {
   );
 }
 
+const SYMBOL_OPTIONS = [
+  { label: 'NAS100 — US 100', value: 'NAS100' },
+  { label: 'US30 — Dow Jones', value: 'US30' },
+  { label: 'SPX500 — S&P 500', value: 'SPX500' },
+  { label: 'EUR/USD', value: 'EURUSD' },
+  { label: 'GBP/USD', value: 'GBPUSD' },
+  { label: 'USD/JPY', value: 'USDJPY' },
+  { label: 'AUD/USD', value: 'AUDUSD' },
+  { label: 'USD/CAD', value: 'USDCAD' },
+  { label: 'USD/CHF', value: 'USDCHF' },
+  { label: 'NZD/USD', value: 'NZDUSD' },
+  { label: 'XAU/USD — Gold', value: 'XAUUSD' },
+  { label: 'XAG/USD — Silver', value: 'XAGUSD' },
+  { label: 'WTI — Crude Oil', value: 'WTIUSD' },
+  { label: 'BTC/USD', value: 'BTCUSD' },
+  { label: 'ETH/USD', value: 'ETHUSD' },
+  { label: 'AAPL', value: 'AAPL' },
+  { label: 'TSLA', value: 'TSLA' },
+  { label: 'NVDA', value: 'NVDA' },
+  { label: 'AMZN', value: 'AMZN' },
+  { label: 'MSFT', value: 'MSFT' },
+  { label: 'GOOGL', value: 'GOOGL' },
+];
+
 function tvSymbol(sym) {
-  return sym === 'NAS100' ? 'OANDA:NAS100USD' : `OANDA:${sym}`;
+  const s = (sym || '').toUpperCase();
+  const map = {
+    NAS100: 'OANDA:NAS100USD',
+    NAS100USD: 'OANDA:NAS100USD',
+    US100: 'OANDA:NAS100USD',
+    NQ: 'OANDA:NAS100USD',
+    US30: 'OANDA:US30USD',
+    US30USD: 'OANDA:US30USD',
+    SPX500: 'OANDA:SPX500USD',
+    SPX500USD: 'OANDA:SPX500USD',
+    US500: 'OANDA:SPX500USD',
+    ES: 'OANDA:SPX500USD',
+    XAUUSD: 'OANDA:XAUUSD',
+    GOLD: 'OANDA:XAUUSD',
+    XAGUSD: 'OANDA:XAGUSD',
+    SILVER: 'OANDA:XAGUSD',
+    WTIUSD: 'OANDA:WTIUSD',
+    WTI: 'OANDA:WTIUSD',
+  };
+  return map[s] || `OANDA:${s}`;
+}
+
+function SymbolPicker({ value, onChange, darkMode }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const q = query.toUpperCase();
+  const filtered = SYMBOL_OPTIONS.filter(o => o.value.includes(q) || o.label.toUpperCase().includes(q));
+  const customValid = q && !SYMBOL_OPTIONS.some(o => o.value === q);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          onDragStart={(e) => e.stopPropagation()}
+          className={`bg-transparent text-sm font-semibold outline-none px-1 rounded hover:bg-cyan-500/10 ${darkMode ? 'text-cyan-300' : 'text-cyan-700'}`}
+          title="Change symbol"
+        >
+          {value}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-60 p-0" align="start">
+        <div className="p-2 border-b border-border">
+          <Input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search or type a symbol…" autoFocus />
+        </div>
+        <div className="max-h-56 overflow-auto">
+          {filtered.map(o => (
+            <button
+              key={o.value}
+              onClick={() => { onChange(o.value); setOpen(false); setQuery(''); }}
+              className={`w-full text-left px-3 py-1.5 text-sm flex justify-between items-center hover:bg-cyan-500/10 ${value === o.value ? 'font-bold text-cyan-600' : ''}`}
+            >
+              <span>{o.label}</span>
+              <span className="text-[10px] text-muted-foreground">{o.value}</span>
+            </button>
+          ))}
+          {customValid && (
+            <button
+              onClick={() => { onChange(q); setOpen(false); setQuery(''); }}
+              className="w-full text-left px-3 py-1.5 text-sm hover:bg-cyan-500/10 border-t border-border"
+            >
+              Use custom symbol “{q}”
+            </button>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 export default function MarketDashboard({ darkMode }) {
@@ -118,10 +210,41 @@ export default function MarketDashboard({ darkMode }) {
   const [dragId, setDragId] = useState(null);
   const [dragOverId, setDragOverId] = useState(null);
   const containerRef = useRef(null);
+  const [defaultSymbol, setDefaultSymbolState] = useState('EURUSD');
+  const [settingsId, setSettingsId] = useState(null);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(widgets));
   }, [widgets]);
+
+  // Load the user's saved default symbol (per-account, via DashboardSettings RLS)
+  useEffect(() => {
+    (async () => {
+      try {
+        const recs = await base44.entities.DashboardSettings.list();
+        if (recs.length > 0) {
+          setSettingsId(recs[0].id);
+          if (recs[0].default_market_symbol) setDefaultSymbolState(recs[0].default_market_symbol);
+        }
+      } catch (e) {
+        console.error('Failed to load default symbol:', e);
+      }
+    })();
+  }, []);
+
+  const setDefaultSymbol = async (sym) => {
+    setDefaultSymbolState(sym);
+    try {
+      if (settingsId) {
+        await base44.entities.DashboardSettings.update(settingsId, { default_market_symbol: sym });
+      } else {
+        const created = await base44.entities.DashboardSettings.create({ default_market_symbol: sym });
+        setSettingsId(created.id);
+      }
+    } catch (e) {
+      console.error('Failed to save default symbol:', e);
+    }
+  };
 
   const addWidget = (type) => {
     const tool = TOOLS.find(t => t.type === type);
@@ -134,7 +257,7 @@ export default function MarketDashboard({ darkMode }) {
       title,
       colSpan: tool.cols,
       rowSpan: tool.rows,
-      config: type === 'chart' ? { symbol: 'EURUSD' } : type === 'watchlist' ? { symbols: ['EURUSD', 'GBPUSD', 'BTCUSD', 'AAPL', 'NAS100'] } : {}
+      config: type === 'chart' ? { symbol: defaultSymbol } : type === 'watchlist' ? { symbols: ['EURUSD', 'GBPUSD', 'BTCUSD', 'AAPL', 'NAS100'] } : {}
     }]);
   };
 
@@ -186,19 +309,17 @@ export default function MarketDashboard({ darkMode }) {
 
   // Clicking a watchlist symbol opens/updates the first chart widget
   const setSymbolOnFirstChart = (symbol) => {
-    setWidgets(ws => {
-      const idx = ws.findIndex(w => w.type === 'chart');
-      if (idx < 0) {
-        const id = 'w' + Date.now();
-        return [...ws, { id, type: 'chart', title: `${symbol} Chart`, colSpan: 8, rowSpan: 10, config: { symbol } }];
-      }
-      return ws.map((w, i) => i === idx ? { ...w, title: `${symbol} Chart`, config: { ...w.config, symbol } } : w);
-    });
+    setDefaultSymbol(symbol);
   };
+
+  const firstChartId = widgets.find(w => w.type === 'chart')?.id;
 
   const renderContent = (w) => {
     switch (w.type) {
-      case 'chart': return <TradingViewWidget type="chart" symbol={tvSymbol(w.config?.symbol || 'EURUSD')} height="100%" />;
+      case 'chart': {
+        const sym = w.id === firstChartId ? defaultSymbol : (w.config?.symbol || defaultSymbol);
+        return <TradingViewWidget type="chart" symbol={tvSymbol(sym)} height="100%" />;
+      };
       case 'stockHeatmap': return <TradingViewWidget type="stockHeatmap" height="100%" />;
       case 'cryptoHeatmap': return <TradingViewWidget type="cryptoHeatmap" height="100%" />;
       case 'forexHeatmap': return <TradingViewWidget type="forexHeatmap" height="100%" />;
@@ -246,6 +367,7 @@ export default function MarketDashboard({ darkMode }) {
         {widgets.map(w => {
           const tool = TOOLS.find(t => t.type === w.type);
           const Icon = tool?.icon || BarChart3;
+          const effSym = w.type === 'chart' ? (w.id === firstChartId ? defaultSymbol : (w.config?.symbol || defaultSymbol)) : '';
           return (
             <Card
               key={w.id}
@@ -260,13 +382,29 @@ export default function MarketDashboard({ darkMode }) {
               <div className={`flex items-center gap-2 px-3 py-2 border-b flex-shrink-0 ${darkMode ? 'border-cyan-500/20' : 'border-cyan-500/30'} cursor-grab active:cursor-grabbing`}>
                 <Icon className="h-4 w-4 text-cyan-500 flex-shrink-0" />
                 {w.type === 'chart' ? (
-                  <input
-                    value={w.config?.symbol || ''}
-                    onChange={(e) => updateWidget(w.id, { config: { ...w.config, symbol: e.target.value.toUpperCase() }, title: `${e.target.value.toUpperCase() || 'Chart'} Chart` })}
-                    className={`bg-transparent text-sm font-semibold w-28 outline-none ${darkMode ? 'text-cyan-300' : 'text-cyan-700'}`}
-                    placeholder="SYMBOL"
-                    onDragStart={(e) => e.stopPropagation()}
-                  />
+                  <div className="flex items-center gap-1">
+                    <SymbolPicker
+                      value={effSym}
+                      onChange={(sym) => {
+                        if (w.id === firstChartId) {
+                          setDefaultSymbol(sym);
+                        } else {
+                          updateWidget(w.id, { config: { ...w.config, symbol: sym }, title: `${sym} Chart` });
+                        }
+                      }}
+                      darkMode={darkMode}
+                    />
+                    <button
+                      onDragStart={(e) => e.stopPropagation()}
+                      onClick={() => setDefaultSymbol(effSym)}
+                      title="Set as my default symbol"
+                      className={effSym === defaultSymbol
+                        ? 'text-yellow-400'
+                        : (darkMode ? 'text-slate-500 hover:text-yellow-400' : 'text-slate-400 hover:text-yellow-500')}
+                    >
+                      <Star className={`h-3.5 w-3.5 ${effSym === defaultSymbol ? 'fill-yellow-400' : ''}`} />
+                    </button>
+                  </div>
                 ) : (
                   <span className={`text-sm font-semibold truncate ${darkMode ? 'text-cyan-300' : 'text-cyan-700'}`}>{w.title}</span>
                 )}
