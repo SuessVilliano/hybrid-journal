@@ -58,10 +58,13 @@
     "permission_level"
   ],
   "rls": {
+    "create": {
+      "data.owner_email": "{{user.email}}"
+    },
     "read": {
       "$or": [
         {
-          "owner_email": "{{user.email}}"
+          "data.owner_email": "{{user.email}}"
         },
         {
           "data.shared_with_email": "{{user.email}}"
@@ -69,13 +72,10 @@
       ]
     },
     "update": {
-      "owner_email": "{{user.email}}"
+      "data.owner_email": "{{user.email}}"
     },
     "delete": {
-      "owner_email": "{{user.email}}"
-    },
-    "write": {
-      "owner_email": "{{user.email}}"
+      "data.owner_email": "{{user.email}}"
     }
   }
 }

@@ -42,13 +42,15 @@
     "share_token"
   ],
   "rls": {
-    "create": {},
-    "read": {},
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "read": null,
     "update": {
-      "created_by": "{{user.email}}"
+      "created_by_id": "{{user.id}}"
     },
     "delete": {
-      "created_by": "{{user.email}}"
+      "created_by_id": "{{user.id}}"
     }
   }
 }

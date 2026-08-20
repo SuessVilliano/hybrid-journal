@@ -99,8 +99,12 @@
     "user_email"
   ],
   "rls": {
-    "create": null,
-    "read": {},
+    "create": {
+      "data.user_email": "{{user.email}}"
+    },
+    "read": {
+      "data.user_email": "{{user.email}}"
+    },
     "update": {
       "data.user_email": "{{user.email}}"
     },

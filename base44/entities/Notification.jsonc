@@ -61,15 +61,17 @@
     "message"
   ],
   "rls": {
-    "create": {},
+    "create": {
+      "data.recipient_email": "{{user.email}}"
+    },
     "read": {
-      "recipient_email": "{{user.email}}"
+      "data.recipient_email": "{{user.email}}"
     },
     "update": {
-      "recipient_email": "{{user.email}}"
+      "data.recipient_email": "{{user.email}}"
     },
     "delete": {
-      "recipient_email": "{{user.email}}"
+      "data.recipient_email": "{{user.email}}"
     }
   }
 }
