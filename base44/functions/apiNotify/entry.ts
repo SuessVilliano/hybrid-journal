@@ -14,7 +14,31 @@ Deno.serve(async (req) => {
   
   try {
     const base44 = createClientFromRequest(req);
-    
+
+    // --- Authentication ---
+    // Require either a valid api_key header (external systems) or an authenticated
+    // user session. Session users may only send notifications to their own account.
+    const apiKey = req.headers.get('api_key');
+    let systemCaller = false;
+    let sessionEmail: string | null = null;
+    let sessionId: string | null = null;
+
+    if (apiKey) {
+      const apiUsers = await base44.asServiceRole.entities.User.filter({ api_key: apiKey, api_key_enabled: true });
+      if (!apiUsers || apiUsers.length === 0) {
+        return Response.json({ error: 'Invalid or disabled API key' }, { status: 401 });
+      }
+      systemCaller = true;
+    } else {
+      try {
+        const me = await base44.auth.me();
+        sessionEmail = me.email;
+        sessionId = me.id;
+      } catch {
+        return Response.json({ error: 'Authentication required: provide a valid api_key header or an authenticated session' }, { status: 401 });
+      }
+    }
+
     // Parse payload
     const payload = await req.json();
     const {
@@ -26,6 +50,16 @@ Deno.serve(async (req) => {
       link = null,
       priority = 'medium'
     } = payload;
+
+    // Authorization: session-authenticated users may only notify themselves
+    if (!systemCaller) {
+      if (recipient_email && recipient_email !== sessionEmail) {
+        return Response.json({ error: 'Forbidden: you can only send notifications to your own account' }, { status: 403 });
+      }
+      if (user_id && user_id !== sessionId) {
+        return Response.json({ error: 'Forbidden: you can only send notifications to your own account' }, { status: 403 });
+      }
+    }
 
     // Validate required fields
     if (!title || !message) {
