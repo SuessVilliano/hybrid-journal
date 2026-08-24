@@ -361,13 +361,19 @@ export default function LiveTradingSignals() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      // 1. Trigger the monitor function to check live prices & update statuses
+      // 1. Trigger the monitor function to check live prices & update statuses.
+      // Manual refresh uses full_scan so EVERY active signal is re-checked,
+      // regardless of age — the scheduled run only checks the last 2h window.
       const result = await base44.functions.invoke('monitorSignalTargets', {
-        token: 'hj_update_9x2k_signals_2026'
+        token: 'hj_update_9x2k_signals_2026',
+        full_scan: true
       });
       const updated = result?.data?.updated || 0;
+      const checked = result?.data?.checked || 0;
       if (updated > 0) {
-        toast.success(`${updated} signal${updated > 1 ? 's' : ''} updated with live prices`);
+        toast.success(`Checked ${checked} signals — ${updated} status${updated > 1 ? 'es' : ''} updated with live prices`);
+      } else {
+        toast.info(`Checked ${checked} signals — no status changes`);
       }
     } catch (error) {
       console.error('Monitor failed:', error);
