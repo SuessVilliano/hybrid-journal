@@ -14,6 +14,10 @@ import { useBrowserNotifications, showSignalNotification } from '@/components/no
 import { formatInTimezone } from '@/components/utils/timezoneHelper';
 import SignalCard from '@/components/signals/SignalCard';
 import SignalPerformancePanel from '@/components/signals/SignalPerformancePanel';
+import AlertsHubPanel from '@/components/alerts/AlertsHubPanel';
+import { useAlertRules } from '@/hooks/useAlertRules';
+import { useAlertSounds } from '@/hooks/useAlertSounds';
+import { useAlertPlayback } from '@/hooks/useAlertPlayback';
 import { toast } from 'sonner';
 
 export default function LiveTradingSignals() {
@@ -41,6 +45,7 @@ export default function LiveTradingSignals() {
   const [hideDuplicates, setHideDuplicates] = useState(true);
   const [showRoutingRules, setShowRoutingRules] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [view, setView] = useState('signals'); // 'signals' | 'alerts'
   const queryClient = useQueryClient();
   const darkMode = document.documentElement.classList.contains('dark');
   const { permission, requestPermission, isSupported } = useBrowserNotifications();
@@ -53,6 +58,20 @@ export default function LiveTradingSignals() {
     queryKey: ['user'],
     queryFn: () => base44.auth.me()
   });
+
+  // Alerts Hub: rules + sounds + realtime playback (live across both tabs)
+  const rulesApi = useAlertRules();
+  const soundsApi = useAlertSounds();
+  const playback = useAlertPlayback(rulesApi.rules, soundsApi.sounds);
+
+  useEffect(() => {
+    const unsubscribe = base44.entities.Signal.subscribe((event) => {
+      if (event.type === 'create' && event.data?.user_email === user?.email) {
+        playback.playForSignal(event.data);
+      }
+    });
+    return unsubscribe;
+  }, [user?.email, playback.playForSignal]);
 
   const { data: signals = [], isLoading: isLoadingSignals, refetch: refetchSignals } = useQuery({
     queryKey: ['signals', user?.email],
@@ -419,6 +438,12 @@ export default function LiveTradingSignals() {
         ? 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900' 
         : 'bg-gradient-to-br from-cyan-50 via-purple-50 to-pink-50'
     }`}>
+      {playback.flash && (
+        <div
+          className="fixed inset-0 z-[60] pointer-events-none animate-pulse"
+          style={{ background: playback.flash }}
+        />
+      )}
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex flex-col gap-4">
           <div>
@@ -499,6 +524,36 @@ export default function LiveTradingSignals() {
           </div>
         </div>
 
+        {/* View toggle: Signals vs Alerts Hub */}
+        <div className={`flex gap-1 p-1 rounded-xl border w-fit ${darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white border-cyan-500/30'}`}>
+          <button
+            onClick={() => setView('signals')}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium ${view === 'signals' ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white' : darkMode ? 'text-slate-400' : 'text-slate-600'}`}
+          >
+            Signals
+          </button>
+          <button
+            onClick={() => setView('alerts')}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium ${view === 'alerts' ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white' : darkMode ? 'text-slate-400' : 'text-slate-600'}`}
+          >
+            🔊 Alerts Hub
+          </button>
+        </div>
+
+        {view === 'alerts' && (
+          <AlertsHubPanel
+            darkMode={darkMode}
+            user={user}
+            sounds={soundsApi.sounds}
+            soundsApi={soundsApi}
+            rules={rulesApi.rules}
+            rulesApi={rulesApi}
+            playback={playback}
+          />
+        )}
+
+        {view === 'signals' && (
+        <>
         {/* Webhook Info */}
         {showWebhookInfo && <WebhookSettings />}
 
@@ -766,6 +821,8 @@ export default function LiveTradingSignals() {
             isOpen={!!analyzingSignal}
             onClose={() => setAnalyzingSignal(null)}
           />
+        )}
+        </>
         )}
       </div>
     </div>

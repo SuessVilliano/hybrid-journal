@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Mic, Square, Upload, Play, Trash2, CloudUpload, Cloud, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSubscription } from '@/components/subscription/useSubscription';
-import UpgradePrompt from '@/components/subscription/UpgradePrompt';
 
 export default function SoundLibrary({ sounds, soundsApi, darkMode }) {
   const { isPro } = useSubscription();
@@ -61,7 +60,7 @@ export default function SoundLibrary({ sounds, soundsApi, darkMode }) {
   };
 
   const sync = async (s) => {
-    if (!isPro) { toast.error(<UpgradePrompt feature="cloud sound sync" />); return; }
+    if (!isPro) { toast.error('Cloud sound sync is a Pro feature — upgrade on the Pricing page.'); return; }
     setBusy(true);
     try {
       await soundsApi.syncToCloud(s);
