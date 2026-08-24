@@ -1,0 +1,139 @@
+{
+  "name": "AlertRule",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Rule name"
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this rule is active"
+    },
+    "priority_order": {
+      "type": "number",
+      "default": 0,
+      "description": "Lower numbers are evaluated first (first match wins)"
+    },
+    "providers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Match these signal providers (empty = any)"
+    },
+    "symbols": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Match these symbols, uppercase (empty = any)"
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "BUY",
+          "SELL",
+          "CLOSE"
+        ]
+      },
+      "description": "Match these actions (empty = any)"
+    },
+    "priorities": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "critical",
+          "high",
+          "normal",
+          "low"
+        ]
+      },
+      "description": "Match these priorities (empty = any)"
+    },
+    "min_confidence": {
+      "type": "number",
+      "default": 0,
+      "description": "Minimum signal confidence (0-100) to match"
+    },
+    "keywords": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Keywords to match against signal text"
+    },
+    "keyword_mode": {
+      "type": "string",
+      "enum": [
+        "any",
+        "all"
+      ],
+      "default": "any",
+      "description": "Match ANY or ALL keywords"
+    },
+    "sound_id": {
+      "type": "string",
+      "description": "ID of the sound to play (local IndexedDB id or cloud CustomAudioAlert id). Empty = no sound."
+    },
+    "voice_mode": {
+      "type": "string",
+      "enum": [
+        "off",
+        "browser",
+        "ai"
+      ],
+      "default": "off",
+      "description": "Voice announcement mode"
+    },
+    "speak_mode": {
+      "type": "string",
+      "enum": [
+        "message",
+        "template"
+      ],
+      "default": "message",
+      "description": "Speak the alert message or a custom template"
+    },
+    "speak_template": {
+      "type": "string",
+      "description": "Custom template. Placeholders: {action} {symbol} {tf} {priority} {confidence} {price} {message} {provider}"
+    },
+    "repeat": {
+      "type": "number",
+      "default": 1,
+      "description": "How many times to repeat the sound"
+    },
+    "volume": {
+      "type": "number",
+      "default": 100,
+      "description": "Playback volume (5-100)"
+    },
+    "flash": {
+      "type": "boolean",
+      "default": false,
+      "description": "Flash the screen when this rule matches"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "rls": {
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "read": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}

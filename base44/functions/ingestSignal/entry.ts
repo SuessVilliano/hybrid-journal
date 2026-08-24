@@ -65,10 +65,11 @@ Deno.serve(async (req) => {
       stop_loss: parseFloat(payload.stop_loss || payload.sl || 0),
       take_profit: parseFloat(payload.take_profit || payload.tp || payload.tp1 || 0),
       take_profits: payload.take_profits || [],
-      timeframe: payload.interval || payload.timeframe || '',
-      confidence: parseFloat(payload.confidence || 85),
+      timeframe: payload.interval || payload.timeframe || payload.tf || '',
+      priority: String(payload.priority || payload.p || 'normal').toLowerCase(),
+      confidence: parseFloat(payload.confidence || payload.conf || 85),
       strategy: payload.strategy?.order_comment || payload.strategy_name || '',
-      notes: payload.message || payload.notes || '',
+      notes: payload.message || payload.notes || payload.msg || '',
       status: 'new',
       raw_data: payload
     };

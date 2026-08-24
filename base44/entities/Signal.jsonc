@@ -46,6 +46,17 @@
       "type": "number",
       "description": "Confidence score (0-100)"
     },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "critical",
+        "high",
+        "normal",
+        "low"
+      ],
+      "default": "normal",
+      "description": "Alert priority (drives the alerts-hub rules engine)"
+    },
     "strategy": {
       "type": "string",
       "description": "Strategy name"
