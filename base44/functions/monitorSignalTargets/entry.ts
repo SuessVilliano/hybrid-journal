@@ -18,20 +18,30 @@ Deno.serve(async (req) => {
 
     const base44 = createClientFromRequest(req);
 
-    // Only check signals created within the last 2 hours AND still in an active state.
-    // This is the credit saver: idle periods return ~instantly with no price fetches.
-    const since = new Date(Date.now() - MONITOR_WINDOW_HOURS * 60 * 60 * 1000).toISOString();
+    // full_scan: when true, ignore the time window and check ALL active signals
+    // (used for one-time backfills of a backlog). Scheduled runs use the window.
+    const fullScan = body.full_scan === true;
+    const sinceMs = Date.now() - MONITOR_WINDOW_HOURS * 60 * 60 * 1000;
 
+    // Fetch active signals by status (newest-first, bounded by limit). The time
+    // window is applied in JS below — server-side created_date $gte filtering is
+    // unreliable and was silently returning zero rows, which left every signal
+    // stuck on "new" forever. Newest-first ordering guarantees we still capture
+    // every in-window signal as long as fewer than FETCH_LIMIT arrived in 2h.
+    const FETCH_LIMIT = 500;
     const [newSigs, viewedSigs, executedSigs, tp1Sigs, tp2Sigs] = await Promise.all([
-      base44.asServiceRole.entities.Signal.filter({ status: 'new', created_date: { $gte: since } }, '-created_date', 500),
-      base44.asServiceRole.entities.Signal.filter({ status: 'viewed', created_date: { $gte: since } }, '-created_date', 500),
-      base44.asServiceRole.entities.Signal.filter({ status: 'executed', created_date: { $gte: since } }, '-created_date', 200),
-      base44.asServiceRole.entities.Signal.filter({ status: 'tp1_hit', created_date: { $gte: since } }, '-created_date', 200),
-      base44.asServiceRole.entities.Signal.filter({ status: 'tp2_hit', created_date: { $gte: since } }, '-created_date', 200),
+      base44.asServiceRole.entities.Signal.filter({ status: 'new' }, '-created_date', FETCH_LIMIT),
+      base44.asServiceRole.entities.Signal.filter({ status: 'viewed' }, '-created_date', 200),
+      base44.asServiceRole.entities.Signal.filter({ status: 'executed' }, '-created_date', 200),
+      base44.asServiceRole.entities.Signal.filter({ status: 'tp1_hit' }, '-created_date', 200),
+      base44.asServiceRole.entities.Signal.filter({ status: 'tp2_hit' }, '-created_date', 200),
     ]);
 
-    const activeSignals = [...newSigs, ...viewedSigs, ...executedSigs, ...tp1Sigs, ...tp2Sigs];
-    console.log(`[monitorSignalTargets] Checking ${activeSignals.length} signals created in last ${MONITOR_WINDOW_HOURS}h (new: ${newSigs.length}, viewed: ${viewedSigs.length}, executed: ${executedSigs.length}, tp1: ${tp1Sigs.length}, tp2: ${tp2Sigs.length})`);
+    const inWindow = (s) => fullScan || (s.created_date ? new Date(s.created_date).getTime() >= sinceMs : false);
+    const activeSignals = [newSigs, viewedSigs, executedSigs, tp1Sigs, tp2Sigs]
+      .flat()
+      .filter(inWindow);
+    console.log(`[monitorSignalTargets] Checking ${activeSignals.length} signals (mode: ${fullScan ? 'full_scan' : `last ${MONITOR_WINDOW_HOURS}h`}) — fetched new: ${newSigs.length}, viewed: ${viewedSigs.length}, executed: ${executedSigs.length}, tp1: ${tp1Sigs.length}, tp2: ${tp2Sigs.length}`);
 
     if (activeSignals.length === 0) {
       return Response.json({ success: true, checked: 0, updated: 0, notified: 0, message: 'No active signals in monitoring window' });
