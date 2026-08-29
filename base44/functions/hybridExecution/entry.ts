@@ -1,12 +1,17 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
 const GATEWAY_URL = (Deno.env.get('HYBRID_EXECUTION_URL') || 'https://hybridzone-api.onrender.com').replace(/\/$/, '');
-const GATEWAY_KEY = Deno.env.get('HYBRID_EXECUTION_API_KEY') || '';
+const GATEWAY_KEY = Deno.env.get('HYBRID_EXECUTION_API_KEY') || Deno.env.get('THZ_API_KEY') || '';
 const ACTIONS = new Set(['status','capabilities','parse','preview','paper_execute','live_execute','positions','orders']);
 
 async function gateway(path: string, method = 'GET', body?: unknown) {
-  if (!GATEWAY_KEY) throw new Error('HYBRID_EXECUTION_API_KEY secret is not configured');
-  const response = await fetch(`${GATEWAY_URL}${path}`, { method, headers: { 'Content-Type': 'application/json', 'x-api-key': GATEWAY_KEY }, body: body === undefined ? undefined : JSON.stringify(body) });
+  if (!GATEWAY_KEY) throw new Error('HYBRID_EXECUTION_API_KEY or THZ_API_KEY secret is not configured');
+  const response = await fetch(`${GATEWAY_URL}${path}`, {
+    method,
+    headers: { 'Content-Type': 'application/json', 'x-api-key': GATEWAY_KEY },
+    body: body === undefined ? undefined : JSON.stringify(body),
+    signal: AbortSignal.timeout(20000),
+  });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data?.error || (Array.isArray(data?.errors) ? data.errors.join('; ') : `Gateway HTTP ${response.status}`));
   return data;
@@ -36,5 +41,7 @@ Deno.serve(async (req) => {
     if (action === 'positions') return Response.json(await gateway(`/api/execution/positions?broker=${broker}&mode=${mode}`));
     if (action === 'orders') return Response.json(await gateway(`/api/execution/orders?broker=${broker}&mode=${mode}`));
     return Response.json({ error: 'Unhandled action' }, { status: 400 });
-  } catch (error) { return Response.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 }); }
+  } catch (error) {
+    return Response.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+  }
 });
