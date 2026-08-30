@@ -18,8 +18,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { callCTraderMcp } from '../../shared/ctraderMcpClient.ts';
 
 const MCP_TOKEN = Deno.env.get('HYBRID_JOURNAL_MCP_TOKEN');
-const GATEWAY_URL = (Deno.env.get('HYBRID_EXECUTION_URL') || 'https://hybridzone-api.onrender.com').replace(/\/$/, '');
-const GATEWAY_KEY = Deno.env.get('HYBRID_EXECUTION_API_KEY') || Deno.env.get('THZ_API_KEY') || '';
+const GATEWAY_URL = 'https://hybridzone-api.onrender.com';
+const GATEWAY_KEY = Deno.env.get('HYBRID_EXECUTION_API_KEY') || '';
 const PROTOCOL_VERSION = '2024-11-05';
 
 const CORS = {
