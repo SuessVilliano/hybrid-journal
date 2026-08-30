@@ -17,6 +17,7 @@
         "ThinkorSwim",
         "TradingView",
         "Binance",
+        "Kraken",
         "Alpaca",
         "OANDA",
         "Public",
@@ -61,7 +62,7 @@
     },
     "settings_json": {
       "type": "object",
-      "description": "Non-sensitive connection settings"
+      "description": "Non-sensitive connection settings (e.g. { broker_id: 'kraken', mode: 'paper' })"
     },
     "secret_ref": {
       "type": "string",

@@ -113,6 +113,17 @@ const TOOLS = [
       },
     },
   },
+  {
+    name: 'get_recent_trades',
+    description: 'Get recently closed Kraken trades (filled orders with entry/exit price, qty, pnl, timestamps). Kraken only — pass broker="kraken" and mode. Used by the journal auto-sync and by AI clients to review trade history. Returns whatever the Hybrid Execution gateway exposes for the account.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        broker: { type: 'string', description: 'kraken (only kraken is supported for recent trades). Defaults to kraken.' },
+        mode: { type: 'string', description: 'paper or live (Kraken). Defaults to paper.' },
+      },
+    },
+  },
 ];
 
 Deno.serve(async (req) => {
@@ -172,6 +183,9 @@ async function dispatchCall(id, params, req) {
         break;
       case 'get_account_status':
         result = await getAccountStatus(args, req);
+        break;
+      case 'get_recent_trades':
+        result = await getRecentTrades(args, req);
         break;
       default:
         return rpcError(id, -32601, `Unknown tool: ${name}`);
@@ -269,4 +283,13 @@ async function getAccountStatus(args, req) {
     return { broker: 'ctrader', connection_id: args.connection_id, balance };
   }
   throw new Error(`Unsupported broker: ${broker}`);
+}
+
+async function getRecentTrades(args, req) {
+  const broker = String(args.broker || 'kraken').toLowerCase();
+  if (broker !== 'kraken') {
+    throw new Error('get_recent_trades currently supports Kraken only (broker="kraken")');
+  }
+  const mode = encodeURIComponent(String(args.mode || 'paper').toLowerCase());
+  return gateway(`/api/execution/trades?broker=kraken&mode=${mode}`);
 }
