@@ -16,6 +16,7 @@ import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import ComingSoon from '@/pages/ComingSoon';
+import Connect from '@/pages/Connect';
 import DocumentAuditor from '@/pages/DocumentAuditor';
 import TradingBible from '@/pages/TradingBible';
 import OAuthConsent from '@/pages/OAuthConsent';
@@ -124,6 +125,14 @@ const AuthenticatedApp = () => {
           element={
             <LayoutWrapper currentPageName="TradingBible">
               <TradingBible />
+            </LayoutWrapper>
+          }
+        />
+        <Route
+          path="/connect"
+          element={
+            <LayoutWrapper currentPageName="Connect">
+              <Connect />
             </LayoutWrapper>
           }
         />
