@@ -14,52 +14,8 @@
 //      only that user's Kraken connection(s).
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { decryptSecret } from './helpers/secrets.js';
 
 const GATEWAY_URL = 'https://hybridzone-api.onrender.com';
-
-async function sha256HexK(s: string): Promise<string> {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-async function krakenPrivateReq(method: string, postData: string, apiKey: string, apiSecret: string): Promise<any> {
-  const path = `/0/private/${method}`;
-  const nonce = new URLSearchParams(postData).get('nonce') || '';
-  const sha = await sha256HexK(nonce + postData);
-  const key = await crypto.subtle.importKey('raw', Uint8Array.from(atob(apiSecret), c => c.charCodeAt(0)), { name: 'HMAC', hash: 'SHA-512' }, false, ['sign']);
-  const sigBuf = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(path + sha));
-  const signature = btoa(String.fromCharCode(...new Uint8Array(sigBuf)));
-  const r = await fetch(`https://api.kraken.com${path}`, { method: 'POST', headers: { 'API-Key': apiKey, 'API-Sign': signature, 'Content-Type': 'application/x-www-form-urlencoded' }, body: postData });
-  return await r.json().catch(() => ({}));
-}
-
-// If the connection has an encrypted in-app read-only Kraken key, fetch fresh
-// balance/equity directly from Kraken (proves the real account link + keeps the
-// card current). Returns null if no key or the call fails (positions still sync
-// via the gateway independently).
-async function krakenBalanceFromConn(conn: any): Promise<{ balance?: number; equity?: number; currency?: string } | null> {
-  try {
-    if (!conn.api_key || !conn.api_secret) return null;
-    const ak = await decryptSecret(conn.api_key);
-    const ask = await decryptSecret(conn.api_secret);
-    if (!ak || !ask) return null;
-    const bal = await krakenPrivateReq('Balance', `nonce=${String(Date.now())}`, ak, ask);
-    if (bal?.error?.length) return null;
-    let b = 0;
-    if (bal?.result && typeof bal.result === 'object') {
-      for (const [k, v] of Object.entries(bal.result)) { if (k.startsWith('Z')) b += Number(v); }
-    }
-    let e = b;
-    try {
-      const tb = await krakenPrivateReq('TradeBalance', `nonce=${String(Date.now() + 1)}&asset=USD`, ak, ask);
-      if (tb?.result?.tb) e = Number(tb.result.tb);
-    } catch { /* TradeBalance optional */ }
-    return { balance: b, equity: e, currency: 'USD' };
-  } catch {
-    return null;
-  }
-}
 
 function gatewayKey(): string {
   return Deno.env.get('HYBRID_EXECUTION_API_KEY') || '';
@@ -187,17 +143,10 @@ export default async function(req: Request): Promise<Response> {
           }
         }
 
-        const bal = await krakenBalanceFromConn(conn);
-        const connUpdate: any = {
+        await base44.asServiceRole.entities.BrokerConnection.update(conn.id, {
           last_sync_at: new Date().toISOString(),
           status: 'connected'
-        };
-        if (bal) {
-          connUpdate.account_balance = bal.balance;
-          connUpdate.account_equity = bal.equity;
-          connUpdate.settings_json = { ...(conn.settings_json || {}), balance: bal.balance, equity: bal.equity, currency: bal.currency, last_balance_at: new Date().toISOString() };
-        }
-        await base44.asServiceRole.entities.BrokerConnection.update(conn.id, connUpdate);
+        });
 
         results.push({
           connection_id: conn.id,
@@ -206,9 +155,7 @@ export default async function(req: Request): Promise<Response> {
           positions: positions.length,
           created,
           updated,
-          closed,
-          balance: bal?.balance,
-          equity: bal?.equity
+          closed
         });
       } catch (e) {
         results.push({ connection_id: conn.id, display_name: conn.display_name, error: (e as Error).message });
