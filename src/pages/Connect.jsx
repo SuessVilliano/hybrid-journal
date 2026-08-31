@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Plug, Copy, Check, RefreshCw, Loader2, Zap, Brain, Shield, TrendingUp, KeyRound, AlertCircle, ExternalLink } from 'lucide-react';
+import { Plug, Copy, Check, RefreshCw, Loader2, Zap, Brain, Shield, TrendingUp, KeyRound, AlertCircle, ExternalLink, Trash2 } from 'lucide-react';
 
 const AI_CLIENTS = [
   {
@@ -53,7 +53,7 @@ export default function Connect() {
 
   const darkMode = document.documentElement.classList.contains('dark');
 
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://hybridjournal.base44.app';
+  const origin = 'https://hybridjournal.base44.app';
   const oauthUrl = `${origin}/api/mcp`;
   const headlessUrl = `${origin}/functions/hybridMcp`;
 
@@ -125,6 +125,20 @@ export default function Connect() {
     }
   };
 
+  const handleDisconnect = async () => {
+    if (!krakenConn) return;
+    if (!window.confirm('Disconnect Kraken? This stops auto-sync and removes the connection. Your already-synced trades stay in your journal.')) return;
+    setError(null);
+    try {
+      await base44.entities.BrokerConnection.delete(krakenConn.id);
+      setSyncResult(null);
+      queryClient.invalidateQueries(['krakenConnections']);
+      queryClient.invalidateQueries(['krakenOpenCount']);
+    } catch (e) {
+      setError(e.message || 'Failed to disconnect');
+    }
+  };
+
   const tokenCard = (label, url, key, hint) => (
     <div className={`rounded-xl border p-4 ${darkMode ? 'bg-slate-950/60 border-cyan-500/20' : 'bg-white border-slate-200'}`}>
       <div className="flex items-center justify-between mb-2">
@@ -187,6 +201,21 @@ export default function Connect() {
               </div>
             ) : (
               <>
+                <div className={`rounded-lg p-3 mb-1 ${darkMode ? 'bg-slate-900/60' : 'bg-slate-50'}`}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-slate-900'}`}>{krakenConn.display_name}</span>
+                    <Badge variant="outline" className={darkMode ? 'border-slate-600 text-slate-300' : 'border-slate-300 text-slate-600'}>
+                      {String(krakenConn.settings_json?.mode || 'paper').toUpperCase()}
+                    </Badge>
+                  </div>
+                  <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'} space-y-0.5`}>
+                    <div>Connection ID: <code className="break-all">{krakenConn.id}</code></div>
+                    <div>Created: {krakenConn.created_date ? new Date(krakenConn.created_date).toLocaleString() : '—'}</div>
+                  </div>
+                  <p className={`text-xs mt-2 ${darkMode ? 'text-cyan-400/70' : 'text-cyan-700'}`}>
+                    Synced via your Hybrid Execution gateway — your Kraken API keys live on the gateway (Render), not in the journal. If "Sync now" errors, the gateway isn't returning positions for the selected mode (check your Kraken link on the gateway).
+                  </p>
+                </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div>
                     <div className={`text-xs uppercase ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Last sync</div>
@@ -210,12 +239,21 @@ export default function Connect() {
                     {syncing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
                     Sync now
                   </Button>
-                  {syncResult && (
-                    <span className={`text-xs ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
-                      Synced {syncResult.results?.length || 0} connection(s)
-                      {syncResult.results?.[0] ? ` — ${syncResult.results[0].created} created, ${syncResult.results[0].updated} updated, ${syncResult.results[0].closed} closed` : ''}
-                    </span>
-                  )}
+                  <Button variant="outline" onClick={handleDisconnect} className="text-red-500 hover:text-red-600">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Disconnect
+                  </Button>
+                  {syncResult && (() => {
+                    const r = syncResult.results?.[0];
+                    if (r?.error) {
+                      return <span className="text-xs text-red-500">Sync failed: {r.error}</span>;
+                    }
+                    return (
+                      <span className={`text-xs ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
+                        Synced {syncResult.results?.length || 0} connection(s){r ? ` — ${r.created || 0} created, ${r.updated || 0} updated, ${r.closed || 0} closed` : ''}
+                      </span>
+                    );
+                  })()}
                 </div>
                 <div className={`rounded-lg p-3 text-xs ${darkMode ? 'bg-slate-900/60 text-slate-400' : 'bg-slate-50 text-slate-600'}`}>
                   <strong>Webhook (for closed trades):</strong> point your Render gateway to{' '}
