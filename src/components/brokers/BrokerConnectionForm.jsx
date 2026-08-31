@@ -51,6 +51,7 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
     if (broker_id === 'dxtrade') connection_type = 'dxtrade_login';
     else if (broker_id === 'tradovate') connection_type = 'tradovate_login';
     else if (broker_id === 'ninjatrader') connection_type = 'import_only';
+    else if (broker_id === 'kraken') connection_type = 'api';
     setFormData({
       ...formData,
       broker_id,
@@ -104,6 +105,17 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
         } else {
           setValidationResult({ valid: false, message: response.data.message || 'CrossTrade validation failed. Check your API token.' });
         }
+      } else if (isKraken) {
+        const response = await base44.functions.invoke('validateCredentials', {
+          provider: 'Kraken',
+          apiKey: formData.api_key,
+          apiSecret: formData.api_secret
+        });
+        if (response?.data?.valid) {
+          setValidationResult({ valid: true, message: 'Kraken API key validated! Balance and account info captured.', account_info: response.data.details });
+        } else {
+          setValidationResult({ valid: false, message: response?.data?.message || 'Kraken validation failed. Check your API key and private key.' });
+        }
       } else {
         const result = await validateBrokerCredentials(formData.broker_id, {
           api_key: formData.api_key,
@@ -141,6 +153,26 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
       submitData.status = formData.mcp_url ? 'connected' : 'pending';
     } else {
       submitData.status = formData.connection_type === 'credentials' ? 'manual' : (validationResult?.valid ? 'connected' : 'pending');
+    }
+
+    // Kraken: map the real read-only key connection onto the BrokerConnection
+    // schema so krakenSyncPull recognizes it and the card shows real balance.
+    if (isKraken) {
+      submitData.provider = 'Kraken';
+      submitData.mode = 'READONLY_API';
+      submitData.display_name = submitData.display_name || 'Kraken';
+      submitData.connection_type = 'api';
+      const ai = validationResult?.account_info;
+      if (ai) {
+        submitData.account_balance = ai.balance;
+        submitData.account_equity = ai.equity;
+        submitData.account_number = submitData.account_number || ('KRK-' + (ai.keyId || 'XXXX'));
+        submitData.settings_json = { broker_id: 'kraken', balance: ai.balance, equity: ai.equity, currency: ai.currency, validated_at: new Date().toISOString() };
+      } else {
+        submitData.settings_json = { ...(submitData.settings_json || {}), broker_id: 'kraken' };
+      }
+      submitData.auto_sync_enabled = !!formData.auto_sync;
+      submitData.sync_frequency_minutes = Math.max(5, Math.round((formData.sync_interval || 3600) / 60));
     }
 
     // Encrypt API credentials server-side before persisting (no-op fallback
@@ -214,7 +246,7 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
                 value={formData.account_number}
                 onChange={(e) => setFormData({...formData, account_number: e.target.value})}
                 placeholder="123456789"
-                required={!isCTrader}
+                required={!isCTrader && !isKraken}
               />
             </div>
 

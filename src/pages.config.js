@@ -54,7 +54,6 @@ import Analytics from './pages/Analytics';
 import Reports from './pages/Reports';
 import Automation from './pages/Automation';
 import Backtesting from './pages/Backtesting';
-import BrokerConnections from './pages/BrokerConnections';
 import Calculators from './pages/Calculators';
 import DailyPlanning from './pages/DailyPlanning';
 import Dashboard from './pages/Dashboard';
@@ -97,7 +96,6 @@ export const PAGES = {
     "Reports": Reports,
     "Automation": Automation,
     "Backtesting": Backtesting,
-    "BrokerConnections": BrokerConnections,
     "Calculators": Calculators,
     "DailyPlanning": DailyPlanning,
     "Dashboard": Dashboard,

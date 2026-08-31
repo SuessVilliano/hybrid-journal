@@ -187,6 +187,14 @@ export async function syncBrokerTrades(brokerConnection, syncType = 'manual') {
       functionName = 'syncCrossTrade';
     }
 
+    // Kraken uses the real gateway-backed krakenSyncPull (NOT the generic
+    // syncBroker, which fabricates simulated trades for non-Binance brokers).
+    if (brokerConnection.broker_id === 'kraken' ||
+        brokerConnection.provider === 'Kraken' ||
+        brokerConnection.settings_json?.broker_id === 'kraken') {
+      functionName = 'krakenSyncPull';
+    }
+
     console.log(`[syncBrokerTrades] Using ${functionName} for ${brokerConnection.broker_name}`);
 
     const response = await base44.functions.invoke(functionName, {

@@ -136,6 +136,7 @@ const AuthenticatedApp = () => {
             </LayoutWrapper>
           }
         />
+        <Route path="/brokerconnections" element={<Navigate to="/connect" replace />} />
       </Route>
 
       <Route path="*" element={<PageNotFound />} />

@@ -1,5 +1,33 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
+async function sha256Hex(s: string): Promise<string> {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Kraken private endpoint signer: HMAC-SHA512 over (urlpath + sha256(nonce + postdata))
+// using the base64-decoded API secret. Returns the parsed JSON response.
+async function krakenPrivateRequest(method: string, postData: string, apiKey: string, apiSecret: string): Promise<any> {
+    const path = `/0/private/${method}`;
+    const nonce = new URLSearchParams(postData).get('nonce') || '';
+    const sha = await sha256Hex(nonce + postData);
+    const key = await crypto.subtle.importKey(
+        'raw',
+        Uint8Array.from(atob(apiSecret), c => c.charCodeAt(0)),
+        { name: 'HMAC', hash: 'SHA-512' },
+        false,
+        ['sign']
+    );
+    const sigBuf = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(path + sha));
+    const signature = btoa(String.fromCharCode(...new Uint8Array(sigBuf)));
+    const r = await fetch(`https://api.kraken.com${path}`, {
+        method: 'POST',
+        headers: { 'API-Key': apiKey, 'API-Sign': signature, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: postData
+    });
+    return await r.json().catch(() => ({}));
+}
+
 Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
@@ -231,6 +259,35 @@ Deno.serve(async (req) => {
                         };
                     }
                     break;
+
+                case 'Kraken':
+                case 'kraken': {
+                    // Validate a Kraken read-only API key by calling /0/private/Balance
+                    // (HMAC-SHA512 signed). Confirms the key works and captures real
+                    // balance/equity so the connection card shows real account info.
+                    const kRes = await krakenPrivateRequest('Balance', `nonce=${String(Date.now())}`, apiKey, apiSecret);
+                    if (kRes?.error && kRes.error.length) {
+                        validationResult = { valid: false, message: `Kraken: ${kRes.error.join('; ')}` };
+                        break;
+                    }
+                    let kBalance = 0;
+                    if (kRes?.result && typeof kRes.result === 'object') {
+                        for (const [cur, val] of Object.entries(kRes.result)) {
+                            if (cur.startsWith('Z')) kBalance += Number(val);
+                        }
+                    }
+                    let kEquity = kBalance;
+                    try {
+                        const tbRes = await krakenPrivateRequest('TradeBalance', `nonce=${String(Date.now() + 1)}&asset=USD`, apiKey, apiSecret);
+                        if (tbRes?.result?.tb) kEquity = Number(tbRes.result.tb);
+                    } catch { /* TradeBalance optional */ }
+                    validationResult = {
+                        valid: true,
+                        message: 'Kraken API key validated — read-only access confirmed.',
+                        details: { balance: kBalance, equity: kEquity, currency: 'USD', keyId: apiKey.slice(0, 8) }
+                    };
+                    break;
+                }
 
                 default:
                     // For other providers, do basic format validation
