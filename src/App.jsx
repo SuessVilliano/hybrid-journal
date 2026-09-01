@@ -73,6 +73,13 @@ const AuthenticatedApp = () => {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/oauth/consent" element={<OAuthConsent />} />
 
+      {/* Main page — public home page, no login required */}
+      <Route path="/" element={
+        <LayoutWrapper currentPageName={mainPageKey}>
+          <MainPage />
+        </LayoutWrapper>
+      } />
+
       {/* Public pages — accessible without login */}
       {publicPageEntries.map(([path, Page]) => (
         <Route
@@ -88,11 +95,6 @@ const AuthenticatedApp = () => {
 
       {/* Protected pages — redirect to /login if not authenticated */}
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
-        <Route path="/" element={
-          <LayoutWrapper currentPageName={mainPageKey}>
-            <MainPage />
-          </LayoutWrapper>
-        } />
         {protectedPageEntries.map(([path, Page]) => (
           <Route
             key={path}
