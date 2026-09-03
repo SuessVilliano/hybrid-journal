@@ -1,19 +1,74 @@
 import { base44 } from '@/api/base44Client';
+import { calculateTradeStats, normalizeTrades } from '@/lib/tradingAnalytics';
 
-// Generate comprehensive AI insights
+function calculateContextStats(trades = []) {
+  const normalized = normalizeTrades(trades);
+  const core = calculateTradeStats(normalized);
+  if (!core) return null;
+
+  const winningTrades = normalized.filter((t) => t.pnl > 0);
+  const losingTrades = normalized.filter((t) => t.pnl < 0);
+
+  const symbolCounts = normalized.reduce((acc, t) => {
+    const key = t.symbol || 'Unknown';
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+
+  const strategyCounts = normalized.reduce((acc, t) => {
+    if (t.strategy) acc[t.strategy] = (acc[t.strategy] || 0) + 1;
+    return acc;
+  }, {});
+
+  const instrumentCounts = normalized.reduce((acc, t) => {
+    if (t.instrument_type) acc[t.instrument_type] = (acc[t.instrument_type] || 0) + 1;
+    return acc;
+  }, {});
+
+  const emotionCounts = normalized.reduce((acc, t) => {
+    if (t.emotion_before) acc[t.emotion_before] = (acc[t.emotion_before] || 0) + 1;
+    return acc;
+  }, {});
+
+  const longTrades = normalized.filter((t) => String(t.side).toLowerCase() === 'long').length;
+  const shortTrades = normalized.filter((t) => String(t.side).toLowerCase() === 'short').length;
+  const topEmotionBefore = Object.entries(emotionCounts).sort(([, a], [, b]) => b - a)[0]?.[0] || 'N/A';
+  const emotionSample = normalized.filter((t) => t.emotion_before === topEmotionBefore);
+  const emotionWins = emotionSample.filter((t) => t.pnl > 0).length;
+
+  return {
+    ...core,
+    largestWin: winningTrades.length ? Math.max(...winningTrades.map((t) => t.pnl)) : 0,
+    largestLoss: losingTrades.length ? Math.min(...losingTrades.map((t) => t.pnl)) : 0,
+    topSymbols: Object.entries(symbolCounts).sort(([, a], [, b]) => b - a).map(([symbol]) => symbol),
+    topStrategy: Object.entries(strategyCounts).sort(([, a], [, b]) => b - a)[0]?.[0] || 'N/A',
+    topInstrument: Object.entries(instrumentCounts).sort(([, a], [, b]) => b - a)[0]?.[0] || 'N/A',
+    sideBias: longTrades === shortTrades ? 'Balanced' : longTrades > shortTrades ? 'Long' : 'Short',
+    topEmotionBefore,
+    emotionWinCorrelation: emotionSample.length ? `${((emotionWins / emotionSample.length) * 100).toFixed(1)}%` : 'N/A',
+  };
+}
+
 export async function generateAIInsights(trades, strategies) {
   try {
-    const stats = calculateTradeStats(trades);
-    
-    const prompt = `Analyze this trading performance data and provide comprehensive insights:
+    const stats = calculateContextStats(trades);
+    if (!stats) return null;
+
+    const prompt = `Analyze this trading performance data and provide comprehensive insights. Treat these canonical metrics as authoritative and do not recalculate them differently.
 
 PERFORMANCE METRICS:
-- Total Trades: ${stats.totalTrades}
-- Win Rate: ${stats.winRate.toFixed(1)}%
+- Total realized trades: ${stats.totalTrades}
+- Decided trades: ${stats.decidedTrades}
+- Breakeven trades: ${stats.breakevenTrades}
+- Win Rate (wins / wins+losses): ${stats.winRate.toFixed(1)}%
 - Total P&L: $${stats.totalPnl.toFixed(2)}
-- Profit Factor: ${stats.profitFactor.toFixed(2)}
+- Net P&L after recorded fees: $${stats.netPnl.toFixed(2)}
+- Profit Factor: ${stats.profitFactor === Infinity ? 'Infinity (no recorded losses)' : stats.profitFactor.toFixed(2)}
+- Expectancy: $${stats.expectancy.toFixed(2)} per decided trade
 - Average Win: $${stats.avgWin.toFixed(2)}
 - Average Loss: $${stats.avgLoss.toFixed(2)}
+- Payoff Ratio: ${stats.payoffRatio === Infinity ? 'Infinity' : stats.payoffRatio.toFixed(2)}
+- Max Drawdown: $${stats.maxDrawdown.toFixed(2)}
 - Largest Win: $${stats.largestWin.toFixed(2)}
 - Largest Loss: $${stats.largestLoss.toFixed(2)}
 
@@ -24,21 +79,21 @@ TRADING PATTERNS:
 - Preferred side: ${stats.sideBias}
 
 EMOTIONAL ANALYSIS:
-- Most common emotion before trading: ${stats.topEmotionBefore}
-- Emotion correlation with wins: ${stats.emotionWinCorrelation}
+- Most common pre-trade emotion: ${stats.topEmotionBefore}
+- Win rate for that emotion sample: ${stats.emotionWinCorrelation}
 
 Provide analysis in these categories:
-1. STRENGTHS: What's working well (2-3 points)
-2. WEAKNESSES: Areas needing improvement (2-3 points)
-3. PATTERNS: Profitable patterns identified (2-3 specific patterns)
-4. RISKS: Potential risks and red flags (2-3 warnings)
-5. RECOMMENDATIONS: Specific actionable advice (3-4 recommendations)
+1. STRENGTHS: 2-3 data-supported points
+2. WEAKNESSES: 2-3 data-supported points
+3. PATTERNS: 2-3 profitable or unprofitable patterns worth testing
+4. RISKS: 2-3 warnings, especially drawdown/sample-size concerns
+5. RECOMMENDATIONS: 3-4 specific next actions
 
-Be specific, data-driven, and actionable. Keep each point concise.`;
+Do not imply causation from small samples. Be concise, specific, and data-driven.`;
 
     const result = await base44.integrations.Core.InvokeLLM({
       prompt,
-      add_context_from_internet: false
+      add_context_from_internet: false,
     });
 
     return parseInsights(result);
@@ -48,65 +103,58 @@ Be specific, data-driven, and actionable. Keep each point concise.`;
   }
 }
 
-// Identify profitable patterns
 export async function identifyProfitablePatterns(trades) {
   try {
-    const winningTrades = trades.filter(t => t.pnl > 0);
-    const losingTrades = trades.filter(t => t.pnl < 0);
-    
-    const prompt = `Analyze these trading patterns to identify what consistently leads to profitable trades:
+    const normalized = normalizeTrades(trades);
+    const winningTrades = normalized.filter((t) => t.pnl > 0);
+    const losingTrades = normalized.filter((t) => t.pnl < 0);
 
-WINNING TRADES CHARACTERISTICS:
-${JSON.stringify(winningTrades.slice(0, 20).map(t => ({
+    const prompt = `Analyze these realized trading samples for recurring patterns. Do not call a pattern reliable unless the sample supports it.
+
+WINNING TRADE SAMPLE:
+${JSON.stringify(winningTrades.slice(0, 30).map((t) => ({
   symbol: t.symbol,
   strategy: t.strategy,
   side: t.side,
   emotion: t.emotion_before,
   pnl: t.pnl,
-  followed_rules: t.followed_rules
+  r_multiple: t.rMultiple,
+  followed_rules: t.followed_rules,
 })))}
 
-LOSING TRADES CHARACTERISTICS:
-${JSON.stringify(losingTrades.slice(0, 20).map(t => ({
+LOSING TRADE SAMPLE:
+${JSON.stringify(losingTrades.slice(0, 30).map((t) => ({
   symbol: t.symbol,
   strategy: t.strategy,
   side: t.side,
   emotion: t.emotion_before,
   pnl: t.pnl,
-  followed_rules: t.followed_rules
+  r_multiple: t.rMultiple,
+  followed_rules: t.followed_rules,
 })))}
 
-Identify 5 key patterns that correlate with profitability. For each pattern, provide:
-- Pattern name
-- Description
-- Win rate when pattern is present
-- Actionable advice
-
-Return JSON array.`;
+Identify up to 5 patterns worth testing. For each return a name, description, estimated win rate only when calculable from the supplied sample, confidence note, and actionable advice.`;
 
     const schema = {
-      type: "object",
+      type: 'object',
       properties: {
         patterns: {
-          type: "array",
+          type: 'array',
           items: {
-            type: "object",
+            type: 'object',
             properties: {
-              name: { type: "string" },
-              description: { type: "string" },
-              winRate: { type: "number" },
-              advice: { type: "string" }
-            }
-          }
-        }
-      }
+              name: { type: 'string' },
+              description: { type: 'string' },
+              winRate: { type: 'number' },
+              confidence: { type: 'string' },
+              advice: { type: 'string' },
+            },
+          },
+        },
+      },
     };
 
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt,
-      response_json_schema: schema
-    });
-
+    const result = await base44.integrations.Core.InvokeLLM({ prompt, response_json_schema: schema });
     return result.patterns || [];
   } catch (error) {
     console.error('Pattern analysis error:', error);
@@ -114,95 +162,82 @@ Return JSON array.`;
   }
 }
 
-// Analyze emotional impact
 export async function analyzeEmotionalImpact(trades) {
   try {
-    const emotionData = trades.reduce((acc, trade) => {
+    const normalized = normalizeTrades(trades);
+    const emotionData = normalized.reduce((acc, trade) => {
       const emotion = trade.emotion_before || 'Unknown';
-      if (!acc[emotion]) {
-        acc[emotion] = { wins: 0, losses: 0, totalPnl: 0, count: 0 };
-      }
-      acc[emotion].count++;
+      if (!acc[emotion]) acc[emotion] = { wins: 0, losses: 0, breakevens: 0, totalPnl: 0, count: 0 };
+      acc[emotion].count += 1;
       acc[emotion].totalPnl += trade.pnl;
-      if (trade.pnl > 0) acc[emotion].wins++;
-      else if (trade.pnl < 0) acc[emotion].losses++;
+      if (trade.pnl > 0) acc[emotion].wins += 1;
+      else if (trade.pnl < 0) acc[emotion].losses += 1;
+      else acc[emotion].breakevens += 1;
       return acc;
     }, {});
 
-    const prompt = `Analyze how emotions affect trading performance:
+    const prompt = `Analyze how pre-trade emotions are associated with performance. This is observational data, so describe associations rather than claiming emotions caused results.
 
-${Object.entries(emotionData).map(([emotion, stats]) => 
-  `${emotion}: ${stats.count} trades, ${(stats.wins / stats.count * 100).toFixed(1)}% win rate, $${stats.totalPnl.toFixed(2)} P&L`
-).join('\n')}
+${Object.entries(emotionData).map(([emotion, stats]) => {
+  const decided = stats.wins + stats.losses;
+  const winRate = decided ? (stats.wins / decided) * 100 : 0;
+  return `${emotion}: ${stats.count} trades, ${stats.wins}W/${stats.losses}L/${stats.breakevens}BE, ${winRate.toFixed(1)}% decided-trade win rate, $${stats.totalPnl.toFixed(2)} P&L`;
+}).join('\n')}
 
-Provide:
-1. Best emotions for trading (top 3)
-2. Emotions to avoid (worst 3)
-3. Specific advice for emotional management
+Provide the strongest positive and negative associations, sample-size cautions, and specific emotional-management practices.`;
 
-Return detailed analysis with actionable recommendations.`;
-
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt,
-      add_context_from_internet: false
-    });
-
-    return {
-      emotionData,
-      analysis: result
-    };
+    const result = await base44.integrations.Core.InvokeLLM({ prompt, add_context_from_internet: false });
+    return { emotionData, analysis: result };
   } catch (error) {
     console.error('Emotional analysis error:', error);
     return null;
   }
 }
 
-// Risk prediction
 export async function predictRisks(trades, recentTrades) {
   try {
-    const recentStats = calculateTradeStats(recentTrades.slice(0, 10));
-    const overallStats = calculateTradeStats(trades);
-    
-    const prompt = `Based on recent trading activity, predict potential risks:
+    const recentStats = calculateTradeStats((recentTrades || []).slice(0, 10));
+    const overallStats = calculateTradeStats(trades || []);
+    if (!recentStats || !overallStats) return [];
 
-RECENT 10 TRADES:
+    const prompt = `Compare recent realized trading behavior with the trader's overall baseline and identify potential risk warnings.
+
+RECENT SAMPLE:
+- Trades: ${recentStats.totalTrades}
 - Win Rate: ${recentStats.winRate.toFixed(1)}%
 - P&L: $${recentStats.totalPnl.toFixed(2)}
-- Average Loss: $${recentStats.avgLoss.toFixed(2)}
+- Expectancy: $${recentStats.expectancy.toFixed(2)}
+- Max Drawdown: $${recentStats.maxDrawdown.toFixed(2)}
+- Max Losing Streak: ${recentStats.maxLossStreak}
 
-OVERALL PERFORMANCE:
+OVERALL BASELINE:
+- Trades: ${overallStats.totalTrades}
 - Win Rate: ${overallStats.winRate.toFixed(1)}%
-- Total P&L: $${overallStats.totalPnl.toFixed(2)}
+- P&L: $${overallStats.totalPnl.toFixed(2)}
+- Expectancy: $${overallStats.expectancy.toFixed(2)}
+- Max Drawdown: $${overallStats.maxDrawdown.toFixed(2)}
 
-Identify 3-5 potential risks or warning signs. For each:
-- Risk level (Low/Medium/High)
-- Description
-- Mitigation strategy
-
-Return JSON array.`;
+Identify 3-5 potential risks. Separate genuine deterioration from normal variance when the recent sample is small. Return risk level, description, evidence, and mitigation.`;
 
     const schema = {
-      type: "object",
+      type: 'object',
       properties: {
         risks: {
-          type: "array",
+          type: 'array',
           items: {
-            type: "object",
+            type: 'object',
             properties: {
-              level: { type: "string" },
-              description: { type: "string" },
-              mitigation: { type: "string" }
-            }
-          }
-        }
-      }
+              level: { type: 'string' },
+              description: { type: 'string' },
+              evidence: { type: 'string' },
+              mitigation: { type: 'string' },
+            },
+          },
+        },
+      },
     };
 
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt,
-      response_json_schema: schema
-    });
-
+    const result = await base44.integrations.Core.InvokeLLM({ prompt, response_json_schema: schema });
     return result.risks || [];
   } catch (error) {
     console.error('Risk prediction error:', error);
@@ -210,94 +245,11 @@ Return JSON array.`;
   }
 }
 
-// Helper functions
-function calculateTradeStats(trades) {
-  if (!trades.length) return {};
-  
-  const totalTrades = trades.length;
-  const winningTrades = trades.filter(t => t.pnl > 0);
-  const losingTrades = trades.filter(t => t.pnl < 0);
-  
-  const totalPnl = trades.reduce((sum, t) => sum + (t.pnl || 0), 0);
-  const winRate = (winningTrades.length / totalTrades) * 100;
-  
-  const avgWin = winningTrades.length > 0
-    ? winningTrades.reduce((sum, t) => sum + t.pnl, 0) / winningTrades.length
-    : 0;
-  
-  const avgLoss = losingTrades.length > 0
-    ? Math.abs(losingTrades.reduce((sum, t) => sum + t.pnl, 0) / losingTrades.length)
-    : 0;
-  
-  const profitFactor = avgLoss > 0 ? (avgWin * winningTrades.length) / (avgLoss * losingTrades.length) : 0;
-  
-  const largestWin = winningTrades.length > 0 ? Math.max(...winningTrades.map(t => t.pnl)) : 0;
-  const largestLoss = losingTrades.length > 0 ? Math.min(...losingTrades.map(t => t.pnl)) : 0;
-  
-  const symbolCounts = trades.reduce((acc, t) => {
-    acc[t.symbol] = (acc[t.symbol] || 0) + 1;
-    return acc;
-  }, {});
-  const topSymbols = Object.entries(symbolCounts)
-    .sort(([,a], [,b]) => b - a)
-    .map(([symbol]) => symbol);
-  
-  const strategyCounts = trades.reduce((acc, t) => {
-    if (t.strategy) acc[t.strategy] = (acc[t.strategy] || 0) + 1;
-    return acc;
-  }, {});
-  const topStrategy = Object.entries(strategyCounts).sort(([,a], [,b]) => b - a)[0]?.[0] || 'N/A';
-  
-  const instrumentCounts = trades.reduce((acc, t) => {
-    if (t.instrument_type) acc[t.instrument_type] = (acc[t.instrument_type] || 0) + 1;
-    return acc;
-  }, {});
-  const topInstrument = Object.entries(instrumentCounts).sort(([,a], [,b]) => b - a)[0]?.[0] || 'N/A';
-  
-  const longTrades = trades.filter(t => t.side === 'Long').length;
-  const shortTrades = trades.filter(t => t.side === 'Short').length;
-  const sideBias = longTrades > shortTrades ? 'Long' : 'Short';
-  
-  const emotionCounts = trades.reduce((acc, t) => {
-    if (t.emotion_before) acc[t.emotion_before] = (acc[t.emotion_before] || 0) + 1;
-    return acc;
-  }, {});
-  const topEmotionBefore = Object.entries(emotionCounts).sort(([,a], [,b]) => b - a)[0]?.[0] || 'N/A';
-  
-  const calmWins = trades.filter(t => t.emotion_before === 'Calm' && t.pnl > 0).length;
-  const calmTotal = trades.filter(t => t.emotion_before === 'Calm').length;
-  const emotionWinCorrelation = calmTotal > 0 ? ((calmWins / calmTotal) * 100).toFixed(1) + '%' : 'N/A';
-  
-  return {
-    totalTrades,
-    winRate,
-    totalPnl,
-    profitFactor,
-    avgWin,
-    avgLoss,
-    largestWin,
-    largestLoss,
-    topSymbols,
-    topStrategy,
-    topInstrument,
-    sideBias,
-    topEmotionBefore,
-    emotionWinCorrelation
-  };
-}
-
 function parseInsights(text) {
-  const sections = {
-    strengths: [],
-    weaknesses: [],
-    patterns: [],
-    risks: [],
-    recommendations: []
-  };
-  
-  const lines = text.split('\n');
+  const sections = { strengths: [], weaknesses: [], patterns: [], risks: [], recommendations: [] };
+  const lines = String(text || '').split('\n');
   let currentSection = null;
-  
+
   for (const line of lines) {
     const trimmed = line.trim();
     if (trimmed.toUpperCase().includes('STRENGTH')) currentSection = 'strengths';
@@ -309,6 +261,6 @@ function parseInsights(text) {
       sections[currentSection].push(trimmed.replace(/^[-•*\d.)\s]+/, ''));
     }
   }
-  
+
   return sections;
 }
