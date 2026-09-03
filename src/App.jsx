@@ -17,6 +17,7 @@ import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import ComingSoon from '@/pages/ComingSoon';
 import Connect from '@/pages/Connect';
+import PublicPerformance from '@/pages/PublicPerformance';
 import DocumentAuditor from '@/pages/DocumentAuditor';
 import TradingBible from '@/pages/TradingBible';
 import OAuthConsent from '@/pages/OAuthConsent';
@@ -135,6 +136,14 @@ const AuthenticatedApp = () => {
           element={
             <LayoutWrapper currentPageName="Connect">
               <Connect />
+            </LayoutWrapper>
+          }
+        />
+        <Route
+          path="/publicperformance"
+          element={
+            <LayoutWrapper currentPageName="PublicPerformance">
+              <PublicPerformance />
             </LayoutWrapper>
           }
         />
