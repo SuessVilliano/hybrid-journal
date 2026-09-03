@@ -97,7 +97,7 @@ function findTradeRows(objects: unknown[]) {
     walk(obj, (_key, value) => {
       if (!Array.isArray(value) || value.length === 0) return;
       const candidates = value.filter(looksLikeTrade);
-      if (candidates.length >= Math.min(1, value.length)) {
+      if (candidates.length > 0) {
         for (const row of candidates.slice(0, 5000)) {
           if (!seen.has(row)) {
             seen.add(row);
@@ -130,6 +130,7 @@ function normalizeTrade(row: any, sourceUrl: string, provider: string, sourceId:
 
   const providerTradeId = String(pick(row, ['id', 'tradeid', 'positionid', 'ticket', 'orderid']) || '');
   const fallbackId = `${provider}:${sourceId}:${symbol}:${String(entryDate)}:${pnl}`;
+  const scopedTradeId = providerTradeId ? `${provider}:${sourceId}:${providerTradeId}` : fallbackId;
 
   return {
     symbol,
@@ -144,12 +145,12 @@ function normalizeTrade(row: any, sourceUrl: string, provider: string, sourceId:
     commission: safeNumber(pick(row, ['commission', 'fees', 'fee'])) || 0,
     swap: safeNumber(pick(row, ['swap', 'financing'])) || 0,
     source: `Public Performance URL (${provider})`,
-    source_trade_id: providerTradeId || fallbackId,
-    broker_trade_id: providerTradeId || fallbackId,
+    source_trade_id: scopedTradeId,
+    broker_trade_id: scopedTradeId,
     import_source: 'Public Performance URL Sync',
     platform: 'Other',
     trade_status: pick(row, ['status']) ? String(pick(row, ['status'])).toLowerCase() : 'closed',
-    raw_payload: { provider, source_url: sourceUrl, row }
+    raw_payload: { provider, source_url: sourceUrl, provider_trade_id: providerTradeId || null, row }
   };
 }
 
@@ -246,13 +247,17 @@ Deno.serve(async (req) => {
 
     const metrics = extractMetrics(objects);
     const rows = findTradeRows(objects);
-    const normalizedTrades = rows
-      .map((row) => normalizeTrade(row, target.toString(), detected.provider, detected.accountId))
-      .filter(Boolean);
-
-    let currentSource = source;
     const now = new Date().toISOString();
     const trustLevel = candidateData.objects.length > 0 || objects.length > 0 ? 'structured_public_feed' : 'public_report';
+    const normalizedTrades = rows
+      .map((row) => normalizeTrade(row, target.toString(), detected.provider, detected.accountId))
+      .filter(Boolean)
+      .map((trade: any) => ({
+        ...trade,
+        raw_payload: { ...trade.raw_payload, public_performance_trust: trustLevel }
+      }));
+
+    let currentSource = source;
     const snapshot = {
       ...metrics,
       structured_objects_found: objects.length,
@@ -314,6 +319,7 @@ Deno.serve(async (req) => {
       discovered_endpoints: candidateUrls.length
     });
   } catch (error) {
-    return Response.json({ success: false, error: error?.message || String(error) }, { status: 400 });
+    const message = error instanceof Error ? error.message : String(error);
+    return Response.json({ success: false, error: message }, { status: 400 });
   }
 });
