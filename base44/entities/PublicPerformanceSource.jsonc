@@ -1,0 +1,37 @@
+{
+  "name": "PublicPerformanceSource",
+  "type": "object",
+  "properties": {
+    "display_name": { "type": "string", "description": "User-friendly label for this public performance source" },
+    "url": { "type": "string", "description": "Canonical public performance URL" },
+    "provider": { "type": "string", "description": "Detected provider slug (propaccount, myfxbook, fxblue, other)" },
+    "provider_account_id": { "type": "string", "description": "Public account/profile identifier extracted from the URL" },
+    "connection_id": { "type": "string", "description": "Optional linked BrokerConnection id" },
+    "account_id": { "type": "string", "description": "Optional linked internal Account id" },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "connected", "partial", "unsupported", "error", "disabled"],
+      "default": "pending"
+    },
+    "trust_level": {
+      "type": "string",
+      "enum": ["public_report", "structured_public_feed", "verified_broker_feed"],
+      "default": "public_report",
+      "description": "Evidence level. Public pages are not automatically treated as broker-verified."
+    },
+    "auto_sync_enabled": { "type": "boolean", "default": false },
+    "sync_frequency_minutes": { "type": "number", "default": 60 },
+    "last_sync": { "type": "string", "format": "date-time" },
+    "last_http_status": { "type": "number" },
+    "last_snapshot": { "type": "object", "description": "Latest normalized public performance summary" },
+    "last_error": { "type": "string" },
+    "metadata": { "type": "object", "description": "Provider detection and extraction metadata" }
+  },
+  "required": ["url"],
+  "rls": {
+    "create": { "created_by_id": "{{user.id}}" },
+    "read": { "created_by_id": "{{user.id}}" },
+    "update": { "created_by_id": "{{user.id}}" },
+    "delete": { "created_by_id": "{{user.id}}" }
+  }
+}
