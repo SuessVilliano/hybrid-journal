@@ -1,3 +1,5 @@
+import { summarizeTradeProvenance } from '@/lib/tradeProvenance';
+
 const toNumber = (value, fallback = 0) => {
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
@@ -105,6 +107,7 @@ export function calculateTradeStats(inputTrades = []) {
 
   const { maxDrawdown, maxDrawdownPct, currentDrawdown, endingEquity } = calculateDrawdown(trades);
   const { maxWinStreak, maxLossStreak } = calculateStreaks(trades);
+  const provenance = summarizeTradeProvenance(trades);
 
   return {
     totalTrades: trades.length,
@@ -132,6 +135,7 @@ export function calculateTradeStats(inputTrades = []) {
     endingEquity,
     maxWinStreak,
     maxLossStreak,
+    provenance,
   };
 }
 
@@ -198,15 +202,15 @@ export function calculateHybridScore(inputTrades = []) {
   );
 
   const sampleScore = clamp((sampleSize / 100) * 100);
-  const provenanceFields = ['platform', 'account_id', 'symbol', 'entry_date'];
-  const provenanceCoverage = trades.length
-    ? trades.reduce((sum, trade) => {
-        const present = provenanceFields.filter((field) => Boolean(trade?.[field])).length;
-        return sum + present / provenanceFields.length;
-      }, 0) / trades.length * 100
-    : 0;
   const rCoverage = sampleSize ? (hasRiskData / sampleSize) * 100 : 0;
-  const dataConfidence = clamp(sampleScore * 0.55 + provenanceCoverage * 0.3 + rCoverage * 0.15);
+  const sourceConfidence = stats.provenance?.dataConfidence || 0;
+  const verificationRate = stats.provenance?.verificationRate || 0;
+  const dataConfidence = clamp(
+    sampleScore * 0.40 +
+    sourceConfidence * 0.35 +
+    verificationRate * 0.15 +
+    rCoverage * 0.10
+  );
 
   const rawScore = edge * 0.30 + risk * 0.25 + consistency * 0.20 + discipline * 0.15 + dataConfidence * 0.10;
   const confidenceMultiplier = 0.6 + (dataConfidence / 100) * 0.4;
