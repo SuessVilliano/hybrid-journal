@@ -11,84 +11,92 @@
     },
     "layout": {
       "type": "string",
-      "enum": [
-        "grid",
-        "list",
-        "compact"
-      ],
+      "enum": ["grid", "list", "compact"],
       "default": "grid",
       "description": "Dashboard layout style"
     },
     "theme_preference": {
       "type": "string",
-      "enum": [
-        "dark",
-        "light",
-        "auto"
-      ],
+      "enum": ["dark", "light", "auto"],
       "default": "auto",
       "description": "Theme preference"
     },
     "default_timeframe": {
       "type": "string",
-      "enum": [
-        "7d",
-        "30d",
-        "90d",
-        "1y",
-        "all"
-      ],
+      "enum": ["7d", "30d", "90d", "1y", "all"],
       "default": "30d",
       "description": "Default timeframe for metrics"
     },
+    "analytics_trust_filter": {
+      "type": "string",
+      "enum": ["all", "executions", "verified", "simulated", "signals"],
+      "default": "executions",
+      "description": "Which provenance class should drive primary performance analytics"
+    },
+    "show_data_trust": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show verification and provenance confidence throughout analytics"
+    },
+    "show_funding_readiness": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show data-driven funding readiness when relevant"
+    },
+    "personalization_version": {
+      "type": "string",
+      "description": "Version of onboarding-derived dashboard personalization"
+    },
+    "primary_goal": {
+      "type": "string",
+      "description": "Primary trader goal used to prioritize dashboard guidance"
+    },
+    "primary_market": {
+      "type": "string",
+      "description": "Primary market used to prioritize analytics and market context"
+    },
+    "primary_session": {
+      "type": "string",
+      "description": "Primary trading session used for contextual analytics"
+    },
+    "risk_focus": {
+      "type": "string",
+      "description": "Risk-management focus derived from onboarding"
+    },
     "menu_order": {
       "type": "array",
-      "items": {
-        "type": "string"
-      },
+      "items": { "type": "string" },
       "description": "Custom order of menu items by ID"
     },
     "favorites": {
       "type": "array",
-      "items": {
-        "type": "string"
-      },
+      "items": { "type": "string" },
       "description": "Favorited menu item IDs"
     },
     "recent_pages": {
       "type": "array",
-      "items": {
-        "type": "object"
-      },
+      "items": { "type": "object" },
       "description": "Recently visited pages with timestamps"
     },
     "menu_view": {
       "type": "string",
-      "enum": [
-        "all",
-        "favorites",
-        "recent"
-      ],
+      "enum": ["all", "favorites", "recent"],
       "default": "all",
       "description": "Current menu view mode"
     },
     "quick_access": {
       "type": "array",
-      "items": {
-        "type": "string"
-      },
+      "items": { "type": "string" },
       "description": "Quick access page IDs (4 max)"
     },
     "hide_funding_banner": {
       "type": "boolean",
       "default": false,
-      "description": "Hide the Get Funded banner on dashboard"
+      "description": "Legacy preference for hiding the promotional funding banner"
     },
     "selected_account_ids": {
       "type": "array",
-      "items": {
-        "type": "string"
-      },
+      "items": { "type": "string" },
       "description": "Globally selected trading account IDs across all pages"
     },
     "default_market_symbol": {
@@ -98,17 +106,9 @@
   },
   "required": [],
   "rls": {
-    "create": {
-      "created_by_id": "{{user.id}}"
-    },
-    "read": {
-      "created_by_id": "{{user.id}}"
-    },
-    "update": {
-      "created_by_id": "{{user.id}}"
-    },
-    "delete": {
-      "created_by_id": "{{user.id}}"
-    }
+    "create": { "created_by_id": "{{user.id}}" },
+    "read": { "created_by_id": "{{user.id}}" },
+    "update": { "created_by_id": "{{user.id}}" },
+    "delete": { "created_by_id": "{{user.id}}" }
   }
 }
