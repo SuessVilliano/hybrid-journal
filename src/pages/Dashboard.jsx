@@ -5,10 +5,10 @@ import DeepAnalysisPanel from '@/components/ai/DeepAnalysisPanel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, TrendingDown, Activity, DollarSign, Target, Calendar, Share2, Brain, Settings, X, Upload, BookOpen } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { TrendingUp, TrendingDown, Activity, DollarSign, Target, Calendar, Share2, Brain, Settings, Upload, BookOpen, ShieldCheck, Database } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { MultiSelect } from '@/components/ui/multi-select';
 import EquityCurve from '@/components/trading/EquityCurve';
 import TradeCalendar from '@/components/trading/TradeCalendar';
 import PerformanceMetrics from '@/components/trading/PerformanceMetrics';
@@ -22,20 +22,32 @@ import StrategyPerformanceWidget from '@/components/dashboard/StrategyPerformanc
 import InstrumentAnalysisWidget from '@/components/dashboard/InstrumentAnalysisWidget';
 import CompoundCalculatorWidget from '@/components/dashboard/CompoundCalculatorWidget';
 import HybridScoreWidget from '@/components/dashboard/HybridScoreWidget';
+import FundingReadinessWidget from '@/components/dashboard/FundingReadinessWidget';
 import TodaysPlanWidget from '@/components/planning/TodaysPlanWidget';
 import GlobalAccountSelector from '@/components/accounts/GlobalAccountSelector';
 import TemplatePicker from '@/components/dashboard/TemplatePicker';
+import { calculateTradeStats, formatMetric } from '@/lib/tradingAnalytics';
+import { filterTradesByTrust, summarizeTradeProvenance } from '@/lib/tradeProvenance';
+import { buildPersonalizedWelcome, deriveDashboardPersonalization } from '@/lib/dashboardPersonalization';
+
+const DEFAULT_WIDGETS = [
+  'pnl', 'winRate', 'profitFactor', 'avgWin', 'hybridScore',
+  'equityCurve', 'recentTrades', 'performance'
+];
+
+const TRUST_MODES = [
+  { id: 'executions', label: 'Executions', description: 'Real execution records, excluding simulations and strategy signals.' },
+  { id: 'verified', label: 'Verified', description: 'Only broker/API-linked executions.' },
+  { id: 'all', label: 'All Data', description: 'Everything, including manual records, simulations and signals.' },
+];
 
 export default function Dashboard() {
-  const [timeframe, setTimeframe] = useState('all');
   const [showShareModal, setShowShareModal] = useState(false);
   const [showAIAnalysis, setShowAIAnalysis] = useState(false);
   const [showWidgetSelector, setShowWidgetSelector] = useState(false);
   const [selectedAccounts, setSelectedAccounts] = useState([]);
-  const [enabledWidgets, setEnabledWidgets] = useState([
-    'pnl', 'winRate', 'profitFactor', 'avgWin', 'hybridScore', 'equityCurve', 'recentTrades', 'performance'
-  ]);
-  const [hideFundingBanner, setHideFundingBanner] = useState(false);
+  const [enabledWidgets, setEnabledWidgets] = useState(DEFAULT_WIDGETS);
+  const [trustMode, setTrustMode] = useState('executions');
 
   const queryClient = useQueryClient();
 
@@ -45,36 +57,18 @@ export default function Dashboard() {
   });
 
   const { data: traderProfile } = useQuery({
-    queryKey: ['traderProfile'],
+    queryKey: ['traderProfile', user?.email],
     queryFn: async () => {
       const profiles = await base44.entities.TraderProfile.list();
-      return profiles[0] || null;
-    }
+      return profiles.find(p => p.created_by === user?.email) || profiles[0] || null;
+    },
+    enabled: !!user
   });
-  
+
   const { data: allTrades = [], isLoading } = useQuery({
     queryKey: ['trades', user?.email],
-    queryFn: async () => {
-      return base44.entities.Trade.filter({ created_by: user.email }, '-entry_date', 1000);
-    },
+    queryFn: () => base44.entities.Trade.filter({ created_by: user.email }, '-entry_date', 1000),
     enabled: !!user
-  });
-
-  const { data: accounts = [] } = useQuery({
-    queryKey: ['accounts', user?.email],
-    queryFn: async () => {
-      return base44.entities.Account.filter({ created_by: user.email });
-    },
-    enabled: !!user
-  });
-
-  const trades = selectedAccounts.length > 0
-    ? allTrades.filter(t => selectedAccounts.includes(t.account_id))
-    : allTrades;
-
-  const { data: sessions = [] } = useQuery({
-    queryKey: ['sessions'],
-    queryFn: () => base44.entities.TradingSession.list('-date', 50)
   });
 
   const { data: dashboardSettings } = useQuery({
@@ -90,26 +84,47 @@ export default function Dashboard() {
     mutationFn: async (data) => {
       const existing = await base44.entities.DashboardSettings.list();
       const userSettings = existing.find(s => s.created_by === user.email);
-      
-      if (userSettings) {
-        return base44.entities.DashboardSettings.update(userSettings.id, data);
-      } else {
-        return base44.entities.DashboardSettings.create(data);
-      }
+      return userSettings
+        ? base44.entities.DashboardSettings.update(userSettings.id, data)
+        : base44.entities.DashboardSettings.create(data);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['dashboardSettings', user?.email] });
-    }
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['dashboardSettings', user?.email] })
   });
 
   useEffect(() => {
-    if (dashboardSettings?.widgets) {
-      setEnabledWidgets(dashboardSettings.widgets);
+    if (!traderProfile) return;
+
+    const personalized = deriveDashboardPersonalization(traderProfile);
+    const hasSavedPersonalization = dashboardSettings?.personalization_version;
+
+    setEnabledWidgets(
+      dashboardSettings?.widgets?.length
+        ? dashboardSettings.widgets
+        : personalized.widgets || DEFAULT_WIDGETS
+    );
+    setTrustMode(dashboardSettings?.analytics_trust_filter || personalized.analytics_trust_filter || 'executions');
+
+    if (!dashboardSettings && user) {
+      saveSettingsMutation.mutate(personalized);
+    } else if (dashboardSettings && !hasSavedPersonalization) {
+      saveSettingsMutation.mutate({ ...personalized, ...dashboardSettings });
     }
-    if (dashboardSettings?.hide_funding_banner !== undefined) {
-      setHideFundingBanner(dashboardSettings.hide_funding_banner);
-    }
-  }, [dashboardSettings]);
+  }, [traderProfile, dashboardSettings, user]);
+
+  const accountTrades = useMemo(() => (
+    selectedAccounts.length > 0
+      ? allTrades.filter(t => selectedAccounts.includes(t.account_id))
+      : allTrades
+  ), [allTrades, selectedAccounts]);
+
+  const trades = useMemo(
+    () => filterTradesByTrust(accountTrades, trustMode),
+    [accountTrades, trustMode]
+  );
+
+  const stats = useMemo(() => calculateTradeStats(trades), [trades]);
+  const provenance = useMemo(() => summarizeTradeProvenance(accountTrades), [accountTrades]);
+  const welcome = useMemo(() => buildPersonalizedWelcome(traderProfile || {}), [traderProfile]);
 
   const handleToggleWidget = (widgetId) => {
     const newWidgets = enabledWidgets.includes(widgetId)
@@ -119,248 +134,173 @@ export default function Dashboard() {
     saveSettingsMutation.mutate({ widgets: newWidgets });
   };
 
-  const stats = useMemo(() => {
-    if (!trades.length) return null;
-    
-    const totalTrades = trades.length;
-    const winningTrades = trades.filter(t => t.pnl > 0);
-    const losingTrades = trades.filter(t => t.pnl < 0);
-    const totalPnl = trades.reduce((sum, t) => sum + (t.pnl || 0), 0);
-    const winRate = totalTrades > 0 ? (winningTrades.length / totalTrades) * 100 : 0;
-    const avgWin = winningTrades.length > 0 
-      ? winningTrades.reduce((sum, t) => sum + t.pnl, 0) / winningTrades.length 
-      : 0;
-    const avgLoss = losingTrades.length > 0 
-      ? Math.abs(losingTrades.reduce((sum, t) => sum + t.pnl, 0) / losingTrades.length)
-      : 0;
-    const profitFactor = avgLoss > 0 ? (avgWin * winningTrades.length) / (avgLoss * losingTrades.length) : 0;
-    
-    return {
-      totalTrades,
-      winningTrades: winningTrades.length,
-      losingTrades: losingTrades.length,
-      totalPnl,
-      winRate,
-      avgWin,
-      avgLoss,
-      profitFactor
-    };
-  }, [trades]);
+  const handleTrustMode = (mode) => {
+    setTrustMode(mode);
+    saveSettingsMutation.mutate({ analytics_trust_filter: mode });
+  };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
       </div>
     );
   }
 
   const darkMode = document.documentElement.classList.contains('dark');
+  const cardClass = darkMode
+    ? 'bg-slate-950/80 backdrop-blur-xl border-cyan-500/20'
+    : 'bg-white/80 backdrop-blur-xl border-cyan-500/30';
 
   return (
     <div className={`min-h-screen p-4 md:p-6 transition-colors ${
-      darkMode 
-        ? 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900' 
+      darkMode
+        ? 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900'
         : 'bg-gradient-to-br from-cyan-50 via-purple-50 to-pink-50'
     }`}>
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
           <div>
             <h1 className={`text-3xl md:text-4xl font-bold bg-gradient-to-r ${
               darkMode ? 'from-cyan-400 to-purple-500' : 'from-cyan-600 to-purple-600'
             } bg-clip-text text-transparent`}>
-              Welcome back, {traderProfile?.preferred_name || user?.full_name?.split(' ')[0] || 'Trader'}! 👋
+              {welcome.title}
             </h1>
             <p className={darkMode ? 'text-cyan-400/70 mt-1' : 'text-cyan-700/70 mt-1'}>
-              {traderProfile?.trader_type 
-                ? `Track your ${traderProfile.trader_type.toLowerCase()} performance` 
-                : 'Track your performance and grow consistently'}
+              {welcome.subtitle}
             </p>
           </div>
+
           <div className="flex flex-wrap gap-3 items-center">
             <TemplatePicker />
             <Link to={createPageUrl('Journal')}>
               <Button className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700">
-                <BookOpen className="h-4 w-4 mr-2" />
-                Journal
+                <BookOpen className="h-4 w-4 mr-2" /> Journal
               </Button>
             </Link>
-            <Button 
-              onClick={() => setShowWidgetSelector(true)} 
-              variant="outline"
-              className={`border-cyan-500/30 ${darkMode ? 'text-cyan-400 hover:bg-cyan-500/10' : 'text-cyan-700 hover:bg-cyan-100'}`}
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              Customize
+            <Button onClick={() => setShowWidgetSelector(true)} variant="outline" className="border-cyan-500/30">
+              <Settings className="h-4 w-4 mr-2" /> Customize
             </Button>
             {stats && trades.length > 0 && (
-              <Button 
-                onClick={() => setShowAIAnalysis(true)} 
-                className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700"
-              >
-                <Brain className="h-4 w-4 mr-2" />
-                AI Analysis
+              <Button onClick={() => setShowAIAnalysis(true)} className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700">
+                <Brain className="h-4 w-4 mr-2" /> AI Analysis
               </Button>
             )}
             {stats && <ExportMenu trades={trades} stats={stats} />}
             <Link to={createPageUrl('Imports')}>
-              <Button variant="outline" className={`border-cyan-500/30 ${darkMode ? 'text-cyan-400 hover:bg-cyan-500/10' : 'text-cyan-700 hover:bg-cyan-100'}`}>
-                <Upload className="h-4 w-4 mr-2" />
-                Import
+              <Button variant="outline" className="border-cyan-500/30">
+                <Upload className="h-4 w-4 mr-2" /> Import
               </Button>
             </Link>
-            <Button onClick={() => setShowShareModal(true)} variant="outline" className={`border-cyan-500/30 ${darkMode ? 'text-cyan-400 hover:bg-cyan-500/10' : 'text-cyan-700 hover:bg-cyan-100'}`}>
-              <Share2 className="h-4 w-4 mr-2" />
-              Share
+            <Button onClick={() => setShowShareModal(true)} variant="outline" className="border-cyan-500/30">
+              <Share2 className="h-4 w-4 mr-2" /> Share
             </Button>
           </div>
         </div>
 
-        {/* Funding Banner */}
-        {!hideFundingBanner && (
-          <Card className="bg-gradient-to-r from-green-500 to-emerald-600 border-0 shadow-lg shadow-green-500/20 relative">
-            <CardContent className="p-6">
-              <button
-                onClick={() => {
-                  setHideFundingBanner(true);
-                  saveSettingsMutation.mutate({ 
-                    hide_funding_banner: true,
-                    widgets: enabledWidgets 
-                  });
-                }}
-                className="absolute top-3 right-3 text-white hover:bg-white/20 rounded-full p-1.5 transition"
-              >
-                <X className="h-4 w-4" />
-              </button>
-              <div className="flex items-center justify-between pr-8">
-                <div>
-                  <h3 className="text-xl font-bold text-white mb-2">🚀 Ready to Trade with Capital?</h3>
-                  <p className="text-green-50 text-sm">Get funded up to $400,000 and keep up to 90% of profits</p>
+        <Card className={cardClass}>
+          <CardContent className="p-4 md:p-5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Database className="h-4 w-4 text-cyan-400" />
+                  <span className={`font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`}>Analytics Trust Layer</span>
+                  <Badge variant="outline" className="border-cyan-500/30 text-cyan-400">
+                    {provenance.verifiedExecutions} verified
+                  </Badge>
                 </div>
-                <a
-                  href="https://hybridfunding.co"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-6 py-3 bg-white text-green-600 font-bold rounded-lg hover:bg-green-50 transition shadow-lg"
-                >
-                  Get Funded Now
-                </a>
+                <p className={`mt-1 text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                  Choose which evidence Hybrid uses for scores, AI insights and performance analytics.
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        )}
 
-        {/* Global Account Selector */}
+              <div className="flex flex-wrap gap-2">
+                {TRUST_MODES.map(mode => (
+                  <Button
+                    key={mode.id}
+                    size="sm"
+                    variant={trustMode === mode.id ? 'default' : 'outline'}
+                    title={mode.description}
+                    onClick={() => handleTrustMode(mode.id)}
+                    className={trustMode === mode.id ? 'bg-gradient-to-r from-cyan-500 to-purple-600' : 'border-cyan-500/30'}
+                  >
+                    {mode.id === 'verified' && <ShieldCheck className="mr-1.5 h-3.5 w-3.5" />}
+                    {mode.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className={`mt-4 grid grid-cols-2 gap-3 border-t pt-4 md:grid-cols-4 ${darkMode ? 'border-slate-800' : 'border-slate-200'}`}>
+              <TrustMetric label="Verified Executions" value={provenance.verifiedExecutions} darkMode={darkMode} />
+              <TrustMetric label="Manual Entries" value={provenance.manualEntries} darkMode={darkMode} />
+              <TrustMetric label="Signals / Sim" value={provenance.signals + provenance.simulated} darkMode={darkMode} />
+              <TrustMetric label="Data Confidence" value={`${provenance.dataConfidence.toFixed(0)}%`} darkMode={darkMode} />
+            </div>
+          </CardContent>
+        </Card>
+
         <GlobalAccountSelector onAccountsChange={setSelectedAccounts} />
 
-        {/* Key Metrics */}
+        {(dashboardSettings?.show_funding_readiness || enabledWidgets.includes('fundingReadiness') || traderProfile?.prop_firm_trader) && (
+          <FundingReadinessWidget trades={accountTrades} traderProfile={traderProfile} />
+        )}
+
         {stats && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {enabledWidgets.includes('pnl') && (
-              <Card className="bg-gradient-to-br from-cyan-500 to-purple-600 text-white border-0 shadow-lg shadow-cyan-500/20">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Total P&L</CardTitle>
-                  <DollarSign className="h-4 w-4" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl md:text-3xl font-bold">${stats.totalPnl.toFixed(2)}</div>
-                  <p className="text-xs mt-1 opacity-80">
-                    {stats.totalTrades} total trades
-                  </p>
-                </CardContent>
-              </Card>
+              <MetricCard title="Net P&L" value={`$${stats.netPnl.toFixed(2)}`} detail={`${stats.totalTrades} analyzed trades`} icon={DollarSign} darkMode={darkMode} featured />
             )}
-
             {enabledWidgets.includes('winRate') && (
-              <Card className={darkMode ? 'bg-slate-950/80 backdrop-blur-xl border-cyan-500/20' : 'bg-white/80 backdrop-blur-xl border-cyan-500/30'}>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className={`text-sm font-medium ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>Win Rate</CardTitle>
-                  <Target className={`h-4 w-4 ${darkMode ? 'text-cyan-400' : 'text-cyan-600'}`} />
-                </CardHeader>
-                <CardContent>
-                  <div className={`text-2xl md:text-3xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>{stats.winRate.toFixed(1)}%</div>
-                  <p className={`text-xs mt-1 ${darkMode ? 'text-cyan-400/70' : 'text-cyan-700/70'}`}>
-                    {stats.winningTrades}W / {stats.losingTrades}L
-                  </p>
-                </CardContent>
-              </Card>
+              <MetricCard title="Win Rate" value={`${stats.winRate.toFixed(1)}%`} detail={`${stats.winningTrades}W / ${stats.losingTrades}L / ${stats.breakevenTrades}BE`} icon={Target} darkMode={darkMode} />
             )}
-
             {enabledWidgets.includes('avgWin') && (
-              <Card className={darkMode ? 'bg-slate-950/80 backdrop-blur-xl border-green-500/20' : 'bg-white/80 backdrop-blur-xl border-green-500/30'}>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className={`text-sm font-medium ${darkMode ? 'text-green-400' : 'text-green-700'}`}>Avg Win</CardTitle>
-                  <TrendingUp className={`h-4 w-4 ${darkMode ? 'text-green-400' : 'text-green-600'}`} />
-                </CardHeader>
-                <CardContent>
-                  <div className={`text-2xl md:text-3xl font-bold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>${stats.avgWin.toFixed(2)}</div>
-                  <p className={`text-xs mt-1 ${darkMode ? 'text-green-400/70' : 'text-green-700/70'}`}>Per winning trade</p>
-                </CardContent>
-              </Card>
+              <MetricCard title="Avg Win" value={`$${stats.avgWin.toFixed(2)}`} detail={`Expectancy $${stats.expectancy.toFixed(2)}`} icon={TrendingUp} darkMode={darkMode} />
             )}
-
             {enabledWidgets.includes('profitFactor') && (
-              <Card className={darkMode ? 'bg-slate-950/80 backdrop-blur-xl border-purple-500/20' : 'bg-white/80 backdrop-blur-xl border-purple-500/30'}>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className={`text-sm font-medium ${darkMode ? 'text-purple-400' : 'text-purple-700'}`}>Profit Factor</CardTitle>
-                  <Activity className={`h-4 w-4 ${darkMode ? 'text-purple-400' : 'text-purple-600'}`} />
-                </CardHeader>
-                <CardContent>
-                  <div className={`text-2xl md:text-3xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>{stats.profitFactor.toFixed(2)}</div>
-                  <p className={`text-xs mt-1 ${darkMode ? 'text-purple-400/70' : 'text-purple-700/70'}`}>Risk-adjusted</p>
-                </CardContent>
-              </Card>
+              <MetricCard title="Profit Factor" value={formatMetric(stats.profitFactor)} detail={`Payoff ${formatMetric(stats.payoffRatio)}x`} icon={Activity} darkMode={darkMode} />
             )}
-
-            {enabledWidgets.includes('avgLoss') && stats.avgLoss && (
-              <Card className={darkMode ? 'bg-slate-950/80 backdrop-blur-xl border-red-500/20' : 'bg-white/80 backdrop-blur-xl border-red-500/30'}>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className={`text-sm font-medium ${darkMode ? 'text-red-400' : 'text-red-700'}`}>Avg Loss</CardTitle>
-                  <TrendingDown className={`h-4 w-4 ${darkMode ? 'text-red-400' : 'text-red-600'}`} />
-                </CardHeader>
-                <CardContent>
-                  <div className={`text-2xl md:text-3xl font-bold ${darkMode ? 'text-red-400' : 'text-red-700'}`}>${stats.avgLoss.toFixed(2)}</div>
-                  <p className={`text-xs mt-1 ${darkMode ? 'text-red-400/70' : 'text-red-700/70'}`}>Per losing trade</p>
-                </CardContent>
-              </Card>
+            {enabledWidgets.includes('avgLoss') && stats.avgLoss > 0 && (
+              <MetricCard title="Avg Loss" value={`$${stats.avgLoss.toFixed(2)}`} detail={`Max DD $${stats.maxDrawdown.toFixed(2)}`} icon={TrendingDown} darkMode={darkMode} />
             )}
           </div>
         )}
 
-        {/* Main Content Tabs */}
+        {!stats && (
+          <Card className={cardClass}>
+            <CardContent className="py-10 text-center">
+              <Database className="mx-auto h-9 w-9 text-cyan-400" />
+              <h3 className={`mt-3 text-lg font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`}>No trades match this trust filter yet</h3>
+              <p className={`mt-1 text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                Import or connect an account, or switch the Analytics Trust Layer to All Data.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList className={darkMode ? 'bg-slate-950/80 border border-cyan-500/20' : 'bg-white border border-cyan-500/30'}>
-            <TabsTrigger value="overview" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>Overview</TabsTrigger>
-            <TabsTrigger value="analytics" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>Analytics</TabsTrigger>
-            <TabsTrigger value="calendar" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>Calendar</TabsTrigger>
-            <TabsTrigger value="psychology" className={`data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600 data-[state=active]:text-white ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>Psychology</TabsTrigger>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="calendar">Calendar</TabsTrigger>
+            <TabsTrigger value="psychology">Psychology</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
             <DeepAnalysisPanel />
             <TodaysPlanWidget />
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
               {enabledWidgets.includes('equityCurve') && (
-                <Card className={`lg:col-span-2 backdrop-blur-xl ${darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white/80 border-cyan-500/30'}`}>
-                  <CardHeader>
-                    <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>Equity Curve</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <EquityCurve trades={trades} />
-                  </CardContent>
+                <Card className={`lg:col-span-2 ${cardClass}`}>
+                  <CardHeader><CardTitle>Equity Curve</CardTitle></CardHeader>
+                  <CardContent><EquityCurve trades={trades} /></CardContent>
                 </Card>
               )}
-
               {enabledWidgets.includes('recentTrades') && (
-                <Card className={`backdrop-blur-xl ${darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white/80 border-cyan-500/30'} ${!enabledWidgets.includes('equityCurve') && 'lg:col-span-3'}`}>
-                  <CardHeader>
-                    <CardTitle className={darkMode ? 'text-cyan-400' : 'text-cyan-700'}>Recent Trades</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <RecentTrades trades={trades.slice(0, 5)} />
-                  </CardContent>
+                <Card className={`${cardClass} ${!enabledWidgets.includes('equityCurve') ? 'lg:col-span-3' : ''}`}>
+                  <CardHeader><CardTitle>Recent Trades</CardTitle></CardHeader>
+                  <CardContent><RecentTrades trades={trades.slice(0, 5)} /></CardContent>
                 </Card>
               )}
             </div>
@@ -369,25 +309,20 @@ export default function Dashboard() {
             {enabledWidgets.includes('compound') && <CompoundCalculatorWidget trades={trades} />}
             {enabledWidgets.includes('strategies') && <StrategyPerformanceWidget trades={trades} />}
             {enabledWidgets.includes('instruments') && <InstrumentAnalysisWidget trades={trades} />}
-            {enabledWidgets.includes('emotions') && <EmotionalPatternsWidget trades={trades} />}
+            {(enabledWidgets.includes('emotions') || enabledWidgets.includes('emotionalPatterns')) && <EmotionalPatternsWidget trades={trades} />}
             {enabledWidgets.includes('performance') && <PerformanceMetrics trades={trades} />}
-            </TabsContent>
+          </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
             <PerformanceMetrics trades={trades} detailed />
           </TabsContent>
 
           <TabsContent value="calendar" className="space-y-6">
-            <Card className={`backdrop-blur-xl ${darkMode ? 'bg-slate-950/80 border-cyan-500/20' : 'bg-white/80 border-cyan-500/30'}`}>
+            <Card className={cardClass}>
               <CardHeader>
-                <CardTitle className={`flex items-center gap-2 ${darkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>
-                  <Calendar className="h-5 w-5" />
-                  Trading Calendar
-                </CardTitle>
+                <CardTitle className="flex items-center gap-2"><Calendar className="h-5 w-5" /> Trading Calendar</CardTitle>
               </CardHeader>
-              <CardContent>
-                <TradeCalendar trades={trades} />
-              </CardContent>
+              <CardContent><TradeCalendar trades={trades} /></CardContent>
             </Card>
           </TabsContent>
 
@@ -399,7 +334,6 @@ export default function Dashboard() {
           </TabsContent>
         </Tabs>
 
-        {/* Modals */}
         {showShareModal && <ShareModal onClose={() => setShowShareModal(false)} />}
         {showAIAnalysis && <AITradeAnalysis trades={trades} onClose={() => setShowAIAnalysis(false)} />}
         {showWidgetSelector && (
@@ -409,7 +343,37 @@ export default function Dashboard() {
             onClose={() => setShowWidgetSelector(false)}
           />
         )}
-        </div>
-        </div>
-        );
-        }
+      </div>
+    </div>
+  );
+}
+
+function TrustMetric({ label, value, darkMode }) {
+  return (
+    <div>
+      <div className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>{label}</div>
+      <div className={`mt-1 text-lg font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>{value}</div>
+    </div>
+  );
+}
+
+function MetricCard({ title, value, detail, icon: Icon, darkMode, featured = false }) {
+  const cls = featured
+    ? 'bg-gradient-to-br from-cyan-500 to-purple-600 text-white border-0 shadow-lg shadow-cyan-500/20'
+    : darkMode
+      ? 'bg-slate-950/80 backdrop-blur-xl border-cyan-500/20'
+      : 'bg-white/80 backdrop-blur-xl border-cyan-500/30';
+
+  return (
+    <Card className={cls}>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <Icon className="h-4 w-4" />
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl md:text-3xl font-bold">{value}</div>
+        <p className={`text-xs mt-1 ${featured ? 'opacity-80' : darkMode ? 'text-slate-400' : 'text-slate-600'}`}>{detail}</p>
+      </CardContent>
+    </Card>
+  );
+}
