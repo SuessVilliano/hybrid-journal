@@ -30,6 +30,8 @@ export function classifyTradeProvenance(trade = {}) {
 
   const brokerNamed = BROKER_SOURCES.some((broker) => combined.includes(broker));
   const apiImported = importSource.includes('api') || importSource.includes('webhook') || Boolean(trade.raw_payload);
+  const publicPerformance = importSource.includes('public performance url') || source.includes('public performance url');
+  const publicTrust = normalize(trade.raw_payload?.public_performance_trust);
 
   if (containsAny(combined, SIGNAL_MARKERS)) {
     return {
@@ -49,6 +51,19 @@ export function classifyTradeProvenance(trade = {}) {
       label: 'Simulated / Paper',
       confidence: 35,
       isVerifiedExecution: false,
+      isExecution: true,
+    };
+  }
+
+  if (publicPerformance) {
+    const verified = publicTrust === 'verified_broker_feed';
+    const structured = publicTrust === 'structured_public_feed';
+    return {
+      category: 'public_performance_execution',
+      verification: verified ? 'verified' : 'reported',
+      label: verified ? 'Verified Public Broker Feed' : structured ? 'Structured Public Performance' : 'Public Performance Report',
+      confidence: verified ? 95 : structured ? 75 : 60,
+      isVerifiedExecution: verified,
       isExecution: true,
     };
   }
