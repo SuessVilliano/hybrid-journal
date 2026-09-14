@@ -1,0 +1,61 @@
+{
+  "name": "ExecutionEvent",
+  "type": "object",
+  "properties": {
+    "event_id": { "type": "string", "description": "Globally unique event id for idempotency" },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "signal.received",
+        "intent.normalized",
+        "intent.validated",
+        "execution.accepted",
+        "execution.broker_acknowledged",
+        "execution.partially_filled",
+        "execution.filled",
+        "execution.cancelled",
+        "execution.rejected",
+        "copy.child_created",
+        "copy.child_acknowledged",
+        "journal.synced",
+        "reconciliation.mismatch"
+      ]
+    },
+    "source": { "type": "string" },
+    "user_email": { "type": "string" },
+    "signal_id": { "type": "string" },
+    "intent_id": { "type": "string" },
+    "execution_id": { "type": "string" },
+    "master_execution_id": { "type": "string" },
+    "copy_relationship_id": { "type": "string" },
+    "connection_id": { "type": "string" },
+    "account_external_id": { "type": "string" },
+    "venue": { "type": "string" },
+    "environment": { "type": "string", "enum": ["PAPER", "DEMO", "LIVE"] },
+    "symbol": { "type": "string" },
+    "canonical_symbol": { "type": "string" },
+    "side": { "type": "string", "enum": ["BUY", "SELL"] },
+    "order_type": { "type": "string" },
+    "requested_quantity": { "type": "number" },
+    "filled_quantity": { "type": "number" },
+    "requested_price": { "type": "number" },
+    "fill_price": { "type": "number" },
+    "stop_loss": { "type": "number" },
+    "take_profit": { "type": "number" },
+    "broker_order_id": { "type": "string" },
+    "broker_position_id": { "type": "string" },
+    "broker_status": { "type": "string" },
+    "fees": { "type": "number" },
+    "realized_pnl": { "type": "number" },
+    "occurred_at": { "type": "string", "format": "date-time" },
+    "broker_confirmed": { "type": "boolean", "default": false },
+    "raw_masked_payload": { "type": "object" }
+  },
+  "required": ["event_id", "event_type", "source", "user_email", "occurred_at"],
+  "rls": {
+    "create": { "data.user_email": "{{user.email}}" },
+    "read": { "data.user_email": "{{user.email}}" },
+    "update": { "data.user_email": "{{user.email}}" },
+    "delete": { "data.user_email": "{{user.email}}" }
+  }
+}
