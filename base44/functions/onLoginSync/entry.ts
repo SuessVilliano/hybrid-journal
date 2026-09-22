@@ -80,6 +80,18 @@ Deno.serve(async (req) => {
                     syncFunction = 'syncDXTrade';
                 }
 
+                if (connection.broker_id === 'kraken' ||
+                    connection.provider === 'Kraken' ||
+                    connection.settings_json?.broker_id === 'kraken') {
+                    syncFunction = 'krakenSyncPull';
+                }
+
+                if (connection.broker_id === 'public' ||
+                    connection.provider === 'Public' ||
+                    connection.settings_json?.broker_id === 'public') {
+                    syncFunction = 'publicSyncPull';
+                }
+
                 // Check for Hybrid Funding (gooeytrade)
                 const serverLower = (connection.server || '').toLowerCase();
                 const platformUrlLower = (connection.platform_url || '').toLowerCase();
