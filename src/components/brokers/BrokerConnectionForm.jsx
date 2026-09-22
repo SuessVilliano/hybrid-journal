@@ -40,6 +40,8 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
   const isDXTrade = formData.broker_id === 'dxtrade';
   const isTradovate = formData.broker_id === 'tradovate';
   const isKraken = formData.broker_id === 'kraken';
+  const isAlpaca = formData.broker_id === 'alpaca';
+  const isOanda = formData.broker_id === 'oanda';
   const isNinjaTrader = formData.broker_id === 'ninjatrader';
   const isCTrader = formData.broker_id === 'ctrader';
   const supportsAutoSync = selectedBroker?.supportsAutoSync || isDXTrade;
@@ -52,11 +54,18 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
     else if (broker_id === 'tradovate') connection_type = 'tradovate_login';
     else if (broker_id === 'ninjatrader') connection_type = 'import_only';
     else if (broker_id === 'kraken') connection_type = 'api';
+    else if (broker_id === 'alpaca' || broker_id === 'oanda') connection_type = 'api';
+    const defaultServer = broker_id === 'alpaca'
+      ? 'https://paper-api.alpaca.markets'
+      : broker_id === 'oanda'
+      ? 'https://api-fxpractice.oanda.com'
+      : formData.server;
     setFormData({
       ...formData,
       broker_id,
       broker_name: broker.name,
-      connection_type
+      connection_type,
+      server: defaultServer
     });
     setValidationResult(null);
   };
@@ -116,6 +125,47 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
         } else {
           setValidationResult({ valid: false, message: response?.data?.message || 'Kraken validation failed. Check your API key and private key.' });
         }
+      } else if (isAlpaca) {
+        const response = await base44.functions.invoke('validateCredentials', {
+          provider: 'Alpaca',
+          apiKey: formData.api_key,
+          apiSecret: formData.api_secret,
+          server: formData.server || 'https://paper-api.alpaca.markets'
+        });
+        if (response?.data?.valid) {
+          setValidationResult({
+            valid: true,
+            message: `Alpaca account validated (${response.data.details?.status || 'active'}) — auto-sync is ready.`,
+            account_info: {
+              account_name: response.data.details?.accountNumber,
+              account_currency: 'USD',
+              balance: response.data.details?.balance
+            }
+          });
+        } else {
+          setValidationResult({ valid: false, message: response?.data?.message || 'Alpaca validation failed. Check your API key and secret.' });
+        }
+      } else if (isOanda) {
+        const response = await base44.functions.invoke('validateCredentials', {
+          provider: 'OANDA',
+          apiKey: formData.api_key,
+          apiSecret: formData.api_secret,
+          server: formData.server || 'https://api-fxpractice.oanda.com',
+          accountNumber: formData.account_number
+        });
+        if (response?.data?.valid) {
+          setValidationResult({
+            valid: true,
+            message: 'OANDA account validated — auto-sync is ready.',
+            account_info: {
+              account_name: formData.account_number,
+              account_currency: response.data.details?.currency,
+              balance: response.data.details?.balance
+            }
+          });
+        } else {
+          setValidationResult({ valid: false, message: response?.data?.message || 'OANDA validation failed. Check your API token and account ID.' });
+        }
       } else {
         const result = await validateBrokerCredentials(formData.broker_id, {
           api_key: formData.api_key,
@@ -170,6 +220,31 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
         submitData.settings_json = { broker_id: 'kraken', balance: ai.balance, equity: ai.equity, currency: ai.currency, validated_at: new Date().toISOString() };
       } else {
         submitData.settings_json = { ...(submitData.settings_json || {}), broker_id: 'kraken' };
+      }
+      submitData.auto_sync_enabled = !!formData.auto_sync;
+      submitData.sync_frequency_minutes = Math.max(5, Math.round((formData.sync_interval || 3600) / 60));
+    }
+
+    // Alpaca / OANDA — real read-only API key connections with live validation
+    if (isAlpaca || isOanda) {
+      submitData.provider = isAlpaca ? 'Alpaca' : 'OANDA';
+      submitData.mode = 'READONLY_API';
+      submitData.display_name = submitData.display_name || (isAlpaca ? 'Alpaca' : 'OANDA');
+      submitData.connection_type = 'api';
+      const ai = validationResult?.account_info;
+      if (ai) {
+        if (ai.balance != null) submitData.account_balance = Number(ai.balance);
+        submitData.account_number = submitData.account_number || ai.account_name;
+        submitData.settings_json = {
+          ...(submitData.settings_json || {}),
+          broker_id: formData.broker_id,
+          account_number: submitData.account_number,
+          balance: ai.balance,
+          currency: ai.account_currency,
+          validated_at: new Date().toISOString()
+        };
+      } else {
+        submitData.settings_json = { ...(submitData.settings_json || {}), broker_id: formData.broker_id };
       }
       submitData.auto_sync_enabled = !!formData.auto_sync;
       submitData.sync_frequency_minutes = Math.max(5, Math.round((formData.sync_interval || 3600) / 60));
@@ -246,7 +321,7 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
                 value={formData.account_number}
                 onChange={(e) => setFormData({...formData, account_number: e.target.value})}
                 placeholder="123456789"
-                required={!isCTrader && !isKraken}
+                required={!isCTrader && !isKraken && !isAlpaca}
               />
             </div>
 
@@ -539,42 +614,78 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
             ) : (
               <>
                 {/* API Credentials */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className={isOanda ? '' : 'grid grid-cols-2 gap-4'}>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">
-                      API Key *
+                      {isOanda ? 'API Token *' : 'API Key *'}
                     </label>
                     <Input
                       type="password"
                       value={formData.api_key}
                       onChange={(e) => setFormData({...formData, api_key: e.target.value})}
-                      placeholder="Your API key"
+                      placeholder={isOanda ? 'OANDA personal access token' : 'Your API key'}
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                      API Secret *
-                    </label>
-                    <Input
-                      type="password"
-                      value={formData.api_secret}
-                      onChange={(e) => setFormData({...formData, api_secret: e.target.value})}
-                      placeholder="Your API secret"
-                    />
-                  </div>
+                  {!isOanda && (
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        API Secret *
+                      </label>
+                      <Input
+                        type="password"
+                        value={formData.api_secret}
+                        onChange={(e) => setFormData({...formData, api_secret: e.target.value})}
+                        placeholder="Your API secret"
+                      />
+                    </div>
+                  )}
                 </div>
 
-                {/* Server/Endpoint */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Server/Endpoint
-                  </label>
-                  <Input
-                    value={formData.server}
-                    onChange={(e) => setFormData({...formData, server: e.target.value})}
-                    placeholder="e.g., demo.server.com:443"
-                  />
-                </div>
+                {/* Server/Endpoint — Alpaca & OANDA pick an environment; others free text */}
+                {isAlpaca ? (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Environment *
+                    </label>
+                    <Select
+                      value={formData.server || 'https://paper-api.alpaca.markets'}
+                      onValueChange={(val) => setFormData({...formData, server: val})}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="https://paper-api.alpaca.markets">Paper Trading (paper-api.alpaca.markets)</SelectItem>
+                        <SelectItem value="https://api.alpaca.markets">Live (api.alpaca.markets)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : isOanda ? (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Environment *
+                    </label>
+                    <Select
+                      value={formData.server || 'https://api-fxpractice.oanda.com'}
+                      onValueChange={(val) => setFormData({...formData, server: val})}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="https://api-fxpractice.oanda.com">Practice (api-fxpractice.oanda.com)</SelectItem>
+                        <SelectItem value="https://api-fxtrade.oanda.com">Live (api-fxtrade.oanda.com)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Server/Endpoint
+                    </label>
+                    <Input
+                      value={formData.server}
+                      onChange={(e) => setFormData({...formData, server: e.target.value})}
+                      placeholder="e.g., demo.server.com:443"
+                    />
+                  </div>
+                )}
               </>
             )}
 

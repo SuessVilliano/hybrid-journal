@@ -71,6 +71,26 @@ export const SUPPORTED_BROKERS = [
     supportsAutoSync: true,
     syncFunction: 'syncBroker',
     instructions: 'Generate API key in Kraken: Security > API. Enable: Query Funds, Query Open Orders & Trades, Query Closed Orders & Trades. DO NOT enable trading permissions.'
+  },  
+  { 
+    id: 'alpaca', 
+    name: 'Alpaca (Paper/Live)', 
+    type: 'stocks', 
+    requiresCredentials: true,
+    fields: ['api_key', 'api_secret', 'server'],
+    supportsAutoSync: true,
+    syncFunction: 'syncBroker',
+    instructions: 'Create API keys at Alpaca: dashboard.alpaca.markets → API Keys (generate them in the same environment — Paper or Live — you select below). Read-only keys are enough for syncing; trading is never required.'
+  },
+  { 
+    id: 'oanda', 
+    name: 'OANDA', 
+    type: 'forex', 
+    requiresCredentials: true,
+    fields: ['account_number', 'api_key', 'server'],
+    supportsAutoSync: true,
+    syncFunction: 'syncBroker',
+    instructions: 'Create a personal access token at OANDA: dashboard.oanda.com → My Services / Manage API Access. Paste the token below along with your Account ID (e.g. 101-004-1234567-001) and pick your environment (Practice or Live).'
   },
   { 
     id: 'ninjatrader', 
@@ -187,8 +207,9 @@ export async function syncBrokerTrades(brokerConnection, syncType = 'manual') {
       functionName = 'syncCrossTrade';
     }
 
-    // Kraken uses the real gateway-backed krakenSyncPull (NOT the generic
-    // syncBroker, which fabricates simulated trades for non-Binance brokers).
+    // Kraken uses the real gateway-backed krakenSyncPull. The generic
+    // syncBroker has real integrations for Alpaca, OANDA and Binance and
+    // fails loudly for brokers without a real API integration.
     if (brokerConnection.broker_id === 'kraken' ||
         brokerConnection.provider === 'Kraken' ||
         brokerConnection.settings_json?.broker_id === 'kraken') {
@@ -398,6 +419,8 @@ function getBrokerInstrumentType(broker_id) {
     coinbase: 'Crypto',
     kraken: 'Crypto',
     tradovate: 'Futures',
+    alpaca: 'Stocks',
+    oanda: 'Forex',
     ninjatrader: 'Futures',
     crosstrade: 'Futures',
     tradelocker: 'Forex',

@@ -168,7 +168,7 @@ export default function Landing() {
         <div className="max-w-5xl mx-auto text-center relative">
           <Badge className="mb-6 bg-gradient-to-r from-cyan-500/20 to-purple-600/20 border border-cyan-500/30 text-cyan-300 px-4 py-2 text-sm">
             <Sparkles className="h-4 w-4 mr-2 inline" />
-            Used by 10,000+ Traders in 40+ Countries
+            Used by Traders in Over 4+ Countries
           </Badge>
 
           <h1 className="text-5xl md:text-7xl font-extrabold mb-6 leading-tight">
@@ -209,7 +209,7 @@ export default function Landing() {
           {/* Social proof bar */}
           <div className="flex flex-wrap items-center justify-center gap-8 text-slate-400 text-sm">
             {[
-              { icon: Users, text: '10,000+ Active Traders' },
+              { icon: Users, text: 'Traders in 4+ Countries' },
               { icon: Star, text: '4.9/5 Rating', extra: 'text-yellow-400' },
               { icon: Lock, text: 'Bank-Level Security' },
               { icon: Clock, text: '14-Day Free Trial' }
@@ -502,7 +502,7 @@ export default function Landing() {
             </span>
           </h2>
           <p className="text-xl mb-10 text-slate-300 max-w-2xl mx-auto">
-            Join 10,000+ traders using Hybrid Journal to build consistency, protect their capital, and finally become profitable.
+            Join traders in over 4+ countries using Hybrid Journal to build consistency, protect their capital, and finally become profitable.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
