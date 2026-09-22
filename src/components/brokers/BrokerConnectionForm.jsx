@@ -40,6 +40,7 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
   const isDXTrade = formData.broker_id === 'dxtrade';
   const isTradovate = formData.broker_id === 'tradovate';
   const isKraken = formData.broker_id === 'kraken';
+  const isPublic = formData.broker_id === 'public';
   const isAlpaca = formData.broker_id === 'alpaca';
   const isOanda = formData.broker_id === 'oanda';
   const isNinjaTrader = formData.broker_id === 'ninjatrader';
@@ -54,6 +55,7 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
     else if (broker_id === 'tradovate') connection_type = 'tradovate_login';
     else if (broker_id === 'ninjatrader') connection_type = 'import_only';
     else if (broker_id === 'kraken') connection_type = 'api';
+    else if (broker_id === 'public') connection_type = 'gateway';
     else if (broker_id === 'alpaca' || broker_id === 'oanda') connection_type = 'api';
     const defaultServer = broker_id === 'alpaca'
       ? 'https://paper-api.alpaca.markets'
@@ -113,6 +115,29 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
           setValidationResult({ valid: true, message: response.data.message || 'CrossTrade connected! Auto-sync is ready.', account_info: response.data.details });
         } else {
           setValidationResult({ valid: false, message: response.data.message || 'CrossTrade validation failed. Check your API token.' });
+        }
+      } else if (isPublic) {
+        const response = await base44.functions.invoke('hybridExecution', {
+          action: 'account_snapshot',
+          broker: 'public',
+          mode: 'live',
+          accountId: formData.account_number || undefined
+        });
+        const account = response?.data?.account || response?.data;
+        if (response?.data?.ok && account) {
+          setValidationResult({
+            valid: true,
+            message: 'Public account reached through the Hybrid Execution Gateway. Auto-sync is ready.',
+            account_info: {
+              account_name: account.accountId || formData.account_number || 'Gateway default',
+              account_currency: 'USD',
+              balance: Number(account.totalAccountValue || account.cash || 0),
+              equity: Number(account.totalAccountValue || 0),
+              buying_power: account.buyingPower
+            }
+          });
+        } else {
+          setValidationResult({ valid: false, message: response?.data?.error || 'Public gateway validation failed.' });
         }
       } else if (isKraken) {
         const response = await base44.functions.invoke('validateCredentials', {
@@ -203,6 +228,32 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
       submitData.status = formData.mcp_url ? 'connected' : 'pending';
     } else {
       submitData.status = formData.connection_type === 'credentials' ? 'manual' : (validationResult?.valid ? 'connected' : 'pending');
+    }
+
+    // Public: gateway-managed connection. No Public secret/token is stored in the browser or journal.
+    if (isPublic) {
+      submitData.provider = 'Public';
+      submitData.mode = 'READONLY_API';
+      submitData.display_name = submitData.display_name || 'Public';
+      submitData.connection_type = 'gateway';
+      submitData.status = validationResult?.valid ? 'connected' : 'pending';
+      submitData.api_key = '';
+      submitData.api_secret = '';
+      const ai = validationResult?.account_info;
+      if (ai) {
+        submitData.account_balance = Number(ai.balance || 0);
+        submitData.account_equity = Number(ai.equity || ai.balance || 0);
+        submitData.account_number = submitData.account_number || ai.account_name || '';
+      }
+      submitData.settings_json = {
+        ...(submitData.settings_json || {}),
+        broker_id: 'public',
+        public_account_id: submitData.account_number || null,
+        buying_power: ai?.buying_power || null,
+        gateway_managed: true
+      };
+      submitData.auto_sync_enabled = !!formData.auto_sync;
+      submitData.sync_frequency_minutes = Math.max(5, Math.round((formData.sync_interval || 3600) / 60));
     }
 
     // Kraken: map the real read-only key connection onto the BrokerConnection
@@ -321,7 +372,7 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
                 value={formData.account_number}
                 onChange={(e) => setFormData({...formData, account_number: e.target.value})}
                 placeholder="123456789"
-                required={!isCTrader && !isKraken && !isAlpaca}
+                required={!isCTrader && !isKraken && !isAlpaca && !isPublic}
               />
             </div>
 
@@ -379,8 +430,22 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
               </div>
             )}
 
-            {/* Connection Type — hide for NinjaTrader and Tradovate */}
-            {!isNinjaTrader && !isTradovate && (
+            {isPublic && (
+              <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-4">
+                <div className="flex items-start gap-2">
+                  <Zap className="h-5 w-5 text-cyan-700 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-cyan-900">Public via Hybrid Execution Gateway</p>
+                    <p className="text-xs text-cyan-800 mt-1">
+                      Hybrid Journal never stores your Public Secret Token. Account data, history, quotes, options data and live orders flow through the server-side Hybrid broker gateway.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Connection Type — hide for gateway-managed Public, NinjaTrader and Tradovate */}
+            {!isNinjaTrader && !isTradovate && !isPublic && (
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Connection Type *
@@ -556,6 +621,12 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
                   </p>
                 </div>
               </>
+            ) : formData.connection_type === 'gateway' ? (
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                <p className="text-sm text-slate-700">
+                  No broker secret is entered here. Use <strong>Test Connection</strong> to verify the Public account configured on the Hybrid Execution Gateway.
+                </p>
+              </div>
             ) : formData.connection_type === 'credentials' ? (
               <>
                 {/* Platform Credentials */}
@@ -702,7 +773,7 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
             </div>
 
             {/* Auto Sync Settings - For API connections and DXtrade */}
-            {(formData.connection_type === 'api' || formData.connection_type === 'dxtrade_login') && (
+            {(formData.connection_type === 'api' || formData.connection_type === 'dxtrade_login' || isPublic) && (
               <div className="flex items-center gap-4">
                 <label className="flex items-center gap-2">
                   <input
@@ -782,7 +853,7 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
               <Button type="button" variant="outline" onClick={onCancel}>
                 Cancel
               </Button>
-              {(formData.connection_type === 'api' || formData.connection_type === 'dxtrade_login' || formData.connection_type === 'tradovate_login' || isKraken) && !isNinjaTrader && (
+              {(formData.connection_type === 'api' || formData.connection_type === 'dxtrade_login' || formData.connection_type === 'tradovate_login' || isKraken || isPublic) && !isNinjaTrader && (
                 <Button
                   type="button"
                   variant="outline"
@@ -797,7 +868,7 @@ export default function BrokerConnectionForm({ connection, onSubmit, onCancel })
               <Button
                 type="submit"
                 className="bg-blue-600 hover:bg-blue-700"
-                disabled={!isNinjaTrader && !isImportOnly && (formData.connection_type === 'api' || formData.connection_type === 'dxtrade_login' || formData.connection_type === 'tradovate_login') && !validationResult?.valid}
+                disabled={!isNinjaTrader && !isImportOnly && (formData.connection_type === 'api' || formData.connection_type === 'dxtrade_login' || formData.connection_type === 'tradovate_login' || isPublic) && !validationResult?.valid}
               >
                 {isNinjaTrader ? 'Save & Go to Import' : 'Save Connection'}
               </Button>
