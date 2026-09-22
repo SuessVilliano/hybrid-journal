@@ -71,6 +71,17 @@ export const SUPPORTED_BROKERS = [
     supportsAutoSync: true,
     syncFunction: 'syncBroker',
     instructions: 'Generate API key in Kraken: Security > API. Enable: Query Funds, Query Open Orders & Trades, Query Closed Orders & Trades. DO NOT enable trading permissions.'
+  },
+  {
+    id: 'public',
+    name: 'Public',
+    type: 'multi-asset',
+    requiresCredentials: false,
+    gatewayManaged: true,
+    fields: ['account_number'],
+    supportsAutoSync: true,
+    syncFunction: 'publicSyncPull',
+    instructions: 'Public is connected through the Hybrid Execution Gateway so the Secret Token never enters the browser. Current internal/dev mode uses the gateway-configured Public account; production user linking will use Public partner authorization.'
   },  
   { 
     id: 'alpaca', 
@@ -214,6 +225,12 @@ export async function syncBrokerTrades(brokerConnection, syncType = 'manual') {
         brokerConnection.provider === 'Kraken' ||
         brokerConnection.settings_json?.broker_id === 'kraken') {
       functionName = 'krakenSyncPull';
+    }
+
+    if (brokerConnection.broker_id === 'public' ||
+        brokerConnection.provider === 'Public' ||
+        brokerConnection.settings_json?.broker_id === 'public') {
+      functionName = 'publicSyncPull';
     }
 
     console.log(`[syncBrokerTrades] Using ${functionName} for ${brokerConnection.broker_name}`);
@@ -418,6 +435,7 @@ function getBrokerInstrumentType(broker_id) {
     binance: 'Crypto',
     coinbase: 'Crypto',
     kraken: 'Crypto',
+    public: 'Stocks',
     tradovate: 'Futures',
     alpaca: 'Stocks',
     oanda: 'Forex',
