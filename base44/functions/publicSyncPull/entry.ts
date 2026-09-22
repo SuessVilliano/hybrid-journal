@@ -179,13 +179,27 @@ export default async function(req: Request): Promise<Response> {
           skipped,
           positions: Array.isArray(portfolio?.positions) ? portfolio.positions.length : 0,
           total_account_value: totalValue,
+          account_balance: cash,
+          account_equity: totalValue,
         });
       } catch (e) {
         results.push({ connection_id: conn.id, error: e instanceof Error ? e.message : String(e) });
       }
     }
 
-    return Response.json({ ok: true, manual: !!user, connections: connections.length, results });
+    const imported = results.reduce((sum: number, r: any) => sum + Number(r?.imported || 0), 0);
+    const skipped = results.reduce((sum: number, r: any) => sum + Number(r?.skipped || 0), 0);
+    const first = results.find((r: any) => !r?.error) || {};
+    return Response.json({
+      ok: true,
+      manual: !!user,
+      connections: connections.length,
+      imported,
+      skipped,
+      account_balance: first.account_balance,
+      account_equity: first.account_equity,
+      results
+    });
   } catch (error) {
     return Response.json({ ok: false, error: error instanceof Error ? error.message : String(error) }, { status: 500 });
   }
